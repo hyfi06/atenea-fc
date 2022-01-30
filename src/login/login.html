@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Atenea FC</title>
+    <style>
+      :root {
+        --black: #121212;
+        --background: #121212;
+        --white: #fff;
+        --primary: #8ebfd3;
+        --secondary: #81d2f0;
+        --error: #f18f7f;
+        --sm: 1.4rem;
+        --md: 1.6rem;
+        --lg: 1.8rem;
+        --high: 87%;
+        --medium: 60%;
+        --disable: 38%;
+        --00dp: 0%;
+        --01dp: 5%;
+        --02dp: 7%;
+        --03dp: 8%;
+        --04dp: 9%;
+        --06dp: 11%;
+        --08dp: 12%;
+        --12dp: 14%;
+        --16dp: 15%;
+        --24dp: 16%;
+      }
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 62.5%;
+      }
+      body {
+        font-family: "Rubik", sans-serif;
+        font-size: var(--md);
+        background-color: var(--background);
+        color: white;
+      }
+      .login {
+        margin-top: 1.5rem;
+        display: grid;
+        grid-template-rows: repeat(auto-fill, auto);
+        place-items: center;
+        row-gap: 1.5rem;
+      }
+      .login > p {
+        opacity: var(--medium);
+      }
+      .oauth-button {
+        background-color: rgba(255, 255, 255, var(--02dp));
+        width: 25rem;
+      }
+      .oauth-button:hover {
+        background-color: rgba(255, 255, 255, var(--08dp));
+      }
+      .oauth-button img {
+        height: 3.2rem;
+        opacity: var(--high);
+      }
+      .login form {
+        display: grid;
+        place-items: center;
+        row-gap: 1rem;
+      }
+      .login a {
+        text-decoration: none;
+        color: rgba(255, 255, 255, var(--medium));
+        font-size: var(--sm);
+      }
+      .login a:hover {
+        text-decoration: underline;
+        color: rgba(255, 255, 255, var(--medium));
+      }
+      .login label {
+        display: grid;
+        grid-template-columns: 25rem;
+        row-gap: 0.2rem;
+      }
+      .login label span {
+        opacity: var(--high);
+        margin-left: 1rem;
+      }
+      .text-input {
+        background-color: rgba(255, 255, 255, var(--02dp));
+        border: none;
+        border-radius: 1rem;
+        padding: 0.7rem 1rem;
+        color: rgba(255, 255, 255, var(--high));
+      }
+      .button {
+        min-width: 15rem;
+        border: none;
+        border-radius: 2rem;
+        font-size: var(--lg);
+        height: 4.8rem;
+      }
+      .button:active {
+        border: solid 1px rgba(255, 255, 255, var(--medium));
+      }
+      .button--primary {
+        background-color: rgba(142, 191, 211,0.87);
+      }
+
+      .button--primary:hover {
+        background-color: rgba(142, 191, 211,1);
+      }
+      .button--primary:active {
+        background-color: rgba(142, 191, 211,1);
+      }
+    </style>
+  </head>
+  <body>
+    <section class="login">
+      <button class="button oauth-button" type="submit">
+        <img
+          src="../../Assets/correoCiencias.svg"
+          alt="login Correo Ciencias"
+        />
+      </button>
+      <p>o</p>
+      <form action="">
+        <label for="email">
+          <span>Correo</span>
+          <input
+            class="text-input"
+            type="email"
+            name="email"
+            id="email"
+            placeholder="ejemplo@ciencias.unam.mx"
+            autocomplete="email"
+            required
+          />
+        </label>
+        <label for="password">
+          <span>Contraseña</span>
+          <input
+            class="text-input"
+            type="password"
+            name="password"
+            id="password"
+            autocomplete="current-password"
+            required
+          />
+        </label>
+        <a href="#">Olvidé mi contraseña</a>
+        <input class="button button--primary" type="submit" value="Entrar" />
+      </form>
+    </section>
+  </body>
+</html>
