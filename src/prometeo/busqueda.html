@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      :root {
+        --black: #121212;
+        --background: #121212;
+        --white: #fff;
+        --primary: #8ebfd3;
+        --secondary: #81d2f0;
+        --error: #f18f7f;
+        --sm: 1.4rem;
+        --md: 1.6rem;
+        --lg: 1.8rem;
+        --high: 87%;
+        --medium: 60%;
+        --disable: 38%;
+        --00dp: 0%;
+        --01dp: 5%;
+        --02dp: 7%;
+        --03dp: 8%;
+        --04dp: 9%;
+        --06dp: 11%;
+        --08dp: 12%;
+        --12dp: 14%;
+        --16dp: 15%;
+        --24dp: 16%;
+      }
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 62.5%;
+      }
+      body {
+        font-family: "Rubik", sans-serif;
+        font-size: var(--md);
+        background-color: var(--background);
+        color: white;
+      }
+      .icons-container img {
+        height: var(--md);
+        opacity: var(--medium);
+      }
+      .student-card img {
+        height: var(--md);
+        justify-self: center;
+      }
+      .container {
+        display: grid;
+        place-items: center;
+        margin: 1.5rem 0;
+      }
+      .container span {
+        font-size: var(--lg);
+        opacity: var(--high);
+      }
+      .container > label {
+        display: grid;
+        grid-column: 1fr;
+        place-items: center;
+        row-gap: 0.4rem;
+        width: 90%;
+      }
+      .text-input {
+        background-color: rgba(255, 255, 255, var(--02dp));
+        border: none;
+        border-radius: 1rem;
+        padding: 0.7rem 1rem;
+        color: rgba(255, 255, 255, var(--high));
+        min-width: 30rem;
+      }
+      .resultados {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 32rem);
+        row-gap: 1.5rem;
+        column-gap: 1.5rem;
+        place-items: center;
+        justify-content: center;
+        padding: 0 1.5rem;
+      }
+      .student-card {
+        display: grid;
+        grid-column: 1fr;
+        row-gap: 0.4rem;
+        background-color: rgba(255, 255, 255, var(--01dp));
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        width: 100%;
+      }
+      .student-card > div {
+        display: grid;
+        grid-template-columns: 3em auto;
+        column-gap: 0.4rem;
+      }
+      .button {
+        border: none;
+        border-radius: 1.5rem;
+        font-size: var(--lg);
+        padding: 0.4rem 1.5rem;
+      }
+      .button:active {
+        border: solid 1px rgba(255, 255, 255, var(--medium));
+      }
+      .button--primary {
+        background-color: rgba(142, 191, 211, 0.87);
+      }
+      .button--primary:hover {
+        background-color: rgba(142, 191, 211, 1);
+      }
+      .button--primary:active {
+        background-color: rgba(142, 191, 211, 1);
+      }
+      .text-right {
+        justify-self: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <label for="busqueda">
+        <span>Búsqueda</span>
+        <div class="icons-container">
+          <img src="../../Assets/cuenta.svg" alt="Número de cuenta" />
+          <img src="../../Assets/person.svg" alt="Nombre" />
+          <img src="../../Assets/email.svg" alt="email" />
+        </div>
+        <input type="text" name="busqueda" id="busqueda" class="text-input" />
+      </label>
+    </div>
+
+    <div class="resultados">
+      <div class="student-card">
+        <div class="text-right">
+          <img src="../../Assets/cuenta.svg" alt="" />
+          <span>123456789</span>
+        </div>
+        <div>
+          <img src="../../Assets/person.svg" alt="" />
+          <span>Jane Doe</span>
+        </div>
+        <div>
+          <span>CURP</span>
+          <span>DODJ010101MDFXXNA0</span>
+        </div>
+        <div>
+          <img src="../../Assets/email.svg" alt="" />
+          <span>jane.doe@ciencias.unam.mx</span>
+        </div>
+        <button class="button--primary button text-right">Ver</button>
+      </div>
+    </div>
+  </body>
+</html>
