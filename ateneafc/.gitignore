@@ -132,6 +132,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.envs/*
+!.envs/.local/
+.envs/.local/*
+!.envs/.local/*.example
 
 # Spyder project settings
 .spyderproject
@@ -294,6 +298,7 @@ Temporary Items
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
+!compose/local
 [Ss]cripts
 pyvenv.cfg
 pip-selfcheck.json
