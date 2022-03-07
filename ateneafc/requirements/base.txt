@@ -1,0 +1,7 @@
+# Base
+
+# Django
+Django==4.0.3
+
+# Enviroment
+django-environ==0.8.1
