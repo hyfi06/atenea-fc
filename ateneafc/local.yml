@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 volumes:
   local_postgres_data: {}
@@ -12,11 +12,12 @@ services:
     image: atenea_local_django
     depends_on:
       - postgres
+      - redis
     volumes:
       - .:/app
     env_file:
-      ./.envs/.local/.django
-      ./.envs/.local/.postgres
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
     ports:
       - "8000:8000"
     command: /start
@@ -34,4 +35,4 @@ services:
 
   redis:
     image: redis:6.2
-    
+    container_name: atenea_local_redis

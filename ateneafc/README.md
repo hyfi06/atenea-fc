@@ -1,5 +1,15 @@
 # Atenea FC
 
+## Run
+
+## Development
+
+```bash
+export COMPOSE_FILE=local.yml
+docker-compose build
+docker-compose up
+```
+
 ## License
 
 Copyright (C) 2021-2022 Héctor Olvera Vital
