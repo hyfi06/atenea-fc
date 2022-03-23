@@ -1,5 +1,20 @@
 # Atenea FC
 
+## Run
+
+## Development
+
+```bash
+export COMPOSE_FILE=local.yml
+docker-compose build
+docker-compose up
+
+docker rm -f ID
+docker-compose run --rm --service-ports django
+
+docker-compose run --rm django COMMAND
+```
+
 ## License
 
 Copyright (C) 2021-2022 Héctor Olvera Vital
