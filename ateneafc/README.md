@@ -8,6 +8,11 @@
 export COMPOSE_FILE=local.yml
 docker-compose build
 docker-compose up
+
+docker rm -f ID
+docker-compose run --rm --service-ports django
+
+docker-compose run --rm django COMMAND
 ```
 
 ## License
