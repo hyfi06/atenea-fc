@@ -48,7 +48,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'ateneafc.users.apps.UsersAppConfig'
+    'ateneafc.users.apps.UsersAppConfig',
+    'ateneafc.students.apps.StudentsAppConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
