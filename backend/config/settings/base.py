@@ -47,6 +47,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "corsheaders",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -64,6 +65,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -146,6 +148,8 @@ EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@atenea.ciencias.unam.mx")
 
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+
+CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
 
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")
