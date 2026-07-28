@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.utils.translation import gettext_lazy as _
 
 from .models import User
 
@@ -7,8 +8,19 @@ from .models import User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     ordering = ("email",)
-    list_display = ("email", "first_name", "last_name", "is_staff", "is_active")
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "is_staff",
+        "is_active",
+        "google_conectado",
+    )
     search_fields = ("email", "first_name", "last_name")
+
+    @admin.display(description=_("Google conectado"), boolean=True)
+    def google_conectado(self, obj):
+        return obj.socialaccount_set.exists()
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Personal info", {"fields": ("first_name", "last_name")}),
