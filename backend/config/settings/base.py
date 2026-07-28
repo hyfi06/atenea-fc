@@ -132,6 +132,7 @@ REST_AUTH = {
     "TOKEN_MODEL": None,
     "USE_JWT": True,
     "SESSION_LOGIN": False,
+    "JWT_AUTH_HTTPONLY": False,
     "PASSWORD_RESET_SERIALIZER": "accounts.serializers.PasswordResetSerializer",
 }
 
