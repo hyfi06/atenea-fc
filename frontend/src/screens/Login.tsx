@@ -34,6 +34,7 @@ export function Login() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    navigate('/home')
   }
 
   return (
@@ -67,7 +68,11 @@ export function Login() {
           <span className="h-px flex-1 bg-outline-variant" />
         </div>
 
-        <button type="button" className="h-11 rounded-full border border-outline text-sm font-semibold text-primary">
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          className="h-11 rounded-full border border-outline text-sm font-semibold text-primary"
+        >
           Continuar con Correo Ciencias
         </button>
       </form>

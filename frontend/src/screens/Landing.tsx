@@ -19,6 +19,7 @@ export function Landing() {
       <div className="flex w-full max-w-xs flex-col gap-3">
         <button
           type="button"
+          onClick={() => navigate('/home')}
           className="h-11 rounded-full bg-primary text-sm font-semibold text-on-primary"
         >
           Continuar con Correo Ciencias
