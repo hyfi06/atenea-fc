@@ -38,7 +38,7 @@ class CarreraResolveTests(TestCase):
         # Use test-only clave to avoid coupling with seed migration
         area = Area.objects.create(nombre="Test Area")
         self.actuaria = Carrera.objects.create(
-            clave=990, nombre="Test Carrera", area=area, alias=["TEST_CARRERA", "TC"]
+            clave=990, nombre="Test Carrera", area=area, alias=["TEST_CARRERA", "TC", "CARRERA_PRUEBÁ"]
         )
 
     def tearDown(self):
@@ -52,7 +52,7 @@ class CarreraResolveTests(TestCase):
         self.assertEqual(Carrera.objects.resolve("Test Carrera"), self.actuaria)
 
     def test_resolve_por_alias_sin_acentos_ni_mayusculas(self):
-        self.assertEqual(Carrera.objects.resolve("test_carrera"), self.actuaria)
+        self.assertEqual(Carrera.objects.resolve("carrera_prueba"), self.actuaria)
 
     def test_resolve_no_encontrada(self):
         with self.assertRaises(Carrera.DoesNotExist):

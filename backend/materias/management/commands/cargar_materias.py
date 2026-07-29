@@ -1,6 +1,7 @@
 import csv
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import DataError, IntegrityError, transaction
 
 from carreras.models import Carrera
 from materias.models import Materia
@@ -17,7 +18,12 @@ class Command(BaseCommand):
         actualizadas = 0
         errores = 0
 
-        with open(options["csv_path"], newline="", encoding="utf-8") as archivo:
+        try:
+            archivo = open(options["csv_path"], newline="", encoding="utf-8")
+        except (FileNotFoundError, OSError) as exc:
+            raise CommandError(f"No se pudo abrir el archivo '{options['csv_path']}': {exc}")
+
+        with archivo:
             lector = csv.DictReader(archivo)
             for numero_fila, fila in enumerate(lector, start=2):
                 try:
@@ -26,17 +32,28 @@ class Command(BaseCommand):
                     errores += 1
                     self.stderr.write(f"Fila {numero_fila}: {exc}")
                     continue
+                except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                    errores += 1
+                    self.stderr.write(f"Fila {numero_fila}: {exc}")
+                    continue
 
-                nivel_texto = fila["Nivel"].strip()
-                _, creada = Materia.objects.update_or_create(
-                    clave=fila["Clave"].strip(),
-                    defaults={
-                        "nombre": fila["Materia"].strip(),
-                        "carrera": carrera,
-                        "nivel": int(nivel_texto) if nivel_texto else None,
-                        "plan": int(fila["Plan"].strip()),
-                    },
-                )
+                try:
+                    nivel_texto = fila["Nivel"].strip()
+                    with transaction.atomic():
+                        _, creada = Materia.objects.update_or_create(
+                            clave=fila["Clave"].strip(),
+                            defaults={
+                                "nombre": fila["Materia"].strip(),
+                                "carrera": carrera,
+                                "nivel": int(nivel_texto) if nivel_texto else None,
+                                "plan": int(fila["Plan"].strip()),
+                            },
+                        )
+                except (ValueError, KeyError, TypeError, AttributeError, DataError, IntegrityError) as exc:
+                    errores += 1
+                    self.stderr.write(f"Fila {numero_fila}: {exc}")
+                    continue
+
                 if creada:
                     creadas += 1
                 else:
