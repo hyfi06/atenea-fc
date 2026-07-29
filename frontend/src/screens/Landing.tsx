@@ -12,7 +12,10 @@ export function Landing() {
         <Logo className="h-20 w-20 text-primary" />
         <h1 className="text-2xl font-semibold">Atenea</h1>
         <p className="max-w-[26ch] text-sm text-on-surface-variant">
-          Servicios de la SAE — Facultad de Ciencias, UNAM
+          Secretaría de Asuntos Estudiantiles
+        </p>
+        <p className="max-w-[26ch] text-sm text-on-surface-variant">
+          Facultad de Ciencias, UNAM
         </p>
       </div>
 
