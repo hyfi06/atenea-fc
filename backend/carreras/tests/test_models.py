@@ -34,14 +34,25 @@ class CarreraUnicidadTests(TestCase):
 
 class CarreraResolveTests(TestCase):
     def setUp(self):
-        # Use seeded carrera instead of creating one
-        self.actuaria = Carrera.objects.get(clave=101)
+        # Create self-contained test carrera (not dependent on seeded data)
+        # Use test-only clave to avoid coupling with seed migration
+        area = Area.objects.create(nombre="Test Area")
+        self.actuaria = Carrera.objects.create(
+            clave=990, nombre="Test Carrera", area=area, alias=["TEST_CARRERA", "TC"]
+        )
+
+    def tearDown(self):
+        # Clean up test-created carrera and area
+        # Delete carrera first, then area (protected foreign key)
+        area = self.actuaria.area
+        self.actuaria.delete()
+        area.delete()
 
     def test_resolve_por_nombre_exacto(self):
-        self.assertEqual(Carrera.objects.resolve("Actuaría"), self.actuaria)
+        self.assertEqual(Carrera.objects.resolve("Test Carrera"), self.actuaria)
 
     def test_resolve_por_alias_sin_acentos_ni_mayusculas(self):
-        self.assertEqual(Carrera.objects.resolve("actuaria"), self.actuaria)
+        self.assertEqual(Carrera.objects.resolve("test_carrera"), self.actuaria)
 
     def test_resolve_no_encontrada(self):
         with self.assertRaises(Carrera.DoesNotExist):
