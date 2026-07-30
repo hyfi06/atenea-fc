@@ -25,6 +25,14 @@ class Command(BaseCommand):
 
         with archivo:
             lector = csv.DictReader(archivo)
+            columnas_requeridas = {"Carrera", "Clave", "Materia", "Nivel", "Plan"}
+            columnas_presentes = set(lector.fieldnames or [])
+            columnas_faltantes = columnas_requeridas - columnas_presentes
+            if columnas_faltantes:
+                raise CommandError(
+                    f"Encabezado del CSV inválido: faltan las columnas {sorted(columnas_faltantes)}"
+                )
+
             for numero_fila, fila in enumerate(lector, start=2):
                 try:
                     carrera = Carrera.objects.resolve(fila["Carrera"])
@@ -59,8 +67,7 @@ class Command(BaseCommand):
                 else:
                     actualizadas += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Materias: {creadas} creadas, {actualizadas} actualizadas, {errores} filas con error"
-            )
-        )
+        resumen = f"Materias: {creadas} creadas, {actualizadas} actualizadas, {errores} filas con error"
+        if errores:
+            raise CommandError(resumen)
+        self.stdout.write(self.style.SUCCESS(resumen))

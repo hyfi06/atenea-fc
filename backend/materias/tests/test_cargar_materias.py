@@ -1,8 +1,8 @@
 import csv
 import tempfile
-from pathlib import Path
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 
 from carreras.models import Area, Carrera
@@ -72,7 +72,8 @@ class CargarMateriasTests(TestCase):
              "Nivel": "8", "Plan": "2006"},
         ])
 
-        call_command("cargar_materias", csv_path)
+        with self.assertRaises(CommandError):
+            call_command("cargar_materias", csv_path)
 
         self.assertFalse(Materia.objects.filter(clave="9999").exists())
         self.assertTrue(Materia.objects.filter(clave="1801").exists())

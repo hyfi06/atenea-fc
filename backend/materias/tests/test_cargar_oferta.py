@@ -2,6 +2,7 @@ import csv
 import tempfile
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 
 from carreras.models import Carrera
@@ -68,6 +69,7 @@ class CargarOfertaTests(TestCase):
             {"Clave": "1801", "SeImparte": "1"},
         ])
 
-        call_command("cargar_oferta", "20271", csv_path)
+        with self.assertRaises(CommandError):
+            call_command("cargar_oferta", "20271", csv_path)
 
         self.assertEqual(OfertaMateria.objects.filter(materia=self.materia).count(), 1)
