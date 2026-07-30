@@ -23,4 +23,24 @@ class PerfilAsesorAcademico(models.Model):
             raise ValidationError("Un asesor académico debe tener PerfilAcademico.")
 
     def __str__(self):
-        return f"Asesor <{self.user.email}>"
+        return f"{self.user.email}, {self.area}"
+
+class RegistroAsesor(models.Model):
+    asesor = models.ForeignKey(PerfilAsesorAcademico, on_delete=models.PROTECT, related_name="registros")
+    semestre = models.CharField(max_length=5)
+    materias = models.ManyToManyField("materias.Materia", related_name="registros_asesor", blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["asesor", "semestre"], name="unique_registro_asesor_semestre"),
+        ]
+
+    def agregar_materia(self, materia):
+        if not materia.habilitada_asesorias:
+            raise ValidationError("La materia no está habilitada para asesorías.")
+        if not materia.ofertas.filter(semestre=self.semestre, se_imparte=True).exists():
+            raise ValidationError("La materia no se imparte en este semestre.")
+        self.materias.add(materia)
+
+    def __str__(self):
+        return f"{self.asesor}, {self.semestre}"
