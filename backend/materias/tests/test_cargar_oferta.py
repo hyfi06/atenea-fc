@@ -74,3 +74,26 @@ class CargarOfertaTests(TestCase):
             call_command("cargar_oferta", "20271", csv_path)
 
         self.assertEqual(OfertaMateria.objects.filter(materia=self.materia).count(), 1)
+
+    def test_semestre_invalido_lanza_command_error(self):
+        csv_path = escribir_csv([{"Clave": "1801", "SeImparte": "1"}])
+
+        for semestre_invalido in ("2027", "20273", "abcde"):
+            with self.assertRaises(CommandError):
+                call_command("cargar_oferta", semestre_invalido, csv_path)
+
+        self.assertFalse(OfertaMateria.objects.filter(materia=self.materia).exists())
+
+    def test_valor_se_imparte_no_reconocido_no_crea_oferta(self):
+        csv_path = escribir_csv([{"Clave": "1801", "SeImparte": "tal-vez"}])
+
+        with self.assertRaises(CommandError):
+            call_command("cargar_oferta", "20271", csv_path)
+
+        self.assertFalse(
+            OfertaMateria.objects.filter(materia=self.materia, semestre="20271").exists()
+        )
+
+    def test_archivo_inexistente_lanza_command_error(self):
+        with self.assertRaises(CommandError):
+            call_command("cargar_oferta", "20271", "/ruta/que/no/existe.csv")

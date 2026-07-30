@@ -83,3 +83,7 @@ class CargarMateriasTests(TestCase):
 
         self.assertFalse(Materia.objects.filter(clave="9999").exists())
         self.assertTrue(Materia.objects.filter(clave="1801").exists())
+
+    def test_archivo_inexistente_lanza_command_error(self):
+        with self.assertRaises(CommandError):
+            call_command("cargar_materias", "/ruta/que/no/existe.csv")
