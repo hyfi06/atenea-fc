@@ -26,3 +26,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class PerfilAlumno(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_alumno")
+    numero_cuenta = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return f"{self.numero_cuenta} <{self.user.email}>"
+
+
+class PerfilAcademico(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_academico")
+    numero_trabajador = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return f"{self.numero_trabajador} <{self.user.email}>"
