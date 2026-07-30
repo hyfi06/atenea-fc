@@ -11,19 +11,21 @@ class UserAdmin(DjangoUserAdmin):
     list_display = (
         "email",
         "first_name",
-        "last_name",
+        "apellido1",
+        "apellido2",
         "is_staff",
         "is_active",
         "google_conectado",
     )
-    search_fields = ("email", "first_name", "last_name")
+    search_fields = ("email", "first_name", "apellido1", "apellido2")
 
     @admin.display(description=_("Google conectado"), boolean=True)
     def google_conectado(self, obj):
         return obj.socialaccount_set.exists()
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal info", {"fields": ("first_name", "last_name")}),
+        ("Personal info", {
+         "fields": ("first_name", "apellido1", "apellido2")}),
         (
             "Permissions",
             {
