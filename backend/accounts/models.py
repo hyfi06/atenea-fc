@@ -33,7 +33,7 @@ class PerfilAlumno(models.Model):
     numero_cuenta = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
-        return f"{self.numero_cuenta} <{self.user.email}>"
+        return f"{self.numero_cuenta}, {self.user.email}"
 
 
 class PerfilAcademico(models.Model):
@@ -41,4 +41,4 @@ class PerfilAcademico(models.Model):
     numero_trabajador = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
-        return f"{self.numero_trabajador} <{self.user.email}>"
+        return f"{self.numero_trabajador}, {self.user.email}"
