@@ -12,5 +12,8 @@ db.sqlite3
 
 node_modules/
 dist/
+dist-ssr/
+*.local
+pnpm-debug.log*
 
 .DS_Store
