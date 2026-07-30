@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 
-from carreras.models import Carrera
+from carreras.models import Area, Carrera
 from materias.models import Materia, OfertaMateria
 
 
@@ -22,7 +22,8 @@ def escribir_csv(filas):
 
 class CargarOfertaTests(TestCase):
     def setUp(self):
-        carrera = Carrera.objects.get(clave=101)
+        area = Area.objects.create(nombre="Área de Prueba")
+        carrera = Carrera.objects.create(clave=970, nombre="Carrera de Prueba", area=area)
         self.materia = Materia.objects.create(
             clave="1801", nombre="Administración Actuarial", carrera=carrera,
             nivel=8, plan=2006,

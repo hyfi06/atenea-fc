@@ -21,11 +21,17 @@ def escribir_csv(filas):
 
 
 class CargarMateriasTests(TestCase):
+    def setUp(self):
+        area = Area.objects.create(nombre="Área de Prueba")
+        self.carrera = Carrera.objects.create(
+            clave=980, nombre="Carrera de Prueba", area=area, alias=["CARRERA_PRUEBA", "CP"]
+        )
+
     def test_crea_materias_nuevas(self):
         csv_path = escribir_csv([
-            {"Carrera": "Actuaría", "Clave": "1801", "Materia": "Administración Actuarial",
+            {"Carrera": "Carrera de Prueba", "Clave": "1801", "Materia": "Administración Actuarial",
              "Nivel": "8", "Plan": "2006"},
-            {"Carrera": "ACT", "Clave": "1817", "Materia": "Administración de Riesgos",
+            {"Carrera": "CP", "Clave": "1817", "Materia": "Administración de Riesgos",
              "Nivel": "", "Plan": "2006"},
         ])
 
@@ -34,11 +40,11 @@ class CargarMateriasTests(TestCase):
         self.assertEqual(Materia.objects.count(), 2)
         optativa = Materia.objects.get(clave="1817")
         self.assertIsNone(optativa.nivel)
-        self.assertEqual(optativa.carrera.clave, 101)
+        self.assertEqual(optativa.carrera.clave, self.carrera.clave)
 
     def test_correr_dos_veces_es_idempotente(self):
         csv_path = escribir_csv([
-            {"Carrera": "Actuaría", "Clave": "1801", "Materia": "Administración Actuarial",
+            {"Carrera": "Carrera de Prueba", "Clave": "1801", "Materia": "Administración Actuarial",
              "Nivel": "8", "Plan": "2006"},
         ])
 
@@ -49,13 +55,13 @@ class CargarMateriasTests(TestCase):
 
     def test_actualiza_materia_existente(self):
         csv_path = escribir_csv([
-            {"Carrera": "Actuaría", "Clave": "1801", "Materia": "Nombre viejo",
+            {"Carrera": "Carrera de Prueba", "Clave": "1801", "Materia": "Nombre viejo",
              "Nivel": "8", "Plan": "2006"},
         ])
         call_command("cargar_materias", csv_path)
 
         csv_path_v2 = escribir_csv([
-            {"Carrera": "Actuaría", "Clave": "1801", "Materia": "Nombre corregido",
+            {"Carrera": "Carrera de Prueba", "Clave": "1801", "Materia": "Nombre corregido",
              "Nivel": "8", "Plan": "2006"},
         ])
         call_command("cargar_materias", csv_path_v2)
@@ -68,7 +74,7 @@ class CargarMateriasTests(TestCase):
         csv_path = escribir_csv([
             {"Carrera": "Carrera Inexistente", "Clave": "9999", "Materia": "No debe crearse",
              "Nivel": "1", "Plan": "2006"},
-            {"Carrera": "Actuaría", "Clave": "1801", "Materia": "Administración Actuarial",
+            {"Carrera": "Carrera de Prueba", "Clave": "1801", "Materia": "Administración Actuarial",
              "Nivel": "8", "Plan": "2006"},
         ])
 
