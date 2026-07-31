@@ -32,7 +32,7 @@
 **Interfaces:**
 - Produces: `ventana_agendable(hoy: datetime.date | None = None) -> tuple[datetime.date, datetime.date]` en `asesorias/servicios.py` — devuelve `(hoy_efectivo, domingo_que_cierra_la_semana_siguiente)`. Usado por Task 7 (búsqueda) y por `Asesoria.clean()`.
 
-- [ ] **Step 1: Escribir el test que falla para `ventana_agendable`**
+- [x] **Step 1: Escribir el test que falla para `ventana_agendable`**
 
 ```python
 # backend/asesorias/tests/test_servicios.py
@@ -68,12 +68,12 @@ class VentanaAgendableTests(SimpleTestCase):
         self.assertEqual(inicio, timezone.localdate())
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_servicios -v 2`
 Expected: FAIL con `ModuleNotFoundError: No module named 'asesorias.servicios'`
 
-- [ ] **Step 3: Implementar `ventana_agendable`**
+- [x] **Step 3: Implementar `ventana_agendable`**
 
 ```python
 # backend/asesorias/servicios.py
@@ -90,12 +90,12 @@ def ventana_agendable(hoy: datetime.date | None = None) -> tuple[datetime.date, 
     return hoy, domingo_que_cierra_semana_siguiente
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_servicios -v 2`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Escribir el test que falla para la extensión de `Asesoria.clean()`**
+- [x] **Step 5: Escribir el test que falla para la extensión de `Asesoria.clean()`**
 
 Agregar este método a la clase `AsesoriaConstraintTests` en `backend/asesorias/tests/test_asesoria.py` (después de `test_fecha_no_coincide_con_dia_semana_falla_en_clean`):
 
@@ -111,12 +111,12 @@ Agregar este método a la clase `AsesoriaConstraintTests` en `backend/asesorias/
             asesoria.clean()
 ```
 
-- [ ] **Step 6: Correr el test y verificar que falla**
+- [x] **Step 6: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_asesoria.AsesoriaConstraintTests.test_fecha_fuera_de_la_ventana_agendable_falla_en_clean -v 2`
 Expected: FAIL (no se lanza `ValidationError` — la fecha lejana pasa `clean()` sin la nueva validación)
 
-- [ ] **Step 7: Extender `Asesoria.clean()`**
+- [x] **Step 7: Extender `Asesoria.clean()`**
 
 En `backend/asesorias/models.py`, agregar el import y modificar `clean()`:
 
@@ -134,12 +134,12 @@ from asesorias.servicios import ventana_agendable
             raise ValidationError("La fecha está fuera de la ventana agendable (semana en curso y la siguiente).")
 ```
 
-- [ ] **Step 8: Correr todos los tests de `asesorias` y verificar que pasan**
+- [x] **Step 8: Correr todos los tests de `asesorias` y verificar que pasan**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias -v 2`
 Expected: PASS — incluye el test nuevo y no rompe ninguno existente (`test_asesoria.py` ya usa `self.proximo_lunes`, que siempre cae dentro de la ventana agendable por construcción, así que ningún test viejo se ve afectado).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/asesorias/servicios.py backend/asesorias/tests/test_servicios.py backend/asesorias/models.py backend/asesorias/tests/test_asesoria.py
@@ -170,7 +170,7 @@ EOF
 **Interfaces:**
 - Produces: `AreaSerializer`, `CarreraSerializer` en `carreras/serializers.py`; `AreaViewSet`, `CarreraViewSet` (ambos `ReadOnlyModelViewSet`) en `carreras/views.py`. Endpoints: `GET /api/carreras/areas/`, `GET /api/carreras/areas/{id}/`, `GET /api/carreras/carreras/`, `GET /api/carreras/carreras/{id}/`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/carreras/tests/test_api.py
@@ -210,12 +210,12 @@ class CatalogoCarrerasApiTests(APITestCase):
         self.assertEqual(response.data["clave"], 801)
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test carreras.tests.test_api -v 2`
 Expected: FAIL con 404 (la URL `/api/carreras/` todavía no existe)
 
-- [ ] **Step 3: Implementar serializers, views, urls y wiring**
+- [x] **Step 3: Implementar serializers, views, urls y wiring**
 
 ```python
 # backend/carreras/serializers.py
@@ -284,12 +284,12 @@ urlpatterns = [
 ]
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test carreras.tests.test_api -v 2`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Correr toda la suite para verificar que no se rompió nada**
+- [x] **Step 5: Correr toda la suite para verificar que no se rompió nada**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
@@ -377,12 +377,12 @@ class CatalogoMateriasApiTests(APITestCase):
         self.assertEqual(claves, {"1801"})
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test materias.tests.test_api -v 2`
 Expected: FAIL con 404
 
-- [ ] **Step 3: Implementar serializer, view, urls y wiring**
+- [x] **Step 3: Implementar serializer, view, urls y wiring**
 
 ```python
 # backend/materias/serializers.py
@@ -449,17 +449,17 @@ urlpatterns = [
 ]
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test materias.tests.test_api -v 2`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Correr toda la suite**
+- [x] **Step 5: Correr toda la suite**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/materias/serializers.py backend/materias/views.py backend/materias/urls.py backend/materias/tests/test_api.py backend/config/urls.py
