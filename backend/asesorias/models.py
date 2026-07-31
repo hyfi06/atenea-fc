@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 import datetime
+from asesorias.servicios import ventana_agendable
 
 DIAS_SEMANA = [
     (0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"),
@@ -117,6 +118,9 @@ class Asesoria(models.Model):
     def clean(self):
         if self.fecha.weekday() != self.disponibilidad.dia_semana:
             raise ValidationError("La fecha no coincide con el día de la disponibilidad.")
+        inicio, fin = ventana_agendable()
+        if not (inicio <= self.fecha <= fin):
+            raise ValidationError("La fecha está fuera de la ventana agendable (semana en curso y la siguiente).")
 
     def marcar_asistencia(self, asistio: bool):
         inicio = timezone.make_aware(datetime.datetime.combine(self.fecha, self.hora_inicio))

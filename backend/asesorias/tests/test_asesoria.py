@@ -76,6 +76,17 @@ class AsesoriaConstraintTests(AsesoriaTestsBase):
         with self.assertRaises(ValidationError):
             asesoria.clean()
 
+    def test_fecha_fuera_de_la_ventana_agendable_falla_en_clean(self):
+        fecha_lejana = self.proximo_lunes + datetime.timedelta(days=28)
+        asesoria = Asesoria(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            fecha=fecha_lejana, hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        with self.assertRaises(ValidationError):
+            asesoria.clean()
+
+
     def test_doble_booking_mismo_slot_mismo_dia_falla(self):
         asesoria = self._crear_asesoria(self.proximo_lunes)
         with self.assertRaises(IntegrityError), transaction.atomic():
