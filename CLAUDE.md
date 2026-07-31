@@ -38,6 +38,27 @@ La rama `dev` es un reinicio limpio. Existe una rama `dev-legacy` y ramas remota
 
 Toda decisión de arquitectura nueva (especialmente al integrar un servicio nuevo de la SAE) se registra como un ADR en `docs/decisions/NNNN-titulo.md`, siguiendo el formato de los ADRs existentes (Contexto → Decisión → Consecuencias → Alternativas consideradas).
 
+## Documentando deuda técnica
+
+Toda simplificación deliberada — una decisión "suficiente por ahora", tomada conscientemente para no bloquear una entrega, que alguien debería revisar si el supuesto que la sostiene deja de cumplirse — se registra como un ítem en `docs/technical-debt/NNNN-titulo.md`, numerado consecutivamente igual que los ADRs (secuencia propia de esa carpeta, no compartida con `docs/decisions/`).
+
+Formato estándar de cada ítem:
+
+```markdown
+# NNNN — <Título corto>
+
+**Estado:** Activa | Resuelta — YYYY-MM-DD (commit/ADR que la cerró)
+**Origen:** [ADR NNNN](../decisions/NNNN-titulo.md)
+
+## Qué se simplificó
+
+## Por qué era razonable
+
+## Señal de revisión
+```
+
+Un ítem nace siempre referenciado desde el ADR o spec que lo originó — no basta con mencionarlo solo en "Alternatives considered" del ADR, eso explica la decisión puntual, el ítem de deuda la hace buscable junto con toda la demás deuda del proyecto. Ver [`docs/technical-debt/README.md`](docs/technical-debt/README.md) para el índice completo.
+
 ## Mensajes de commit
 
 Formato `[type][scope] resumen` + lista de cambios + `Signed-off-by`, commits lo más atómicos posible. Ver [`docs/development/commit-conventions.md`](docs/development/commit-conventions.md) (tipos, ejemplos) y [ADR 0007](docs/decisions/0007-commit-message-convention.md).
