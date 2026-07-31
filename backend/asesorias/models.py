@@ -139,6 +139,8 @@ class Asesoria(models.Model):
         self.cancelado_por = usuario
         self.motivo_cancelacion = motivo
         self.save()
+        from asesorias.tasks import enviar_notificacion_cancelacion
+        enviar_notificacion_cancelacion.delay(self.id)
 
     def __str__(self):
         return f"{self.alumno} — {self.disponibilidad.registro.asesor} — {self.fecha}"

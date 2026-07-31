@@ -2,6 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -160,3 +161,5 @@ CELERY_RESULT_BACKEND = env("REDIS_URL")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_ALWAYS_EAGER = "test" in sys.argv
+CELERY_TASK_EAGER_PROPAGATES = True
