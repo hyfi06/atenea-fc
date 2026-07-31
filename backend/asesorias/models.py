@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 import datetime
 
@@ -79,3 +80,65 @@ class Disponibilidad(models.Model):
 
     def __str__(self):
         return f"{self.registro} — {self.get_dia_semana_display()} {self.hora_inicio}"
+
+
+class Asesoria(models.Model):
+    alumno = models.ForeignKey("accounts.PerfilAlumno", on_delete=models.PROTECT, related_name="asesorias")
+    disponibilidad = models.ForeignKey(Disponibilidad, on_delete=models.PROTECT, related_name="asesorias")
+    materia = models.ForeignKey("materias.Materia", on_delete=models.PROTECT, related_name="asesorias")
+
+    fecha = models.DateField()
+    hora_inicio = models.TimeField()
+    formato = models.CharField(max_length=10, choices=FORMATOS)
+    ubicacion = models.CharField(max_length=200, blank=True)
+    liga_virtual = models.URLField(blank=True)
+
+    estado = models.CharField(max_length=10, choices=ESTADOS_ASESORIA, default="agendada")
+    asistio = models.BooleanField(null=True, default=None)
+    notas = models.TextField(blank=True)
+
+    cancelado_por = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    motivo_cancelacion = models.TextField(blank=True)
+
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["disponibilidad", "fecha"],
+                condition=models.Q(estado__in=["agendada", "realizada"]),
+                name="unique_slot_disponibilidad_fecha_no_cancelada",
+            ),
+        ]
+
+    def clean(self):
+        if self.fecha.weekday() != self.disponibilidad.dia_semana:
+            raise ValidationError("La fecha no coincide con el día de la disponibilidad.")
+
+    def marcar_asistencia(self, asistio: bool):
+        inicio = timezone.make_aware(datetime.datetime.combine(self.fecha, self.hora_inicio))
+        if timezone.now() < inicio:
+            raise ValidationError("No se puede marcar asistencia antes de que ocurra la sesión.")
+        self.asistio = asistio
+        self.estado = "realizada"
+        self.save()
+
+    def guardar_notas(self, texto: str):
+        if self.asistio is not True:
+            raise ValidationError("No se pueden guardar notas si la sesión no ocurrió.")
+        self.notas = texto
+        self.save()
+
+    def cancelar(self, usuario, motivo=""):
+        if self.estado != "agendada":
+            raise ValidationError("Solo se puede cancelar una sesión agendada.")
+        self.estado = "cancelada"
+        self.cancelado_por = usuario
+        self.motivo_cancelacion = motivo
+        self.save()
+
+    def __str__(self):
+        return f"{self.alumno} — {self.disponibilidad.registro.asesor} — {self.fecha}"
