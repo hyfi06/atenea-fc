@@ -487,7 +487,7 @@ EOF
   - `EsDueñoDelRegistro.has_object_permission(request, view, obj)`: acepta un `RegistroAsesor` (usa `obj.asesor`) o un `Disponibilidad` (usa `obj.registro.asesor`) — distingue con `hasattr(obj, "asesor")`.
   - `EsDueñoDeLaAsesoria.has_object_permission(request, view, obj)`: acepta un `Asesoria`; rama según `hasattr(request.user, "perfil_alumno")` vs `"perfil_asesor_academico"`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/asesorias/tests/test_permissions.py
@@ -556,12 +556,12 @@ class PermissionsTests(TestCase):
         self.assertFalse(EsDueñoDelRegistro().has_object_permission(request, None, self.disponibilidad))
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_permissions -v 2`
 Expected: FAIL con `ModuleNotFoundError: No module named 'asesorias.permissions'`
 
-- [ ] **Step 3: Implementar `asesorias/permissions.py`**
+- [x] **Step 3: Implementar `asesorias/permissions.py`**
 
 ```python
 # backend/asesorias/permissions.py
