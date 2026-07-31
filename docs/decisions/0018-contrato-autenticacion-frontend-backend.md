@@ -1,0 +1,51 @@
+# 0018 — Contrato de autenticación entre frontend y backend
+
+**Status:** Accepted
+**Date:** 2026-07-31
+
+## Context
+
+La [ADR 0003](0003-google-oauth-allauth-jwt.md) estableció el enfoque general (`django-allauth` + `dj-rest-auth` + `simplejwt`, JWT en vez de sesión). El backend expone hoy el contrato HTTP completo (`accounts/urls.py`, `accounts/views.py`), probado en `accounts/tests/test_auth.py`:
+
+- `POST /api/auth/login/` — email + password → `{access, refresh}`
+- `POST /api/auth/google/` — login social, soporta `access_token`/`id_token` o `code` (heredado de `SocialLoginSerializer` de `dj-rest-auth`)
+- `POST /api/auth/token/refresh/`
+- `POST /api/auth/logout/`
+- `GET /api/auth/user/`
+- `POST /api/auth/password/reset/` y `/password/reset/confirm/`
+
+En esta rama ya se mergeó el scaffolding del frontend (`Login.tsx`, `api/client.ts`), pero es puramente visual: el formulario navega directo a `/home` sin llamar a la API, no hay manejo de tokens, no existe la ruta `/auth/google/callback`, y `api/client.ts` no adjunta `Authorization` en ninguna petición. El contrato real que el SPA debe implementar contra ese backend no estaba decidido. Esta ADR cubre las tres decisiones abiertas encontradas al analizarlo.
+
+## Decision
+
+### 1. Transporte de Google OAuth: GIS Token Client (popup), no redirect
+
+El SPA usa la librería de Google Identity Services (`google.accounts.oauth2.initTokenClient`) para abrir un popup, obtener un `access_token` de OAuth, y enviarlo tal cual a `POST /api/auth/google/ {access_token}`.
+
+Se descarta el flujo de Authorization Code + redirect: `GoogleLoginView.callback_url` (`accounts/views.py:13`) ya apunta a `{FRONTEND_URL}/auth/google/callback`, dejado configurado desde que se implementó el login social, pero nunca ejercitado por ningún test ni por el frontend. El flujo `access_token` es exactamente el que ejercitan `GoogleLoginTests` en `accounts/tests/test_auth.py`, no requiere cambios de backend, y no exige crear una ruta de callback ni una navegación de página completa en el SPA.
+
+### 2. Storage/transporte de JWT: split por entorno — amplía ADR 0003
+
+- **Dev** (`config/settings/dev.py`): `REST_AUTH["JWT_AUTH_HTTPONLY"] = False` (el valor que ya trae `base.py` hoy) — los tokens viajan en el body JSON de la respuesta; el frontend los guarda en `localStorage`, priorizando poder inspeccionar el estado de auth fácilmente desde devtools durante desarrollo.
+- **Prod** (`config/settings/prod.py`): `REST_AUTH["JWT_AUTH_HTTPONLY"] = True` — `dj-rest-auth` entrega `access`/`refresh` como cookies `httpOnly` + `Secure`, coherente con `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE` que `prod.py` ya fija. El frontend nunca lee ni guarda el JWT en JS; cada request usa `credentials: 'include'` en vez de un header `Authorization` armado a mano.
+
+Esto **amplía la ADR 0003**: esa ADR decidió "JWT en el body, el SPA lo guarda y refresca client-side" como una decisión única para todos los entornos, razonando que evitaba acoplar frontend/backend a un mismo contexto de cookies. Esta ADR mantiene esa lectura para dev, pero en prod prioriza la recomendación vigente de OWASP (no exponer tokens a JS por el riesgo de robo vía XSS) sobre la flexibilidad de despliegue cross-origin — aceptable porque en prod, frontend y backend de Atenea se despliegan bajo una topología conocida (`docker-compose.prod.yml`), no como servicios arbitrariamente distintos. Requiere además `CORS_ALLOW_CREDENTIALS = True` en prod (hoy ausente) para que el navegador acepte cookies cross-origin.
+
+### 3. Logout no invalida el refresh token en servidor — deuda técnica aceptada
+
+El proyecto no tiene instalada `rest_framework_simplejwt.token_blacklist`. `POST /api/auth/logout/` limpia el token/cookie del lado del cliente, pero el refresh token sigue siendo válido en el servidor hasta su expiración natural (`REFRESH_TOKEN_LIFETIME = 7 días`) aunque el usuario "cierre sesión". Se acepta como límite del MVP y se registra en [`docs/technical-debt/0007-logout-sin-invalidacion-refresh-token.md`](../technical-debt/0007-logout-sin-invalidacion-refresh-token.md).
+
+## Consequences
+
+- El frontend necesita una variable de entorno nueva expuesta al cliente (`VITE_GOOGLE_OAUTH_CLIENT_ID`), análoga a `GOOGLE_OAUTH_CLIENT_ID` del backend, para inicializar el token client de Google.
+- `api/client.ts` deja de ser un simple wrapper de `fetch` — necesita: adjuntar credenciales según el modo (`Authorization` header en dev, `credentials: 'include'` en prod), interceptar `401` para llamar a `/api/auth/token/refresh/` y reintentar una vez, y una forma de saber al montar la app si ya hay sesión (en prod, un `GET /api/auth/user/` con la cookie; en dev, leer `localStorage`).
+- El camino de Authorization Code (`code` + `callback_url`) queda como código sin usar en el backend (`accounts/views.py:13`, rama `elif code` en `GoogleLoginSerializer.validate`) — no se elimina en esta pasada por estar fuera de alcance, pero cualquiera que lo modifique debe saber que no tiene cobertura de test ni consumidor real.
+- `ROTATE_REFRESH_TOKENS = False` (ya configurado) simplifica el interceptor de refresh: el refresh token no cambia entre llamadas, así que en prod (cookie) no hay nada que reescribir del lado del cliente, y en dev (localStorage) solo se actualiza el `access` token tras cada refresh.
+- Con cookie `httpOnly` en prod, el usuario ya no puede "cerrar sesión" borrando algo él mismo desde devtools — la única vía es que el backend expire/reescriba la cookie, lo que hace más visible el hueco de la deuda técnica del punto 3.
+
+## Alternatives considered
+
+- **Authorization Code + redirect completo:** más "estándar OAuth" en el sentido de mantener el `client_secret` fuera del navegador durante el intercambio, pero el `access_token` del GIS Token Client tampoco lo expone (el intercambio con Google ocurre por completo en el flujo implícito del SDK); se descartó por el costo de UX (navegación completa) y de código (ruta nueva) sin beneficio de seguridad adicional real para este caso.
+- **httpOnly cookie en todos los entornos, incluido dev:** se descartó por fricción de desarrollo — dev usa `http://localhost` sin TLS, lo que complica `Secure`/`SameSite` y dificulta inspeccionar tokens al debuggear; se prefirió limitar el costo de esa complejidad a prod, donde sí importa.
+- **Access token en memoria + refresh en cookie httpOnly (híbrido) para prod:** variante más segura aún (el access token nunca se persiste ni siquiera como cookie), pero es una personalización sobre lo que `dj-rest-auth` da de fábrica con `JWT_AUTH_HTTPONLY`; se prefirió el modo soportado directamente por la librería para no mantener código de cookies a mano.
+- **Instalar `token_blacklist` ahora:** cerraría el hueco de logout de inmediato, pero es una app y migración nuevas no pedidas por ningún flujo actual; se prefiere registrarlo como deuda técnica explícita y resolverlo cuando el riesgo real lo justifique.
