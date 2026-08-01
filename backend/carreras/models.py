@@ -12,6 +12,9 @@ def normalizar(texto: str) -> str:
 class Area(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
 
+    class Meta:
+        ordering = ["nombre"]
+
     def __str__(self):
         return self.nombre
 
@@ -38,6 +41,9 @@ class Carrera(models.Model):
     dgeci_id = models.PositiveIntegerField(null=True, blank=True, unique=True)
 
     objects = CarreraManager()
+
+    class Meta:
+        ordering = ["nombre"]
 
     def __str__(self):
         return self.nombre

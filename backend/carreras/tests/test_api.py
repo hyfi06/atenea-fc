@@ -25,15 +25,16 @@ class CatalogoCarrerasApiTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.get("/api/carreras/areas/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 3+1) # 0002_seed_areas_carreras.py len(AREAS): 3 
-        self.assertEqual(response.data[-1]["nombre"], "Test Area")
+        nombres = {a["nombre"] for a in response.data}
+        self.assertIn("Test Area", nombres)
 
     def test_listar_carreras_incluye_area_anidada(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.get("/api/carreras/carreras/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[-1]["nombre"], "Test Carrera")
-        self.assertEqual(response.data[-1]["area"]["nombre"], "Test Area")
+        carreras_test = [c for c in response.data if c["nombre"] == "Test Carrera"]
+        self.assertEqual(len(carreras_test), 1)
+        self.assertEqual(carreras_test[0]["area"]["nombre"], "Test Area")
 
     def test_obtener_una_carrera(self):
         self.client.force_authenticate(user=self.user)

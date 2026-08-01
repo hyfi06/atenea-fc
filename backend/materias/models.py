@@ -11,6 +11,9 @@ class Materia(models.Model):
     plan = models.PositiveIntegerField()
     habilitada_asesorias = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ["nombre"]
+
     def __str__(self):
         return f"{self.clave} — {self.nombre}"
 
