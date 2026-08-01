@@ -143,7 +143,7 @@ class ProdSettingsJWTCookieTests(TestCase):
             "print(json.dumps({\n"
             "    'REST_AUTH': {\n"
             "        k: settings.REST_AUTH.get(k)\n"
-            "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE')\n"
+            "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE', 'JWT_AUTH_SAMESITE')\n"
             "    },\n"
             "    'AUTH_CLASSES': settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'],\n"
             "}))\n"
@@ -163,6 +163,10 @@ class ProdSettingsJWTCookieTests(TestCase):
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_COOKIE"], "atenea-access-token")
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_REFRESH_COOKIE"], "atenea-refresh-token")
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_SECURE"], True)
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_SAMESITE"], "Lax")
+        self.assertEqual(
+            output["AUTH_CLASSES"], ["dj_rest_auth.jwt_auth.JWTCookieAuthentication"]
+        )
 
 
 from dj_rest_auth.app_settings import api_settings as dra_settings
@@ -172,6 +176,7 @@ PROD_COOKIE_SETTINGS = dict(
     JWT_AUTH_REFRESH_COOKIE="atenea-refresh-token",
     JWT_AUTH_SECURE=True,
     JWT_AUTH_HTTPONLY=True,
+    JWT_AUTH_SAMESITE="Lax",
 )
 
 
@@ -193,6 +198,8 @@ class CookieBasedLoginTests(APITestCase):
         self.assertTrue(access_cookie["secure"])
         self.assertTrue(refresh_cookie["httponly"])
         self.assertTrue(refresh_cookie["secure"])
+        self.assertEqual(access_cookie["samesite"], "Lax")
+        self.assertEqual(refresh_cookie["samesite"], "Lax")
         # dj-rest-auth vacía 'refresh' del body cuando JWT_AUTH_HTTPONLY=True
         self.assertEqual(response.data["refresh"], "")
 

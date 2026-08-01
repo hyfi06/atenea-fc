@@ -17,12 +17,18 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # dj-rest-auth requiere para efectivamente llamar a response.set_cookie(...)
 # (sin nombre, JWT_AUTH_HTTPONLY=True no tiene ningún efecto observable).
 # No son secretos, por eso van hardcodeados aquí y no como variable de entorno.
+#
+# JWT_AUTH_SAMESITE se fija explícitamente (en vez de dejarlo en el default
+# de la librería) porque la evaluación de riesgo CSRF de la deuda técnica
+# 0009 depende de este valor exacto — que quede pinneado aquí evita que un
+# upgrade de dj-rest-auth o un override futuro lo cambie en silencio.
 REST_AUTH = {
     **REST_AUTH,
     "JWT_AUTH_HTTPONLY": True,
     "JWT_AUTH_COOKIE": "atenea-access-token",
     "JWT_AUTH_REFRESH_COOKIE": "atenea-refresh-token",
     "JWT_AUTH_SECURE": True,
+    "JWT_AUTH_SAMESITE": "Lax",
 }
 CORS_ALLOW_CREDENTIALS = True
 
