@@ -51,7 +51,7 @@ class UserAdmin(DjangoUserAdmin):
     )
 
 
-admin.register(PerfilAlumno)
+@admin.register(PerfilAlumno)
 class PerfilAlumnoAdmin(admin.ModelAdmin):
     list_display = ("numero_cuenta", "user")
     search_fields = ("numero_cuenta", "user__email")
