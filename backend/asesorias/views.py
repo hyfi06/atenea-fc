@@ -4,9 +4,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from .models import RegistroAsesor
+from .models import Disponibilidad, RegistroAsesor
 from .permissions import EsAsesorAcademico, EsDuenoDelRegistro
-from .serializers import AgregarMateriaSerializer, RegistroAsesorSerializer
+from .serializers import AgregarMateriaSerializer, DisponibilidadSerializer, RegistroAsesorSerializer
 
 
 class RegistroAsesorViewSet(ModelViewSet):
@@ -33,3 +33,14 @@ class RegistroAsesorViewSet(ModelViewSet):
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         return Response(RegistroAsesorSerializer(registro).data, status=status.HTTP_200_OK)
+
+class DisponibilidadViewSet(ModelViewSet):
+    serializer_class = DisponibilidadSerializer
+    permission_classes = [EsAsesorAcademico, EsDuenoDelRegistro]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        if self.action == "list":
+            return Disponibilidad.objects.filter(registro__asesor__user=self.request.user)
+        return Disponibilidad.objects.all()
+
