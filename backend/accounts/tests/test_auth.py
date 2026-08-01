@@ -1,4 +1,9 @@
+import json
+import os
 import re
+import subprocess
+import sys
+from pathlib import Path
 from unittest.mock import patch
 
 from allauth.account.models import EmailAddress
@@ -6,10 +11,13 @@ from allauth.socialaccount.adapter import get_adapter as get_social_adapter
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from django.core import mail
+from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import User
+
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 def _complete_login_as(email):
@@ -102,3 +110,100 @@ class PasswordResetLoginFlowTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
+
+
+class ProdSettingsJWTCookieTests(TestCase):
+    def test_prod_settings_configure_jwt_cookies(self):
+        env = {
+            **os.environ,
+            "DJANGO_SETTINGS_MODULE": "config.settings.prod",
+            "DJANGO_SECRET_KEY": "test-secret",
+            "DATABASE_URL": "postgres://u:p@localhost:5432/db",
+            "REDIS_URL": "redis://localhost:6379/0",
+            "DJANGO_ALLOWED_HOSTS": "example.com",
+            "GOOGLE_OAUTH_CLIENT_ID": "fake-id",
+            "GOOGLE_OAUTH_CLIENT_SECRET": "fake-secret",
+        }
+        script = (
+            "import django, json\n"
+            "django.setup()\n"
+            "from django.conf import settings\n"
+            "print(json.dumps({\n"
+            "    'REST_AUTH': {\n"
+            "        k: settings.REST_AUTH.get(k)\n"
+            "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE')\n"
+            "    },\n"
+            "    'AUTH_CLASSES': settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'],\n"
+            "}))\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=BASE_DIR,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_HTTPONLY"], True)
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_COOKIE"], "atenea-access-token")
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_REFRESH_COOKIE"], "atenea-refresh-token")
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_SECURE"], True)
+
+
+from dj_rest_auth.app_settings import api_settings as dra_settings
+
+PROD_COOKIE_SETTINGS = dict(
+    JWT_AUTH_COOKIE="atenea-access-token",
+    JWT_AUTH_REFRESH_COOKIE="atenea-refresh-token",
+    JWT_AUTH_SECURE=True,
+    JWT_AUTH_HTTPONLY=True,
+)
+
+
+class CookieBasedLoginTests(APITestCase):
+    def test_login_sets_httponly_secure_cookies_when_configured(self):
+        user = User.objects.create_user("cookies@ciencias.unam.mx", password="ClaveSegura123!")
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            response = self.client.post(
+                "/api/auth/login/",
+                {"email": user.email, "password": "ClaveSegura123!"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        access_cookie = response.cookies["atenea-access-token"]
+        refresh_cookie = response.cookies["atenea-refresh-token"]
+        self.assertTrue(access_cookie["httponly"])
+        self.assertTrue(access_cookie["secure"])
+        self.assertTrue(refresh_cookie["httponly"])
+        self.assertTrue(refresh_cookie["secure"])
+        # dj-rest-auth vacía 'refresh' del body cuando JWT_AUTH_HTTPONLY=True
+        self.assertEqual(response.data["refresh"], "")
+
+    def test_logout_clears_both_cookies_when_configured(self):
+        user = User.objects.create_user("cookies-logout@ciencias.unam.mx", password="ClaveSegura123!")
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            login_response = self.client.post(
+                "/api/auth/login/",
+                {"email": user.email, "password": "ClaveSegura123!"},
+                format="json",
+            )
+            self.client.cookies["atenea-access-token"] = login_response.cookies["atenea-access-token"].value
+
+            logout_response = self.client.post(
+                "/api/auth/logout/",
+                {},
+                format="json",
+                HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}",
+            )
+
+        self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(logout_response.cookies["atenea-access-token"].value, "")
+        self.assertEqual(logout_response.cookies["atenea-access-token"]["max-age"], 0)
+        self.assertEqual(logout_response.cookies["atenea-refresh-token"].value, "")
+        self.assertEqual(logout_response.cookies["atenea-refresh-token"]["max-age"], 0)
