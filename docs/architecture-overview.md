@@ -41,7 +41,7 @@ Visión general del sistema. El detalle y el razonamiento de cada elección vive
 3. `dj-rest-auth` + `simplejwt` emiten un access token y un refresh token JWT.
 4. El SPA adjunta el access token en cada llamada al API; lo renueva con el refresh token cuando expira.
 
-Detalle y alternativas consideradas en [0003](decisions/0003-google-oauth-allauth-jwt.md).
+Detalle y alternativas consideradas en [0003](decisions/0003-google-oauth-allauth-jwt.md) y [0018](decisions/0018-contrato-autenticacion-frontend-backend.md). Referencia completa de endpoints para integrar el SPA (incluyendo autenticación) en [`docs/development/api-frontend.md`](development/api-frontend.md).
 
 ## Despliegue
 

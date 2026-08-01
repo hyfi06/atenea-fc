@@ -61,6 +61,10 @@ docker compose -f docker-compose.dev.yml logs celery-worker   # debe decir "read
 docker compose -f docker-compose.dev.yml down          # apagar todo (los datos de postgres persisten en el volumen)
 ```
 
+## API para frontend
+
+Referencia de endpoints, contratos de request/response y autenticación para el equipo de frontend: [`docs/development/api-frontend.md`](api-frontend.md).
+
 ## Pendiente
 
-- Wiring funcional de Google OAuth del lado del frontend (`api/client.ts`, manejo de tokens): el backend ya expone el contrato completo (ver [ADR 0018](../decisions/0018-contrato-autenticacion-frontend-backend.md)), falta que el SPA lo consuma.
+- Wiring funcional de Google OAuth del lado del frontend (`api/client.ts`, manejo de tokens): el backend ya expone el contrato completo (ver [ADR 0018](../decisions/0018-contrato-autenticacion-frontend-backend.md) y [`api-frontend.md`](api-frontend.md)), falta que el SPA lo consuma.
