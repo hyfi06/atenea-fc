@@ -24,12 +24,14 @@
 ## Task 1: `ventana_agendable()` + extensión de `Asesoria.clean()`
 
 **Files:**
+
 - Create: `backend/asesorias/servicios.py`
 - Create: `backend/asesorias/tests/test_servicios.py`
 - Modify: `backend/asesorias/models.py:117-119` (método `Asesoria.clean()`)
 - Modify: `backend/asesorias/tests/test_asesoria.py` (agregar un test a `AsesoriaConstraintTests`)
 
 **Interfaces:**
+
 - Produces: `ventana_agendable(hoy: datetime.date | None = None) -> tuple[datetime.date, datetime.date]` en `asesorias/servicios.py` — devuelve `(hoy_efectivo, domingo_que_cierra_la_semana_siguiente)`. Usado por Task 7 (búsqueda) y por `Asesoria.clean()`.
 
 - [x] **Step 1: Escribir el test que falla para `ventana_agendable`**
@@ -161,6 +163,7 @@ EOF
 ## Task 2: Catálogo de solo lectura — `carreras`
 
 **Files:**
+
 - Create: `backend/carreras/serializers.py`
 - Create: `backend/carreras/views.py`
 - Create: `backend/carreras/urls.py`
@@ -168,6 +171,7 @@ EOF
 - Modify: `backend/config/urls.py`
 
 **Interfaces:**
+
 - Produces: `AreaSerializer`, `CarreraSerializer` en `carreras/serializers.py`; `AreaViewSet`, `CarreraViewSet` (ambos `ReadOnlyModelViewSet`) en `carreras/views.py`. Endpoints: `GET /api/carreras/areas/`, `GET /api/carreras/areas/{id}/`, `GET /api/carreras/carreras/`, `GET /api/carreras/carreras/{id}/`.
 
 - [x] **Step 1: Escribir el test que falla**
@@ -294,7 +298,7 @@ Expected: PASS (4 tests)
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/carreras/serializers.py backend/carreras/views.py backend/carreras/urls.py backend/carreras/tests/test_api.py backend/config/urls.py
@@ -314,6 +318,7 @@ EOF
 ## Task 3: Catálogo de solo lectura — `materias` (filtrable)
 
 **Files:**
+
 - Create: `backend/materias/serializers.py`
 - Create: `backend/materias/views.py`
 - Create: `backend/materias/urls.py`
@@ -321,10 +326,11 @@ EOF
 - Modify: `backend/config/urls.py`
 
 **Interfaces:**
+
 - Consumes: patrón `ReadOnlyModelViewSet` de Task 2.
 - Produces: `MateriaSerializer` en `materias/serializers.py`; `MateriaViewSet` en `materias/views.py`, filtrable por `?carrera=<id>` y `?habilitada_asesorias=true|false`. Endpoint: `GET /api/materias/materias/`. Usado por Task 7 (búsqueda) para resolver `materia_id`/`carrera_id`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/materias/tests/test_api.py
@@ -479,10 +485,12 @@ EOF
 ## Task 4: Permisos de rol y de dueño
 
 **Files:**
+
 - Create: `backend/asesorias/permissions.py`
 - Create: `backend/asesorias/tests/test_permissions.py`
 
 **Interfaces:**
+
 - Produces: `EsAlumno`, `EsAsesorAcademico`, `EsDueñoDelRegistro`, `EsDueñoDeLaAsesoria` (todas `rest_framework.permissions.BasePermission`) en `asesorias/permissions.py`. Consumidas por Tasks 5, 6, 7, 8.
   - `EsDueñoDelRegistro.has_object_permission(request, view, obj)`: acepta un `RegistroAsesor` (usa `obj.asesor`) o un `Disponibilidad` (usa `obj.registro.asesor`) — distingue con `hasattr(obj, "asesor")`.
   - `EsDueñoDeLaAsesoria.has_object_permission(request, view, obj)`: acepta un `Asesoria`; rama según `hasattr(request.user, "perfil_alumno")` vs `"perfil_asesor_academico"`.
@@ -627,6 +635,7 @@ EOF
 ## Task 5: `RegistroAsesorViewSet` + `agregar_materia`
 
 **Files:**
+
 - Create: `backend/asesorias/serializers.py`
 - Create: `backend/asesorias/views.py`
 - Create: `backend/asesorias/urls.py`
@@ -634,6 +643,7 @@ EOF
 - Modify: `backend/config/urls.py`
 
 **Interfaces:**
+
 - Consumes: `EsAsesorAcademico`, `EsDueñoDelRegistro` (Task 4).
 - Produces: `RegistroAsesorSerializer`, `AgregarMateriaSerializer` en `asesorias/serializers.py`; `RegistroAsesorViewSet` en `asesorias/views.py`. Endpoints: `GET/POST /api/asesorias/registros/`, `POST /api/asesorias/registros/{id}/materias/` con body `{"materia_id": <int>}`.
 
@@ -856,16 +866,18 @@ EOF
 ## Task 6: `DisponibilidadViewSet`
 
 **Files:**
+
 - Modify: `backend/asesorias/serializers.py` (agregar `DisponibilidadSerializer`)
 - Modify: `backend/asesorias/views.py` (agregar `DisponibilidadViewSet`)
 - Modify: `backend/asesorias/urls.py` (registrar `disponibilidades`)
 - Create: `backend/asesorias/tests/test_api_disponibilidad.py`
 
 **Interfaces:**
+
 - Consumes: `EsAsesorAcademico`, `EsDueñoDelRegistro` (Task 4).
 - Produces: `DisponibilidadSerializer` en `asesorias/serializers.py`; `DisponibilidadViewSet` en `asesorias/views.py`. Endpoints: `GET/POST /api/asesorias/disponibilidades/`, `PATCH/DELETE /api/asesorias/disponibilidades/{id}/`. Usado por Task 7 (búsqueda) y Task 8 (creación de `Asesoria` referencia `disponibilidad_id`).
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/asesorias/tests/test_api_disponibilidad.py
@@ -967,12 +979,12 @@ class DisponibilidadApiTests(APITestCase):
         self.assertEqual(response.status_code, 204)
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_disponibilidad -v 2`
 Expected: FAIL con 404
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 Agregar a `backend/asesorias/serializers.py` (al final del archivo):
 
@@ -1040,17 +1052,17 @@ router.register("disponibilidades", DisponibilidadViewSet, basename="disponibili
 urlpatterns = router.urls
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_disponibilidad -v 2`
 Expected: PASS (7 tests)
 
-- [ ] **Step 5: Correr toda la suite**
+- [x] **Step 5: Correr toda la suite**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias/serializers.py backend/asesorias/views.py backend/asesorias/urls.py backend/asesorias/tests/test_api_disponibilidad.py
@@ -1074,16 +1086,18 @@ EOF
 ## Task 7: Búsqueda de disponibilidad (alumno)
 
 **Files:**
+
 - Modify: `backend/asesorias/serializers.py` (agregar `ResultadoBusquedaSerializer`)
 - Modify: `backend/asesorias/views.py` (agregar `BuscarDisponibilidadView`)
 - Modify: `backend/asesorias/urls.py` (agregar path de búsqueda)
 - Create: `backend/asesorias/tests/test_api_busqueda.py`
 
 **Interfaces:**
+
 - Consumes: `ventana_agendable()` (Task 1), `EsAlumno` (Task 4).
 - Produces: `BuscarDisponibilidadView` (`APIView`) en `asesorias/views.py`. Endpoint: `GET /api/asesorias/disponibilidad/buscar/?carrera=&materia=&formato=`, respuesta = lista de `{disponibilidad_id, fecha, hora_inicio, hora_fin, formato, ubicacion, liga_virtual}` dentro de la ventana agendable, excluyendo slots ya ocupados por una `Asesoria` no cancelada.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/asesorias/tests/test_api_busqueda.py
@@ -1182,12 +1196,12 @@ class BuscarDisponibilidadApiTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_busqueda -v 2`
 Expected: FAIL con 404
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 Agregar a `backend/asesorias/serializers.py`:
 
@@ -1282,17 +1296,17 @@ urlpatterns = [
 ] + router.urls
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_busqueda -v 2`
 Expected: PASS (5 tests)
 
-- [ ] **Step 5: Correr toda la suite**
+- [x] **Step 5: Correr toda la suite**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias/serializers.py backend/asesorias/views.py backend/asesorias/urls.py backend/asesorias/tests/test_api_busqueda.py
@@ -1314,16 +1328,18 @@ EOF
 ## Task 8: `AsesoriaViewSet` — agendar, cancelar, marcar asistencia, notas
 
 **Files:**
+
 - Modify: `backend/asesorias/serializers.py` (agregar `AsesoriaSerializer`, `CancelarSerializer`, `MarcarAsistenciaSerializer`, `NotasSerializer`)
 - Modify: `backend/asesorias/views.py` (agregar `AsesoriaViewSet`)
 - Modify: `backend/asesorias/urls.py` (registrar `asesorias`)
 - Create: `backend/asesorias/tests/test_api_asesoria.py`
 
 **Interfaces:**
+
 - Consumes: `ventana_agendable()` (Task 1), `EsAlumno`/`EsAsesorAcademico`/`EsDueñoDeLaAsesoria` (Task 4).
 - Produces: `AsesoriaSerializer` en `asesorias/serializers.py`; `AsesoriaViewSet` en `asesorias/views.py`. Endpoints: `GET /api/asesorias/asesorias/`, `POST /api/asesorias/asesorias/` (solo alumno), `POST /api/asesorias/asesorias/{id}/cancelar/`, `POST /api/asesorias/asesorias/{id}/marcar_asistencia/`, `POST /api/asesorias/asesorias/{id}/notas/`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/asesorias/tests/test_api_asesoria.py
@@ -1509,12 +1525,12 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.status_code, 403)
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_asesoria -v 2`
 Expected: FAIL con 404
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 Agregar a `backend/asesorias/serializers.py`:
 
@@ -1685,17 +1701,17 @@ urlpatterns = [
 ] + router.urls
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_asesoria -v 2`
 Expected: PASS (13 tests)
 
-- [ ] **Step 5: Correr toda la suite**
+- [x] **Step 5: Correr toda la suite**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias/serializers.py backend/asesorias/views.py backend/asesorias/urls.py backend/asesorias/tests/test_api_asesoria.py
@@ -1720,13 +1736,15 @@ EOF
 ## Task 9: Test de integración end-to-end + cierre de fase
 
 **Files:**
+
 - Create: `backend/asesorias/tests/test_api_flujo_completo.py`
 
 **Interfaces:**
+
 - Consumes: todos los endpoints de Tasks 2–8.
 - Produces: nada nuevo — es la verificación de que todas las piezas encajan en un flujo real, tal como lo pide la sección "Testing" de la spec (`docs/superpowers/specs/2026-07-30-asesorias-academicas-api-design.md`).
 
-- [ ] **Step 1: Escribir el test de flujo completo (ya "falla" en el sentido de que es nuevo, pero se espera que pase de inmediato dado que Tasks 1–8 ya están implementados — este paso documenta el comportamiento end-to-end, no introduce código nuevo de producción)**
+- [x] **Step 1: Escribir el test de flujo completo (ya "falla" en el sentido de que es nuevo, pero se espera que pase de inmediato dado que Tasks 1–8 ya están implementados — este paso documenta el comportamiento end-to-end, no introduce código nuevo de producción)**
 
 ```python
 # backend/asesorias/tests/test_api_flujo_completo.py
@@ -1877,17 +1895,17 @@ class FlujoCompletoAsesoriaApiTests(APITestCase):
         self.assertEqual(len(libre_despues), 1)
 ```
 
-- [ ] **Step 2: Correr el test de flujo completo**
+- [x] **Step 2: Correr el test de flujo completo**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_flujo_completo -v 2`
 Expected: PASS (2 tests). Si falla, el error señala qué pieza de las Tasks 1–8 no encaja con las demás — corregir ahí, no en este archivo de test.
 
-- [ ] **Step 3: Correr la suite completa del proyecto**
+- [x] **Step 3: Correr la suite completa del proyecto**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS — todos los tests de Fase 0+1 (60 tests previos) más todos los de esta fase.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/asesorias/tests/test_api_flujo_completo.py
