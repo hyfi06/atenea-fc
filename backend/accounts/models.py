@@ -31,6 +31,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 class PerfilAlumno(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_alumno")
     numero_cuenta = models.CharField(max_length=10, unique=True)
+    carrera = models.ForeignKey("carreras.Carrera", on_delete=models.PROTECT, related_name="alumnos")
+    generacion = models.PositiveSmallIntegerField()
 
     def __str__(self):
         return f"{self.numero_cuenta}, {self.user.email}"

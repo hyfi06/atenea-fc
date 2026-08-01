@@ -27,7 +27,9 @@ class NotificacionesTests(TestCase):
             formato="virtual", liga_virtual="https://meet.example.com/x",
         )
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(user=self.alumno_user, numero_cuenta="312345678")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
 
         hoy = timezone.localdate()
         delta = (0 - hoy.weekday()) % 7 or 7
@@ -50,7 +52,7 @@ class NotificacionesTests(TestCase):
         with self.captureOnCommitCallbacks(execute=True):
             asesoria = Asesoria.objects.create(
                 alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-                fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+                carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
                 formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
             )
         mock_delay.assert_called_once_with(asesoria.id)
@@ -62,7 +64,7 @@ class NotificacionesTests(TestCase):
         with self.captureOnCommitCallbacks(execute=True):
             asesoria = Asesoria.objects.create(
                 alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-                fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+                carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
                 formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
             )
         with self.captureOnCommitCallbacks(execute=True):

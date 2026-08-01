@@ -46,11 +46,11 @@ class AsesoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asesoria
         fields = [
-            "id", "alumno", "disponibilidad", "materia", "fecha", "hora_inicio",
+            "id", "alumno", "disponibilidad", "materia", "carrera", "fecha", "hora_inicio",
             "formato", "ubicacion", "liga_virtual", "estado", "asistio", "notas", "creado_en",
         ]
         read_only_fields = [
-            "id", "alumno", "hora_inicio", "formato", "ubicacion", "liga_virtual",
+            "id", "alumno", "carrera", "hora_inicio", "formato", "ubicacion", "liga_virtual",
             "estado", "asistio", "notas", "creado_en",
         ]
         # DRF genera un UniqueTogetherValidator automático a partir del
@@ -63,10 +63,12 @@ class AsesoriaSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]
+        alumno = self.context["request"].user.perfil_alumno
         instance = Asesoria(
-            alumno=self.context["request"].user.perfil_alumno,
+            alumno=alumno,
             disponibilidad=disponibilidad,
             materia=attrs["materia"],
+            carrera=alumno.carrera,
             fecha=attrs["fecha"],
             hora_inicio=disponibilidad.hora_inicio,
             formato=disponibilidad.formato,
@@ -77,6 +79,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
             instance.clean()
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.messages)
+        attrs["carrera"] = alumno.carrera
         attrs["hora_inicio"] = disponibilidad.hora_inicio
         attrs["formato"] = disponibilidad.formato
         attrs["ubicacion"] = disponibilidad.ubicacion

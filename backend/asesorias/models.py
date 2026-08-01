@@ -87,6 +87,7 @@ class Asesoria(models.Model):
     alumno = models.ForeignKey("accounts.PerfilAlumno", on_delete=models.PROTECT, related_name="asesorias")
     disponibilidad = models.ForeignKey(Disponibilidad, on_delete=models.PROTECT, related_name="asesorias")
     materia = models.ForeignKey("materias.Materia", on_delete=models.PROTECT, related_name="asesorias")
+    carrera = models.ForeignKey("carreras.Carrera", on_delete=models.PROTECT, related_name="asesorias")
 
     fecha = models.DateField()
     hora_inicio = models.TimeField()

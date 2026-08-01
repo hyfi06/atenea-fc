@@ -5,7 +5,7 @@ from django.test import TestCase
 from accounts.models import PerfilAcademico, PerfilAlumno, User
 from asesorias.models import Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from asesorias.permissions import EsAlumno, EsAsesorAcademico, EsDuenoDelRegistro
-from carreras.models import Area
+from carreras.models import Area, Carrera
 
 import datetime
 
@@ -13,6 +13,7 @@ import datetime
 class PermissionsTests(TestCase):
     def setUp(self):
         self.area = Area.objects.create(nombre="Área test")
+        self.carrera = Carrera.objects.create(clave=901, nombre="Carrera Test", area=self.area)
         self.asesor_user = User.objects.create_user(
             email="asesor@ciencias.unam.mx", password="x")
         self.academico =PerfilAcademico.objects.create(
@@ -36,7 +37,7 @@ class PermissionsTests(TestCase):
         self.alumno_user = User.objects.create_user(
             email="alumno@ciencias.unam.mx", password="x")
         PerfilAlumno.objects.create(
-            user=self.alumno_user, numero_cuenta="312345678")
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023)
 
     def tearDown(self):
         self.alumno_user.delete()

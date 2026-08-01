@@ -25,7 +25,9 @@ class RegistroAsesorApiTests(APITestCase):
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
         from accounts.models import PerfilAlumno
-        self.alumno = PerfilAlumno.objects.create(user=self.alumno_user, numero_cuenta="312345678")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
         
     def tearDown(self):
         self.alumno.delete()

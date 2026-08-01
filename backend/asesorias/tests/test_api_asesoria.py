@@ -28,10 +28,14 @@ class AsesoriaApiTestsBase(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(user=self.alumno_user, numero_cuenta="312345678")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
 
         self.otro_alumno_user = User.objects.create_user(email="otro_alumno@ciencias.unam.mx", password="x")
-        self.otro_alumno = PerfilAlumno.objects.create(user=self.otro_alumno_user, numero_cuenta="312345679")
+        self.otro_alumno = PerfilAlumno.objects.create(
+            user=self.otro_alumno_user, numero_cuenta="312345679", carrera=self.carrera, generacion=2023,
+        )
 
         self.proximo_lunes = self._proximo_dia_semana(0)
 
@@ -53,6 +57,7 @@ class AgendarAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["formato"], "virtual")
         self.assertEqual(response.data["estado"], "agendada")
+        self.assertEqual(response.data["carrera"], self.alumno.carrera_id)
 
     def test_asesor_no_puede_agendar(self):
         self.client.force_authenticate(user=self.asesor_user)
@@ -74,7 +79,7 @@ class AgendarAsesoriaApiTests(AsesoriaApiTestsBase):
     def test_doble_booking_devuelve_409(self):
         Asesoria.objects.create(
             alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         self.client.force_authenticate(user=self.alumno_user)
@@ -89,12 +94,12 @@ class ListarAsesoriaApiTests(AsesoriaApiTestsBase):
     def test_alumno_solo_ve_sus_propias_sesiones(self):
         Asesoria.objects.create(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         Asesoria.objects.create(
             alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes + datetime.timedelta(days=7),
+            carrera=self.carrera, fecha=self.proximo_lunes + datetime.timedelta(days=7),
             hora_inicio=self.disponibilidad.hora_inicio, formato=self.disponibilidad.formato,
             liga_virtual=self.disponibilidad.liga_virtual,
         )
@@ -105,7 +110,7 @@ class ListarAsesoriaApiTests(AsesoriaApiTestsBase):
     def test_asesor_ve_las_sesiones_de_sus_disponibilidades(self):
         Asesoria.objects.create(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         self.client.force_authenticate(user=self.asesor_user)
@@ -119,7 +124,7 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.lunes_pasado = self.proximo_lunes - datetime.timedelta(days=7 * 5)
         self.asesoria = Asesoria.objects.create(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
 
@@ -169,7 +174,7 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
 
         segunda = Asesoria.objects.create(
             alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         self.assertIsNotNone(segunda.id)

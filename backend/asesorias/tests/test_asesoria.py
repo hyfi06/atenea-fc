@@ -30,7 +30,9 @@ class AsesoriaTestsBase(TestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(user=self.alumno_user, numero_cuenta="312345678")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
 
         # Próximo lunes (dia_semana=0) en el pasado o futuro según el test lo necesite.
         self.proximo_lunes = self._proximo_dia_semana(0)
@@ -58,7 +60,7 @@ class AsesoriaTestsBase(TestCase):
     def _crear_asesoria(self, fecha, **overrides):
         defaults = dict(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=fecha, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=fecha, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         defaults.update(overrides)
@@ -70,7 +72,7 @@ class AsesoriaConstraintTests(AsesoriaTestsBase):
         martes = self.proximo_lunes + datetime.timedelta(days=1)
         asesoria = Asesoria(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=martes, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=martes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         with self.assertRaises(ValidationError):
@@ -80,7 +82,7 @@ class AsesoriaConstraintTests(AsesoriaTestsBase):
         fecha_lejana = self.proximo_lunes + datetime.timedelta(days=28)
         asesoria = Asesoria(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=fecha_lejana, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=fecha_lejana, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         with self.assertRaises(ValidationError):
