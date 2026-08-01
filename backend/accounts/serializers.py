@@ -25,53 +25,19 @@ class GoogleLoginSerializer(SocialLoginSerializer):
         app = adapter.get_provider().app
 
         access_token = attrs.get("access_token")
-        code = attrs.get("code")
+        if not access_token:
+            raise serializers.ValidationError(_("Incorrect input. access_token is required."))
 
-        if access_token:
-            tokens_to_parse = {"access_token": access_token}
-            token = access_token
-            id_token = attrs.get("id_token")
-            if id_token:
-                tokens_to_parse["id_token"] = id_token
-        elif code:
-            self.set_callback_url(view=view, adapter_class=adapter_class)
-            self.client_class = getattr(view, "client_class", None)
-
-            if not self.client_class:
-                raise serializers.ValidationError(_("Define client_class in view"))
-
-            client = self.client_class(
-                request,
-                app.client_id,
-                app.secret,
-                adapter.access_token_method,
-                adapter.access_token_url,
-                self.callback_url,
-                scope_delimiter=adapter.scope_delimiter,
-                headers=adapter.headers,
-                basic_auth=adapter.basic_auth,
-            )
-            try:
-                token = client.get_access_token(code)
-            except Exception as ex:
-                raise serializers.ValidationError(_("Failed to exchange code for access token")) from ex
-            access_token = token["access_token"]
-            tokens_to_parse = {"access_token": access_token}
-
-            for key in ["refresh_token", "id_token", adapter.expires_in_key]:
-                if key in token:
-                    tokens_to_parse[key] = token[key]
-        else:
-            raise serializers.ValidationError(_("Incorrect input. access_token or code is required."))
+        tokens_to_parse = {"access_token": access_token}
+        id_token = attrs.get("id_token")
+        if id_token:
+            tokens_to_parse["id_token"] = id_token
 
         social_token = adapter.parse_token(tokens_to_parse)
         social_token.app = app
 
         try:
-            if adapter.provider_id == "google" and not code:
-                login = self.get_social_login(adapter, app, social_token, response={"id_token": id_token})
-            else:
-                login = self.get_social_login(adapter, app, social_token, token)
+            login = self.get_social_login(adapter, app, social_token, response={"id_token": id_token})
             ret = complete_social_login(request, login)
         except HTTPError:
             raise serializers.ValidationError(_("Incorrect value"))
