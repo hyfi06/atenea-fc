@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 import datetime
@@ -144,7 +144,7 @@ class Asesoria(models.Model):
         self.motivo_cancelacion = motivo
         self.save()
         from asesorias.tasks import enviar_notificacion_cancelacion
-        enviar_notificacion_cancelacion.delay(self.id)
+        transaction.on_commit(lambda: enviar_notificacion_cancelacion.delay(self.id))
 
     def __str__(self):
         return f"{self.alumno} — {self.disponibilidad.registro.asesor} — {self.fecha}"

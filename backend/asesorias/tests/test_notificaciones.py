@@ -47,23 +47,26 @@ class NotificacionesTests(TestCase):
 
     @patch("asesorias.tasks.enviar_confirmacion_agenda.delay")
     def test_crear_asesoria_encola_confirmacion(self, mock_delay):
-        asesoria = Asesoria.objects.create(
-            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
-            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            asesoria = Asesoria.objects.create(
+                alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+                fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+                formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+            )
         mock_delay.assert_called_once_with(asesoria.id)
         asesoria.delete()
 
     @patch("asesorias.tasks.enviar_notificacion_cancelacion.delay")
     @patch("asesorias.tasks.enviar_confirmacion_agenda.delay")
     def test_cancelar_encola_notificacion_de_cancelacion(self, _mock_confirmacion, mock_cancelacion):
-        asesoria = Asesoria.objects.create(
-            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
-            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
-        )
-        asesoria.cancelar(usuario=self.alumno.user)
+        with self.captureOnCommitCallbacks(execute=True):
+            asesoria = Asesoria.objects.create(
+                alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+                fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+                formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+            )
+        with self.captureOnCommitCallbacks(execute=True):
+            asesoria.cancelar(usuario=self.alumno.user)
         mock_cancelacion.assert_called_once_with(asesoria.id)
         asesoria.delete()
 

@@ -121,7 +121,7 @@ class AsesoriaViewSet(ModelViewSet):
         if self.action in ("cancelar", "marcar_asistencia", "notas"):
             # get_object() resuelve desde este queryset ANTES de aplicar
             # has_object_permission. Si se filtrara aquí por dueño, un
-            # objeto ajeno daría 404 y nunca llegaría a EsDueñoDeLaAsesoria
+            # objeto ajeno daría 404 y nunca llegaría a EsDuenoDeLaAsesoria
             # -> el 403 explícito que exige el ADR 0017 se perdería.
             return Asesoria.objects.all()
         if hasattr(user, "perfil_alumno"):
