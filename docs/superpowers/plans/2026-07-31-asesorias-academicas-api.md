@@ -601,12 +601,12 @@ class EsDueñoDeLaAsesoria(BasePermission):
         return False
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_permissions -v 2`
 Expected: PASS (8 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/asesorias/permissions.py backend/asesorias/tests/test_permissions.py
@@ -637,7 +637,7 @@ EOF
 - Consumes: `EsAsesorAcademico`, `EsDueñoDelRegistro` (Task 4).
 - Produces: `RegistroAsesorSerializer`, `AgregarMateriaSerializer` en `asesorias/serializers.py`; `RegistroAsesorViewSet` en `asesorias/views.py`. Endpoints: `GET/POST /api/asesorias/registros/`, `POST /api/asesorias/registros/{id}/materias/` con body `{"materia_id": <int>}`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 ```python
 # backend/asesorias/tests/test_api_registro.py
@@ -718,12 +718,12 @@ class RegistroAsesorApiTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_registro -v 2`
 Expected: FAIL con 404 (URL no existe)
 
-- [ ] **Step 3: Implementar serializers, view, urls y wiring**
+- [x] **Step 3: Implementar serializers, view, urls y wiring**
 
 ```python
 # backend/asesorias/serializers.py
@@ -825,17 +825,17 @@ urlpatterns = [
 ]
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && .venv/bin/python manage.py test asesorias.tests.test_api_registro -v 2`
 Expected: PASS (6 tests)
 
-- [ ] **Step 5: Correr toda la suite**
+- [x] **Step 5: Correr toda la suite**
 
 Run: `cd backend && .venv/bin/python manage.py test`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias/serializers.py backend/asesorias/views.py backend/asesorias/urls.py backend/asesorias/tests/test_api_registro.py backend/config/urls.py
