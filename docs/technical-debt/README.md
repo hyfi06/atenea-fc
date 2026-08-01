@@ -17,6 +17,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas](0005-editar-disponibilidad-no-propaga.md)
 - [0006 — Sin paginación en los endpoints de listado](0006-sin-paginacion-listados.md)
 - [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md)
+- [0008 — `PerfilAlumno` solo registra una carrera vigente](0008-perfil-alumno-una-sola-carrera.md)
 
 ### Resuelta
 
