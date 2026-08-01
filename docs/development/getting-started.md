@@ -1,6 +1,6 @@
 # Entorno de desarrollo — guía inicial
 
-El `frontend` todavía no existe (se agrega en su propia pasada); esta guía cubre el backend, que ya arranca de verdad.
+Esta guía cubre el backend.
 
 ## Requisitos
 
@@ -63,6 +63,4 @@ docker compose -f docker-compose.dev.yml down          # apagar todo (los datos 
 
 ## Pendiente
 
-- `docker-compose.prod.yml`: se pospuso — todavía no hay nada que probar de verdad en producción (sin auth real, sin tareas Celery reales, sin decisiones de registry/secrets). Ver [0004](../decisions/0004-docker-topology.md) y [0005](../decisions/0005-dev-vs-prod-services.md).
-- `frontend/`: pendiente de su propia pasada de scaffolding.
-- Wiring funcional de Google OAuth y de tareas Celery reales: siguiente paso incremental (ver [0003](../decisions/0003-google-oauth-allauth-jwt.md)).
+- Wiring funcional de Google OAuth del lado del frontend (`api/client.ts`, manejo de tokens): el backend ya expone el contrato completo (ver [ADR 0018](../decisions/0018-contrato-autenticacion-frontend-backend.md)), falta que el SPA lo consuma.

@@ -76,14 +76,14 @@ backend/config/settings/base.py   (modificado: LOCAL_APPS)
 - Produces: `carreras.models.Area` (`nombre: str`), `carreras.models.Carrera` (`clave: int`, `nombre: str`, `area: Area`, `alias: list[str]`, `acepta_nuevo_ingreso: bool`, `siass_id: int | None`, `siassypp_id: int | None`, `dgeci_id: int | None`), `carreras.models.CarreraManager.resolve(texto: str) -> Carrera` (lanza `Carrera.DoesNotExist` si no matchea `nombre` ni `alias`, normalizando acentos/mayúsculas).
 - Consumidores futuros: Task 5 (`Materia.carrera` FK), Task 7 (`cargar_materias` usa `Carrera.objects.resolve(...)`).
 
-- [ ] **Step 1: Crear el paquete de la app**
+- [x] **Step 1: Crear el paquete de la app**
 
 ```bash
 mkdir -p backend/carreras/migrations backend/carreras/tests
 touch backend/carreras/__init__.py backend/carreras/migrations/__init__.py backend/carreras/tests/__init__.py
 ```
 
-- [ ] **Step 2: `apps.py`**
+- [x] **Step 2: `apps.py`**
 
 ```python
 # backend/carreras/apps.py
@@ -95,7 +95,7 @@ class CarrerasConfig(AppConfig):
     name = "carreras"
 ```
 
-- [ ] **Step 3: Registrar la app en settings**
+- [x] **Step 3: Registrar la app en settings**
 
 En `backend/config/settings/base.py`, cambiar:
 
@@ -114,7 +114,7 @@ LOCAL_APPS = [
 ]
 ```
 
-- [ ] **Step 4: `models.py` con `Area`, `Carrera` y su manager**
+- [x] **Step 4: `models.py` con `Area`, `Carrera` y su manager**
 
 ```python
 # backend/carreras/models.py
@@ -163,7 +163,7 @@ class Carrera(models.Model):
         return self.nombre
 ```
 
-- [ ] **Step 5: Generar y aplicar la migración inicial**
+- [x] **Step 5: Generar y aplicar la migración inicial**
 
 ```bash
 cd backend
@@ -174,7 +174,7 @@ uv run python manage.py migrate carreras
 
 Verifica que `backend/carreras/migrations/0001_initial.py` tenga `CreateModel` para `Area` y `Carrera` con los campos de Step 4 (incluyendo `alias` como `django.contrib.postgres.fields.ArrayField`).
 
-- [ ] **Step 6: Escribir los tests de unicidad y de `resolve()`**
+- [x] **Step 6: Escribir los tests de unicidad y de `resolve()`**
 
 ```python
 # backend/carreras/tests/test_models.py
@@ -222,7 +222,7 @@ class CarreraResolveTests(TestCase):
             Carrera.objects.resolve("Carrera Inexistente")
 ```
 
-- [ ] **Step 7: Correr los tests**
+- [x] **Step 7: Correr los tests**
 
 ```bash
 cd backend
@@ -231,7 +231,7 @@ uv run python manage.py test carreras -v 2
 
 Expected: `OK` (6 tests).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/carreras backend/config/settings/base.py
@@ -258,7 +258,7 @@ EOF
 **Interfaces:**
 - Consumes: `carreras.models.Area`, `carreras.models.Carrera` (Task 1).
 
-- [ ] **Step 1: `admin.py`**
+- [x] **Step 1: `admin.py`**
 
 ```python
 # backend/carreras/admin.py
@@ -280,7 +280,7 @@ class CarreraAdmin(admin.ModelAdmin):
     search_fields = ("clave", "nombre")
 ```
 
-- [ ] **Step 2: Verificar manualmente**
+- [x] **Step 2: Verificar manualmente**
 
 ```bash
 cd backend
@@ -289,7 +289,7 @@ uv run python manage.py check
 
 Expected: `System check identified no issues (0 silenced).`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/carreras/admin.py
@@ -314,7 +314,7 @@ EOF
 - Consumes: `carreras.models.Area`, `carreras.models.Carrera` (Task 1).
 - Produces: filas reales en BD — 3 `Area` (Matemáticas, Física, Biología), 9 `Carrera` con `clave`/`alias`/IDs externos tomados de `models.gs` (`CAREERS()`).
 
-- [ ] **Step 1: Escribir la data migration**
+- [x] **Step 1: Escribir la data migration**
 
 ```python
 # backend/carreras/migrations/0002_seed_areas_carreras.py
@@ -393,14 +393,14 @@ class Migration(migrations.Migration):
     ]
 ```
 
-- [ ] **Step 2: Aplicar la migración**
+- [x] **Step 2: Aplicar la migración**
 
 ```bash
 cd backend
 uv run python manage.py migrate carreras
 ```
 
-- [ ] **Step 3: Escribir un test que verifique el seed**
+- [x] **Step 3: Escribir un test que verifique el seed**
 
 ```python
 # backend/carreras/tests/test_seed.py
@@ -434,7 +434,7 @@ class SeedAreasCarrerasTests(TestCase):
 
 Nota: como las migraciones ya insertaron los datos en la BD de test (se aplican todas las migraciones antes de correr tests), este test no necesita fixtures adicionales — solo lee lo que la migración de Step 1 sembró.
 
-- [ ] **Step 4: Correr los tests**
+- [x] **Step 4: Correr los tests**
 
 ```bash
 cd backend
@@ -443,7 +443,7 @@ uv run python manage.py test carreras -v 2
 
 Expected: `OK` (10 tests: los 6 de Task 1 + los 4 nuevos).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/carreras/migrations/0002_seed_areas_carreras.py backend/carreras/tests/test_seed.py
@@ -477,14 +477,14 @@ EOF
 - Produces: `materias.models.Materia` (`clave: str`, `nombre: str`, `carrera: Carrera`, `nivel: int | None`, `plan: int`, `habilitada_asesorias: bool`), `materias.models.OfertaMateria` (`materia: Materia`, `semestre: str`, `se_imparte: bool`, constraint única `(materia, semestre)`).
 - Consumidores futuros: Task 7 (`cargar_materias`), Task 8 (`cargar_oferta`).
 
-- [ ] **Step 1: Crear el paquete de la app**
+- [x] **Step 1: Crear el paquete de la app**
 
 ```bash
 mkdir -p backend/materias/migrations backend/materias/tests
 touch backend/materias/__init__.py backend/materias/migrations/__init__.py backend/materias/tests/__init__.py
 ```
 
-- [ ] **Step 2: `apps.py`**
+- [x] **Step 2: `apps.py`**
 
 ```python
 # backend/materias/apps.py
@@ -496,7 +496,7 @@ class MateriasConfig(AppConfig):
     name = "materias"
 ```
 
-- [ ] **Step 3: Registrar la app en settings**
+- [x] **Step 3: Registrar la app en settings**
 
 En `backend/config/settings/base.py`:
 
@@ -508,7 +508,7 @@ LOCAL_APPS = [
 ]
 ```
 
-- [ ] **Step 4: `models.py`**
+- [x] **Step 4: `models.py`**
 
 ```python
 # backend/materias/models.py
@@ -545,7 +545,7 @@ class OfertaMateria(models.Model):
         return f"{self.materia.clave} — {self.semestre}"
 ```
 
-- [ ] **Step 5: Generar y aplicar la migración**
+- [x] **Step 5: Generar y aplicar la migración**
 
 ```bash
 cd backend
@@ -555,7 +555,7 @@ uv run python manage.py migrate materias
 
 Verifica que `backend/materias/migrations/0001_initial.py` tenga `dependencies = [("carreras", "0001_initial")]` (por la FK a `Carrera`) y el `UniqueConstraint` de `OfertaMateria`.
 
-- [ ] **Step 6: Escribir los tests de unicidad y constraint**
+- [x] **Step 6: Escribir los tests de unicidad y constraint**
 
 ```python
 # backend/materias/tests/test_models.py
@@ -610,7 +610,7 @@ class OfertaMateriaConstraintTests(TestCase):
         self.assertEqual(self.materia.ofertas.count(), 2)
 ```
 
-- [ ] **Step 7: Correr los tests**
+- [x] **Step 7: Correr los tests**
 
 ```bash
 cd backend
@@ -619,7 +619,7 @@ uv run python manage.py test materias -v 2
 
 Expected: `OK` (4 tests).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/materias backend/config/settings/base.py
@@ -645,7 +645,7 @@ EOF
 **Interfaces:**
 - Consumes: `materias.models.Materia`, `materias.models.OfertaMateria` (Task 4).
 
-- [ ] **Step 1: `admin.py`**
+- [x] **Step 1: `admin.py`**
 
 ```python
 # backend/materias/admin.py
@@ -668,7 +668,7 @@ class OfertaMateriaAdmin(admin.ModelAdmin):
     search_fields = ("materia__clave", "materia__nombre")
 ```
 
-- [ ] **Step 2: Verificar**
+- [x] **Step 2: Verificar**
 
 ```bash
 cd backend
@@ -677,7 +677,7 @@ uv run python manage.py check
 
 Expected: `System check identified no issues (0 silenced).`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/materias/admin.py
@@ -705,14 +705,14 @@ EOF
 - Consumes: `carreras.models.Carrera.objects.resolve(texto: str) -> Carrera` (Task 1), `materias.models.Materia` (Task 4).
 - Produces: comando `python manage.py cargar_materias <csv_path>`, invocable en tests vía `django.core.management.call_command("cargar_materias", csv_path)`.
 
-- [ ] **Step 1: Crear el paquete de management commands**
+- [x] **Step 1: Crear el paquete de management commands**
 
 ```bash
 mkdir -p backend/materias/management/commands
 touch backend/materias/management/__init__.py backend/materias/management/commands/__init__.py
 ```
 
-- [ ] **Step 2: Escribir el comando**
+- [x] **Step 2: Escribir el comando**
 
 CSV esperado con columnas exactas `Carrera,Clave,Materia,Nivel,Plan` (`Nivel` puede venir vacío = optativa).
 
@@ -769,7 +769,7 @@ class Command(BaseCommand):
         )
 ```
 
-- [ ] **Step 3: Escribir los tests**
+- [x] **Step 3: Escribir los tests**
 
 ```python
 # backend/materias/tests/test_cargar_materias.py
@@ -857,7 +857,7 @@ class CargarMateriasTests(TestCase):
         self.assertTrue(Materia.objects.filter(clave="1801").exists())
 ```
 
-- [ ] **Step 4: Correr los tests**
+- [x] **Step 4: Correr los tests**
 
 ```bash
 cd backend
@@ -866,7 +866,7 @@ uv run python manage.py test materias.tests.test_cargar_materias -v 2
 
 Expected: `OK` (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/materias/management backend/materias/tests/test_cargar_materias.py
@@ -894,7 +894,7 @@ EOF
 - Consumes: `materias.models.Materia`, `materias.models.OfertaMateria` (Task 4).
 - Produces: comando `python manage.py cargar_oferta <semestre> <csv_path>`.
 
-- [ ] **Step 1: Escribir el comando**
+- [x] **Step 1: Escribir el comando**
 
 CSV esperado con columnas `Clave,SeImparte` (`SeImparte` acepta `1`/`0`, `true`/`false`, `si`/`no`, case-insensitive).
 
@@ -951,7 +951,7 @@ class Command(BaseCommand):
         )
 ```
 
-- [ ] **Step 2: Escribir los tests**
+- [x] **Step 2: Escribir los tests**
 
 ```python
 # backend/materias/tests/test_cargar_oferta.py
@@ -1031,7 +1031,7 @@ class CargarOfertaTests(TestCase):
         self.assertEqual(OfertaMateria.objects.filter(materia=self.materia).count(), 1)
 ```
 
-- [ ] **Step 3: Correr los tests**
+- [x] **Step 3: Correr los tests**
 
 ```bash
 cd backend
@@ -1040,7 +1040,7 @@ uv run python manage.py test materias.tests.test_cargar_oferta -v 2
 
 Expected: `OK` (5 tests).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/materias/management/commands/cargar_oferta.py backend/materias/tests/test_cargar_oferta.py
@@ -1061,7 +1061,7 @@ EOF
 
 **Files:** ninguno nuevo — solo verificación de extremo a extremo.
 
-- [ ] **Step 1: Migrar desde cero en una BD limpia**
+- [x] **Step 1: Migrar desde cero en una BD limpia**
 
 ```bash
 cd backend
@@ -1072,7 +1072,7 @@ uv run python manage.py migrate
 
 Expected: todas las migraciones de `accounts`, `carreras` y `materias` aplican sin error, incluida la data migration `0002_seed_areas_carreras`.
 
-- [ ] **Step 2: Correr la suite completa**
+- [x] **Step 2: Correr la suite completa**
 
 ```bash
 cd backend
@@ -1081,7 +1081,7 @@ uv run python manage.py test -v 2
 
 Expected: `OK` — incluye los tests preexistentes de `accounts` más los de `carreras` (10) y `materias` (13).
 
-- [ ] **Step 3: Confirmar que el seed quedó en la BD de dev**
+- [x] **Step 3: Confirmar que el seed quedó en la BD de dev**
 
 ```bash
 cd backend
@@ -1090,7 +1090,7 @@ uv run python manage.py shell -c "from carreras.models import Carrera; print(Car
 
 Expected: `9`.
 
-- [ ] **Step 4: `manage.py check` sin advertencias**
+- [x] **Step 4: `manage.py check` sin advertencias**
 
 ```bash
 cd backend
