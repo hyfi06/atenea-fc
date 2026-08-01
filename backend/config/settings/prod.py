@@ -9,3 +9,13 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# ADR 0018: en prod, dj-rest-auth entrega el JWT como cookie httpOnly en vez
+# de en el body — el frontend nunca lo lee ni lo guarda en JS.
+REST_AUTH = {**REST_AUTH, "JWT_AUTH_HTTPONLY": True}
+CORS_ALLOW_CREDENTIALS = True
+
+# Fail-fast: sin credenciales de Google configuradas, mejor no arrancar que
+# dejar el login de Google roto en silencio (ver ADR 0018).
+SOCIALACCOUNT_PROVIDERS["google"]["APP"]["client_id"] = env("GOOGLE_OAUTH_CLIENT_ID")
+SOCIALACCOUNT_PROVIDERS["google"]["APP"]["secret"] = env("GOOGLE_OAUTH_CLIENT_SECRET")
