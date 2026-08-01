@@ -46,7 +46,7 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
 ### Transporte del JWT — difiere entre dev y prod
 
 - **Dev:** `JWT_AUTH_HTTPONLY = False` → los tokens viajan en el body JSON (arriba). El SPA los guarda en `localStorage` y manda `Authorization: Bearer <access>` en cada request.
-- **Prod (según ADR 0018):** `JWT_AUTH_HTTPONLY = True` → la intención es que `dj-rest-auth` entregue `access`/`refresh` como cookies `httpOnly`+`Secure`, y el SPA use `credentials: 'include'` en vez de un header armado a mano.
+- **Prod (según ADR 0018):** `JWT_AUTH_HTTPONLY = True` → `dj-rest-auth` entrega `access`/`refresh` como cookies `httpOnly`+`Secure`, y el SPA usa `credentials: 'include'` en vez de un header armado a mano.
 
 > **Estado (2026-08-01):** el flujo de cookies de prod ya es funcional — `config/settings/prod.py` define `JWT_AUTH_COOKIE`/`JWT_AUTH_REFRESH_COOKIE`/`JWT_AUTH_SECURE`, y `DEFAULT_AUTHENTICATION_CLASSES` usa `JWTCookieAuthentication` (lee el header si está presente, si no cae a la cookie) — verificado con tests en `accounts/tests/test_auth.py::CookieBasedLoginTests`. Un detalle a tener presente: `access` sigue apareciendo en el body JSON de `/api/auth/login/` y `/api/auth/google/` incluso con `JWT_AUTH_HTTPONLY=True` (comportamiento default de `dj-rest-auth`, no algo que este proyecto controle sin sobreescribir la vista) — el SPA en prod debe simplemente ignorar ese campo del body y depender solo de la cookie (`credentials: 'include'`), nunca leerlo ni guardarlo.
 
@@ -54,7 +54,9 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
 
 - Access token: vive 15 minutos (`ACCESS_TOKEN_LIFETIME`). El frontend necesita refrescar en `401` o antes de que expire.
 - Refresh token: vive 7 días, **no rota** (`ROTATE_REFRESH_TOKENS = False`) — tras `POST /api/auth/token/refresh/` solo cambia `access`, el refresh guardado sigue siendo válido.
-- `POST /api/auth/token/refresh/` — `{"refresh": "<token>"}` → `{"access": "<jwt>"}`.
+- `POST /api/auth/token/refresh/` → `{"access": "<jwt>", "access_expiration": "<iso datetime>"}`. `access_expiration` lo agrega incondicionalmente `finalize_response` de la vista de refresh (`dj_rest_auth.jwt_auth.RefreshViewWithCookieSupport`), en ambos entornos.
+  - **Dev:** body `{"refresh": "<token>"}` — el refresh token viaja explícito en el body (el flujo ya documentado arriba).
+  - **Prod:** el refresh token es `httpOnly` — el SPA no puede leerlo ni mandarlo en el body. El call correcto es body vacío `{}` con `credentials: 'include'`; el navegador adjunta la cookie de refresh automáticamente y la vista la usa (`CookieTokenRefreshSerializer.extract_refresh_token`, con fallback a `request.data['refresh']` si viniera en el body). Este es exactamente el flujo que prueba `CookieBasedLoginTests.test_cookie_alone_refreshes_access_token` en `accounts/tests/test_auth.py`.
 - `POST /api/auth/token/verify/` — `{"token": "<jwt>"}` → `200`/`401`.
 
 ### Logout
