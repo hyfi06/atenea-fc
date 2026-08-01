@@ -21,27 +21,16 @@ class AgregarMateriaSerializer(serializers.Serializer):
             return Materia.objects.get(pk=value)
         except Materia.DoesNotExist:
             raise serializers.ValidationError("La materia no existe.")
+    def create(self, validated_data):
+        # BooleanField trata una petición de formulario (multipart/urlencoded)
+        # como un checkbox HTML: si "activa" no viene en el payload, DRF lo
+        # interpreta como False en vez de usar el default=True del modelo.
+        # Un bloque recién publicado siempre debe nacer activo; desactivarlo
+        # es una acción posterior explícita vía PATCH, no algo que se decida
+        # al crear.
+        validated_data["activa"] = True
+        return super().create(validated_data)
 
-class DisponibilidadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Disponibilidad
-        fields = ["id", "registro", "dia_semana", "hora_inicio", "formato", "ubicacion", "liga_virtual", "activa"]
-
-    def validate_registro(self, value):
-        request = self.context["request"]
-        if value.asesor.user_id != request.user.id:
-            raise serializers.ValidationError("No puedes crear disponibilidad para el registro de otro asesor.")
-        return value
-
-    def validate(self, attrs):
-        instance = self.instance or Disponibilidad()
-        for key, value in attrs.items():
-            setattr(instance, key, value)
-        try:
-            instance.clean()
-        except DjangoValidationError as exc:
-            raise serializers.ValidationError(exc.messages)
-        return attrs
 
 class ResultadoBusquedaSerializer(serializers.Serializer):
     disponibilidad_id = serializers.IntegerField()
