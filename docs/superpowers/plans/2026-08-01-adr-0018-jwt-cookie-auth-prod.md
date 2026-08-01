@@ -41,7 +41,7 @@
 - Consumes: `REST_AUTH` dict ya definido en `backend/config/settings/base.py:138-144` (trae `JWT_AUTH_HTTPONLY` heredado, sobreescrito a `True` en `prod.py:15`).
 - Produces: `REST_AUTH["JWT_AUTH_COOKIE"] = "atenea-access-token"`, `REST_AUTH["JWT_AUTH_REFRESH_COOKIE"] = "atenea-refresh-token"`, `REST_AUTH["JWT_AUTH_SECURE"] = True` en `prod.py` — nombres que la Tarea 2 y los tests de esta tarea usan tal cual.
 
-- [ ] **Step 1: Escribir el test de valores de settings (subproceso aislado) — RED**
+- [x] **Step 1: Escribir el test de valores de settings (subproceso aislado) — RED**
 
 Este test importa `config.settings.prod` en un proceso Python **separado** (no dentro del test runner de Django, que ya corre bajo `config.settings.dev`) para no contaminar el `SOCIALACCOUNT_PROVIDERS`/otros globals mutados por `prod.py` al importarse. Agregar al final de `backend/accounts/tests/test_auth.py`:
 
@@ -98,12 +98,12 @@ class ProdSettingsJWTCookieTests(TestCase):
 
 Agregar `from django.test import TestCase` al bloque de imports existente al inicio del archivo (junto a `from rest_framework.test import APITestCase`) si no está ya presente.
 
-- [ ] **Step 2: Correr el test y confirmar que falla**
+- [x] **Step 2: Correr el test y confirmar que falla**
 
 Run: `uv run manage.py test accounts.tests.test_auth.ProdSettingsJWTCookieTests -v 2`
 Expected: FAIL — `AssertionError: None != 'atenea-access-token'` (hoy `JWT_AUTH_COOKIE` no está definido en `prod.py`, así que `settings.REST_AUTH.get(...)` da `None`).
 
-- [ ] **Step 3: Agregar los valores a `prod.py`**
+- [x] **Step 3: Agregar los valores a `prod.py`**
 
 En `backend/config/settings/prod.py`, reemplazar:
 
@@ -134,12 +134,12 @@ REST_AUTH = {
 CORS_ALLOW_CREDENTIALS = True
 ```
 
-- [ ] **Step 4: Correr el test y confirmar que pasa**
+- [x] **Step 4: Correr el test y confirmar que pasa**
 
 Run: `uv run manage.py test accounts.tests.test_auth.ProdSettingsJWTCookieTests -v 2`
 Expected: PASS
 
-- [ ] **Step 5: Escribir el test de comportamiento (cookies se setean con los atributos correctos) — RED**
+- [x] **Step 5: Escribir el test de comportamiento (cookies se setean con los atributos correctos) — RED**
 
 Este test sí corre bajo `config.settings.dev`, pero simula la configuración de prod parcheando el singleton de `dj-rest-auth` directamente (ver "Global Constraints" — `override_settings(REST_AUTH=...)` no tiene efecto sobre este paquete). Agregar a `backend/accounts/tests/test_auth.py`:
 
@@ -202,12 +202,12 @@ class CookieBasedLoginTests(APITestCase):
 
 Agregar `from unittest.mock import patch` ya está importado (línea 2 del archivo); confirmar que sigue ahí.
 
-- [ ] **Step 6: Correr los tests y confirmar que pasan**
+- [x] **Step 6: Correr los tests y confirmar que pasan**
 
 Run: `uv run manage.py test accounts.tests.test_auth.CookieBasedLoginTests -v 2`
 Expected: PASS — estos dos tests **ya pasan sin tocar código de producción**, porque solo dependen de que exista *algún* nombre de cookie configurado (aquí, vía el parche). Sirven como base para la Tarea 2, que sí depende de un cambio real de código. Si fallan aquí, el problema está en el test, no en `prod.py`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/config/settings/prod.py backend/accounts/tests/test_auth.py
@@ -226,7 +226,7 @@ git commit -m "fix(backend): configurar nombres de cookie JWT y flag secure en p
 - Consumes: nombres de cookie `atenea-access-token`/`atenea-refresh-token` producidos en la Tarea 1 (vía `PROD_COOKIE_SETTINGS`, ya definido en el archivo de test).
 - Produces: `REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = ["dj_rest_auth.jwt_auth.JWTCookieAuthentication"]` en `base.py` — clase que las Tareas futuras (y cualquier vista nueva) heredan automáticamente vía el default de DRF.
 
-- [ ] **Step 1: Escribir el test de autenticación solo-por-cookie — RED**
+- [x] **Step 1: Escribir el test de autenticación solo-por-cookie — RED**
 
 Agregar `from rest_framework.test import APIClient` al bloque de imports al inicio del archivo. Luego agregar los siguientes tres métodos **dentro del cuerpo de la clase `CookieBasedLoginTests` ya creada en la Tarea 1** (no crear una clase nueva ni redeclarar la existente — solo insertar estos métodos junto a los que ya tiene esa clase):
 
@@ -284,7 +284,7 @@ Agregar `from rest_framework.test import APIClient` al bloque de imports al inic
         self.assertEqual(response.data["email"], user.email)
 ```
 
-- [ ] **Step 2: Correr los tests y confirmar que fallan donde corresponde**
+- [x] **Step 2: Correr los tests y confirmar que fallan donde corresponde**
 
 Run: `uv run manage.py test accounts.tests.test_auth.CookieBasedLoginTests -v 2`
 Expected:
@@ -292,7 +292,7 @@ Expected:
 - `test_cookie_alone_refreshes_access_token` → PASS ya (el endpoint de refresh usa `CookieTokenRefreshSerializer`, que lee la cookie por su cuenta desde antes, independiente de `DEFAULT_AUTHENTICATION_CLASSES`) — confirma que este bug es específicamente de autenticación de vistas protegidas, no del refresh.
 - `test_header_auth_still_works_without_cookie_config` → PASS ya (nada roto todavía).
 
-- [ ] **Step 3: Cambiar la clase de autenticación default**
+- [x] **Step 3: Cambiar la clase de autenticación default**
 
 En `backend/config/settings/base.py`, reemplazar:
 
@@ -324,17 +324,17 @@ REST_FRAMEWORK = {
 }
 ```
 
-- [ ] **Step 4: Correr los tests y confirmar que todos pasan**
+- [x] **Step 4: Correr los tests y confirmar que todos pasan**
 
 Run: `uv run manage.py test accounts.tests.test_auth.CookieBasedLoginTests accounts.tests.test_auth.ProdSettingsJWTCookieTests -v 2`
 Expected: PASS — los 6 tests (4 de `CookieBasedLoginTests` + `test_prod_settings_configure_jwt_cookies`).
 
-- [ ] **Step 5: Correr la suite completa del backend para descartar regresiones**
+- [x] **Step 5: Correr la suite completa del backend para descartar regresiones**
 
 Run: `uv run manage.py test`
 Expected: todos los tests existentes (incluyendo `GoogleLoginTests`, `PasswordResetLoginFlowTests`, y toda la suite de `asesorias`/`materias`/`carreras`) siguen en PASS. Presta atención en particular a cualquier test que dependa de `DEFAULT_AUTHENTICATION_CLASSES` — no debería haber ninguno acoplado a la clase exacta, solo al comportamiento (header `Authorization` funciona).
 
-- [ ] **Step 6: Verificar que el login social también setea cookies (mismo codepath)**
+- [x] **Step 6: Verificar que el login social también setea cookies (mismo codepath)**
 
 Agregar a la clase `GoogleLoginTests` existente en `backend/accounts/tests/test_auth.py`:
 
@@ -357,7 +357,7 @@ Esto reusa `dra_settings` y `PROD_COOKIE_SETTINGS`, definidos a nivel de módulo
 Run: `uv run manage.py test accounts.tests.test_auth.GoogleLoginTests -v 2`
 Expected: PASS — confirma que `GoogleLoginView` (que hereda `get_response()` de `LoginView`, la misma vía que ya se probó en `CookieBasedLoginTests`) también setea las cookies correctamente, sin necesitar cambios de código adicionales.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/config/settings/base.py backend/accounts/tests/test_auth.py
@@ -378,7 +378,7 @@ git commit -m "fix(backend): autenticar requests contra la cookie JWT, no solo e
 - Consumes: nombres de cookie y comportamiento verificado en las Tareas 1 y 2.
 - Produces: nada consumido por código — son artefactos de documentación.
 
-- [ ] **Step 1: Agregar entrada de Changelog a la ADR 0018**
+- [x] **Step 1: Agregar entrada de Changelog a la ADR 0018**
 
 Al final de `docs/decisions/0018-contrato-autenticacion-frontend-backend.md`, en la sección `## Changelog` (después de la entrada del 2026-08-01 sobre eliminar el flujo Authorization Code), agregar:
 
@@ -386,7 +386,7 @@ Al final de `docs/decisions/0018-contrato-autenticacion-frontend-backend.md`, en
 - **2026-08-01** — Se implementa en el backend el transporte de cookie httpOnly para prod descrito en la decisión 2, que hasta ahora solo estaba documentado pero no era funcional: `config/settings/prod.py` fijaba `JWT_AUTH_HTTPONLY=True` sin definir `JWT_AUTH_COOKIE`/`JWT_AUTH_REFRESH_COOKIE` (sin nombre, dj-rest-auth nunca llama a `response.set_cookie(...)`), y `REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]` usaba `JWTAuthentication` (solo header) en vez de `JWTCookieAuthentication` (header con fallback a cookie), así que ninguna vista protegida podía autenticar con la cookie aunque existiera. Se corrigen ambos puntos; el comportamiento de dev no cambia. El default de la librería para CSRF en cookie (`JWT_AUTH_COOKIE_USE_CSRF=False`) se deja sin activar, tal como ya razonaba esta ADR en "Alternatives considered" — registrado explícitamente como deuda técnica en [`docs/technical-debt/0009-sin-csrf-en-cookie-jwt.md`](../technical-debt/0009-sin-csrf-en-cookie-jwt.md).
 ```
 
-- [ ] **Step 2: Actualizar el callout de advertencia en la guía de frontend**
+- [x] **Step 2: Actualizar el callout de advertencia en la guía de frontend**
 
 En `docs/development/api-frontend.md`, ubicar el bloque que empieza con `> ⚠️ **Discrepancia verificada en el código actual...**` (dentro de la sección "Transporte del JWT — difiere entre dev y prod") y reemplazarlo completo por:
 
@@ -394,7 +394,7 @@ En `docs/development/api-frontend.md`, ubicar el bloque que empieza con `> ⚠�
 > **Estado (2026-08-01):** el flujo de cookies de prod ya es funcional — `config/settings/prod.py` define `JWT_AUTH_COOKIE`/`JWT_AUTH_REFRESH_COOKIE`/`JWT_AUTH_SECURE`, y `DEFAULT_AUTHENTICATION_CLASSES` usa `JWTCookieAuthentication` (lee el header si está presente, si no cae a la cookie) — verificado con tests en `accounts/tests/test_auth.py::CookieBasedLoginTests`. Un detalle a tener presente: `access` sigue apareciendo en el body JSON de `/api/auth/login/` y `/api/auth/google/` incluso con `JWT_AUTH_HTTPONLY=True` (comportamiento default de `dj-rest-auth`, no algo que este proyecto controle sin sobreescribir la vista) — el SPA en prod debe simplemente ignorar ese campo del body y depender solo de la cookie (`credentials: 'include'`), nunca leerlo ni guardarlo.
 ```
 
-- [ ] **Step 3: Crear el ítem de deuda técnica 0009**
+- [x] **Step 3: Crear el ítem de deuda técnica 0009**
 
 Crear `docs/technical-debt/0009-sin-csrf-en-cookie-jwt.md`:
 
@@ -417,7 +417,7 @@ En prod, el JWT viaja como cookie `httpOnly`+`Secure` (`JWTCookieAuthentication`
 Si la topología de despliegue cambia (frontend y backend dejan de compartir dominio/subdominio — p. ej. frontend servido desde un CDN con dominio propio), o si se detecta/sospecha un intento de CSRF contra un endpoint autenticado por cookie, activar `JWT_AUTH_COOKIE_USE_CSRF=True` y coordinar el trabajo correspondiente en `api/client.ts` del frontend.
 ```
 
-- [ ] **Step 4: Agregar la entrada al índice de deuda técnica**
+- [x] **Step 4: Agregar la entrada al índice de deuda técnica**
 
 En `docs/technical-debt/README.md`, en la sección `### Activa`, después de la línea de `0008`, agregar:
 
@@ -425,7 +425,7 @@ En `docs/technical-debt/README.md`, en la sección `### Activa`, después de la 
 - [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md)
 ```
 
-- [ ] **Step 5: Verificar que todos los enlaces markdown nuevos resuelven**
+- [x] **Step 5: Verificar que todos los enlaces markdown nuevos resuelven**
 
 Run:
 ```bash
@@ -436,7 +436,7 @@ done
 ```
 Expected: las 4 líneas dicen `OK`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/decisions/0018-contrato-autenticacion-frontend-backend.md \
