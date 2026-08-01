@@ -1,16 +1,14 @@
+import datetime
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-<<<<<<< HEAD
-from .models import Disponibilidad, RegistroAsesor
-from .permissions import EsAsesorAcademico, EsDuenoDelRegistro
-from .serializers import AgregarMateriaSerializer, DisponibilidadSerializer, RegistroAsesorSerializer
-=======
 from .models import Asesoria, Disponibilidad, RegistroAsesor
 from .permissions import EsAlumno, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria
 from .serializers import (
@@ -18,7 +16,6 @@ from .serializers import (
     MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer, ResultadoBusquedaSerializer,
 )
 from .servicios import ventana_agendable
->>>>>>> 7779c32 ([feat][backend] agregar AsesoriaViewSet compartido alumno/asesor)
 
 
 class RegistroAsesorViewSet(ModelViewSet):
