@@ -13,7 +13,7 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from django.core import mail
 from django.test import TestCase
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 
 from accounts.models import User
 
@@ -62,6 +62,18 @@ class GoogleLoginTests(APITestCase):
         self.assertTrue(
             SocialAccount.objects.filter(user=user, provider="google").exists()
         )
+
+    @patch.object(GoogleOAuth2Adapter, "complete_login")
+    def test_sets_cookies_when_httponly_configured(self, mock_complete_login):
+        user = User.objects.create_user("google-cookies@ciencias.unam.mx")
+        mock_complete_login.side_effect = _complete_login_as(user.email)
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            response = self._post_google_login()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("atenea-access-token", response.cookies)
+        self.assertIn("atenea-refresh-token", response.cookies)
 
 
 class PasswordResetLoginFlowTests(APITestCase):
@@ -207,3 +219,55 @@ class CookieBasedLoginTests(APITestCase):
         self.assertEqual(logout_response.cookies["atenea-access-token"]["max-age"], 0)
         self.assertEqual(logout_response.cookies["atenea-refresh-token"].value, "")
         self.assertEqual(logout_response.cookies["atenea-refresh-token"]["max-age"], 0)
+
+    def test_cookie_alone_authenticates_protected_endpoint(self):
+        user = User.objects.create_user("cookies-auth@ciencias.unam.mx", password="ClaveSegura123!")
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            login_response = self.client.post(
+                "/api/auth/login/",
+                {"email": user.email, "password": "ClaveSegura123!"},
+                format="json",
+            )
+
+            cookie_only_client = APIClient()
+            cookie_only_client.cookies["atenea-access-token"] = login_response.cookies["atenea-access-token"].value
+
+            response = cookie_only_client.get("/api/auth/user/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["email"], user.email)
+
+    def test_cookie_alone_refreshes_access_token(self):
+        user = User.objects.create_user("cookies-refresh@ciencias.unam.mx", password="ClaveSegura123!")
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            login_response = self.client.post(
+                "/api/auth/login/",
+                {"email": user.email, "password": "ClaveSegura123!"},
+                format="json",
+            )
+
+            refresh_only_client = APIClient()
+            refresh_only_client.cookies["atenea-refresh-token"] = login_response.cookies["atenea-refresh-token"].value
+
+            response = refresh_only_client.post("/api/auth/token/refresh/", {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+    def test_header_auth_still_works_without_cookie_config(self):
+        """Regresión: el flujo de dev (sin nombres de cookie configurados) no se rompe."""
+        user = User.objects.create_user("header-only@ciencias.unam.mx", password="ClaveSegura123!")
+
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"email": user.email, "password": "ClaveSegura123!"},
+            format="json",
+        )
+        response = self.client.get(
+            "/api/auth/user/", HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["email"], user.email)

@@ -130,8 +130,12 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # JWTCookieAuthentication extiende JWTAuthentication: revisa el header
+    # Authorization primero (así es como sigue funcionando dev sin cambios) y
+    # cae a la cookie JWT_AUTH_COOKIE solo si no hay header — necesario para
+    # que el flujo de cookie httpOnly de prod (ADR 0018) autentique requests.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ],
 }
 
