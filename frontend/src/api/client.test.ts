@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { apiGet, apiPost, ApiError } from './client'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { apiGet, apiPost } from './client'
 
 const originalFetch = global.fetch
 
