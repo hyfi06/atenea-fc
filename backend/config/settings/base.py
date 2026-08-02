@@ -159,6 +159,12 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@atenea.ciencias
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 
 CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
+# CORS_ALLOWED_ORIGINS ya restringe a un único origin exacto (sin wildcard),
+# así que habilitar credenciales es seguro también en dev — y necesario:
+# frontend/src/api/client.ts manda `credentials: 'include'` de forma uniforme
+# en dev y prod (ADR 0018), y sin este flag el navegador descarta toda
+# respuesta cross-origin credenciada como error de red.
+CORS_ALLOW_CREDENTIALS = True
 
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")

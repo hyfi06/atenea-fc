@@ -30,7 +30,7 @@ REST_AUTH = {
     "JWT_AUTH_SECURE": True,
     "JWT_AUTH_SAMESITE": "Lax",
 }
-CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_CREDENTIALS ahora vive en base.py (aplica igual en dev y prod).
 
 # Fail-fast: sin credenciales de Google configuradas, mejor no arrancar que
 # dejar el login de Google roto en silencio (ver ADR 0018).
