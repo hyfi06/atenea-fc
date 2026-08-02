@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useMisAsesorias } from '../api'
+import { useMisAsesorias, useCancelarAsesoria, useMarcarAsistencia, useGuardarNotas } from '../api'
 import { useMapaMaterias, useMapaCarreras } from '../../catalogo/api'
-import { sesionesPreviasConNotas } from '../logica'
+import { sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas } from '../logica'
 import { InsigniaEstado } from '../../../components/ui/InsigniaEstado'
 import { Skeleton } from '../../../components/ui/Skeleton'
+import { Boton } from '../../../components/ui/Boton'
+import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
+import { DialogoCancelar } from '../components/DialogoCancelar'
+import type { Asesoria } from '../../../api/types'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const FORMATEADOR_HORA = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' })
 
 export function DetalleAsesoria() {
   const { id } = useParams<{ id: string }>()
@@ -72,7 +78,7 @@ export function DetalleAsesoria() {
         </dl>
       </section>
 
-      {/* Sección de acciones (cancelar / marcar asistencia / notas) — Task 13 */}
+      <SeccionAcciones asesoria={asesoria} />
 
       <section>
         <h2 className="mb-2 text-sm font-medium text-on-surface">Notas de sesiones anteriores con este alumno</h2>
@@ -92,5 +98,117 @@ export function DetalleAsesoria() {
         )}
       </section>
     </main>
+  )
+}
+
+function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
+  const { mensaje, mostrar } = useRetroalimentacion()
+  const cancelar = useCancelarAsesoria()
+  const marcarAsistencia = useMarcarAsistencia()
+  const guardarNotas = useGuardarNotas()
+  const [dialogoCancelarAbierto, setDialogoCancelarAbierto] = useState(false)
+  const [notas, setNotas] = useState(asesoria.notas)
+
+  if (asesoria.estado === 'cancelada') {
+    return (
+      <section className="rounded-lg bg-surface-container-low p-4">
+        <p className="text-sm text-on-surface-variant">
+          Esta asesoría fue cancelada. El motivo no está disponible todavía en
+          la API (ver deuda técnica 0010) — el campo existe en el backend pero
+          no se expone en el serializer.
+        </p>
+      </section>
+    )
+  }
+
+  if (asesoria.estado === 'realizada') {
+    return (
+      <section className="flex flex-col gap-3 rounded-lg bg-surface-container-low p-4">
+        <p className="text-sm text-on-surface">{asesoria.asistio ? 'El alumno asistió.' : 'El alumno no asistió.'}</p>
+        {puedeGuardarNotas(asesoria) ? (
+          <>
+            <textarea
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              rows={4}
+              placeholder="Notas de la sesión…"
+              className="rounded-md border border-outline bg-transparent px-2 py-1.5 text-sm text-on-surface"
+            />
+            <Boton
+              type="button"
+              disabled={notas === asesoria.notas}
+              cargando={guardarNotas.isPending}
+              onClick={() =>
+                guardarNotas.mutate(
+                  { id: asesoria.id, texto: notas },
+                  { onSuccess: () => mostrar('Notas guardadas') },
+                )
+              }
+              className="w-fit px-6"
+            >
+              Guardar notas
+            </Boton>
+          </>
+        ) : null}
+        <Retroalimentacion mensaje={mensaje} />
+      </section>
+    )
+  }
+
+  const yaOcurrio = sesionYaOcurrio(asesoria, new Date())
+
+  return (
+    <section className="flex flex-col gap-3 rounded-lg bg-surface-container-low p-4">
+      {yaOcurrio ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-on-surface">¿El alumno asistió a esta sesión?</p>
+          <div className="flex gap-2">
+            <Boton
+              type="button"
+              cargando={marcarAsistencia.isPending}
+              onClick={() => marcarAsistencia.mutate({ id: asesoria.id, asistio: true }, { onSuccess: () => mostrar('Asistencia registrada') })}
+              className="flex-1"
+            >
+              Asistió
+            </Boton>
+            <Boton
+              type="button"
+              variante="secundario"
+              cargando={marcarAsistencia.isPending}
+              onClick={() => marcarAsistencia.mutate({ id: asesoria.id, asistio: false }, { onSuccess: () => mostrar('Asistencia registrada') })}
+              className="flex-1"
+            >
+              No asistió
+            </Boton>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-on-surface-variant">
+          Podrás marcar asistencia después de las {FORMATEADOR_HORA.format(new Date(`${asesoria.fecha}T${asesoria.hora_inicio}`))}.
+        </p>
+      )}
+
+      <Boton variante="peligro" type="button" onClick={() => setDialogoCancelarAbierto(true)} className="w-fit px-6">
+        Cancelar asesoría
+      </Boton>
+
+      <DialogoCancelar
+        abierto={dialogoCancelarAbierto}
+        cargando={cancelar.isPending}
+        onConfirmar={(motivo) =>
+          cancelar.mutate(
+            { id: asesoria.id, motivo },
+            {
+              onSuccess: () => {
+                setDialogoCancelarAbierto(false)
+                mostrar('Asesoría cancelada')
+              },
+            },
+          )
+        }
+        onCerrar={() => setDialogoCancelarAbierto(false)}
+      />
+      <Retroalimentacion mensaje={mensaje} />
+    </section>
   )
 }
