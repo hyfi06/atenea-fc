@@ -183,3 +183,24 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.client.force_authenticate(user=self.otro_alumno_user)
         response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
         self.assertEqual(response.status_code, 403)
+
+    def test_asesor_dueño_cancela_y_libera_el_slot(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["estado"], "cancelada")
+
+        segunda = Asesoria.objects.create(
+            alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        self.assertIsNotNone(segunda.id)
+
+    def test_asesor_no_dueño_no_puede_cancelar(self):
+        otro_user = User.objects.create_user(email="otro_asesor@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=otro_user, numero_trabajador="99999")
+        PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
+        self.client.force_authenticate(user=otro_user)
+        response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
+        self.assertEqual(response.status_code, 403)

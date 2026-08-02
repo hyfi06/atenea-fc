@@ -15,6 +15,13 @@ class EsAsesorAcademico(BasePermission):
         return hasattr(request.user, "perfil_asesor_academico")
 
 
+class EsAlumnoOAsesorAcademico(BasePermission):
+    message = "Se requiere un perfil de alumno o de asesor académico."
+
+    def has_permission(self, request, view):
+        return hasattr(request.user, "perfil_alumno") or hasattr(request.user, "perfil_asesor_academico")
+
+
 class EsDuenoDelRegistro(BasePermission):
     message = "No puedes operar sobre el registro de otro asesor."
 

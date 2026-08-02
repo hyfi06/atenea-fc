@@ -113,6 +113,7 @@ No hay roles genéricos — se derivan de qué perfil tiene el usuario autentica
 |---|---|
 | `EsAlumno` | `request.user` tiene `perfil_alumno` |
 | `EsAsesorAcademico` | `request.user` tiene `perfil_asesor_academico` |
+| `EsAlumnoOAsesorAcademico` | `request.user` tiene `perfil_alumno` **o** `perfil_asesor_academico` (usada en `cancelar`, ver más abajo) |
 | `EsDuenoDelRegistro` | (a nivel objeto) el registro/disponibilidad pertenece al asesor autenticado |
 | `EsDuenoDeLaAsesoria` | (a nivel objeto) la sesión pertenece al alumno o asesor autenticado |
 
@@ -161,13 +162,15 @@ Otros `400` posibles en creación: `"La fecha no coincide con el día de la disp
 | `GET` | `/api/asesorias/asesorias/` | requerida | |
 | `POST` | `/api/asesorias/asesorias/` | `EsAlumno` | ver arriba, puede dar `409` |
 | `GET` | `/api/asesorias/asesorias/{id}/` | requerida | |
-| `POST` | `/api/asesorias/asesorias/{id}/cancelar/` | `EsAlumno` + dueño | `{motivo?}` |
+| `POST` | `/api/asesorias/asesorias/{id}/cancelar/` | `EsAlumnoOAsesorAcademico` + dueño | `{motivo?}` — el alumno o el asesor dueño de la sesión pueden cancelarla |
 | `POST` | `/api/asesorias/asesorias/{id}/marcar_asistencia/` | `EsAsesorAcademico` + dueño | `{asistio: bool}` — falla si es antes de que ocurra la sesión |
 | `POST` | `/api/asesorias/asesorias/{id}/notas/` | `EsAsesorAcademico` + dueño | `{texto}` — falla si `asistio` no es `true` |
 
 `Asesoria.estado`: `agendada` (default) → `cancelada` | `realizada`. Nunca se borra un registro. `asistio` es tri-estado: `null` (aún no ocurre/no marcada), `true`, `false`.
 
 Cancelar y crear una asesoría disparan notificaciones por correo vía Celery (asíncronas, no bloquean la response).
+
+`cancelar/` está listado en esta sección de alumno porque nació ahí, pero desde 2026-08-02 no es exclusivo de alumno: el asesor dueño de la sesión también puede cancelarla (ver ADR 0017, changelog).
 
 ## Resumen — qué endpoints son `AllowAny`
 
