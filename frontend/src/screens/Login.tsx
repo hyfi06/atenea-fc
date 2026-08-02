@@ -1,5 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { ApiError } from '../api/client'
 
 interface TextFieldProps {
   label: string
@@ -29,12 +31,38 @@ function TextField({ label, type, value, autoComplete, onChange }: TextFieldProp
 
 export function Login() {
   const navigate = useNavigate()
+  const { loginWithPassword, loginWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+  const [conectandoGoogle, setConectandoGoogle] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    navigate('/home')
+    setError(null)
+    setEnviando(true)
+    try {
+      await loginWithPassword(email, password)
+      navigate('/home')
+    } catch (err) {
+      setError(err instanceof ApiError ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión. Intenta de nuevo.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError(null)
+    setConectandoGoogle(true)
+    try {
+      await loginWithGoogle()
+      navigate('/home')
+    } catch {
+      setError('No se pudo iniciar sesión con Google.')
+    } finally {
+      setConectandoGoogle(false)
+    }
   }
 
   return (
@@ -54,11 +82,22 @@ export function Login() {
         <TextField label="Correo" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
+
         <button type="button" className="self-end text-xs font-medium text-primary">
           ¿Olvidaste tu contraseña?
         </button>
 
-        <button type="submit" className="h-11 rounded-full bg-primary text-sm font-semibold text-on-primary">
+        <button
+          type="submit"
+          disabled={enviando}
+          className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-on-primary disabled:opacity-60"
+        >
+          {enviando && <span className="spinner h-4 w-4" aria-hidden />}
           Entrar
         </button>
 
@@ -70,9 +109,11 @@ export function Login() {
 
         <button
           type="button"
-          onClick={() => navigate('/home')}
-          className="h-11 rounded-full border border-outline text-sm font-semibold text-primary"
+          onClick={handleGoogleLogin}
+          disabled={conectandoGoogle}
+          className="flex h-11 items-center justify-center gap-2 rounded-full border border-outline text-sm font-semibold text-primary disabled:opacity-60"
         >
+          {conectandoGoogle && <span className="spinner h-4 w-4" aria-hidden />}
           Continuar con Correo Ciencias
         </button>
       </form>
