@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
-import type { RegistroAsesor, Disponibilidad } from '../../api/types'
+import type { RegistroAsesor, Disponibilidad, Asesoria } from '../../api/types'
 
 export function useMisRegistros() {
   return useQuery({
@@ -56,5 +56,39 @@ export function useEliminarDisponibilidad() {
   return useMutation({
     mutationFn: (id: number) => apiDelete(`/api/asesorias/disponibilidades/${id}/`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disponibilidades'] }),
+  })
+}
+
+export function useMisAsesorias() {
+  return useQuery({
+    queryKey: ['asesorias'],
+    queryFn: () => apiGet<Asesoria[]>('/api/asesorias/asesorias/'),
+  })
+}
+
+export function useCancelarAsesoria() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+      apiPost<Asesoria>(`/api/asesorias/asesorias/${id}/cancelar/`, { motivo }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asesorias'] }),
+  })
+}
+
+export function useMarcarAsistencia() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, asistio }: { id: number; asistio: boolean }) =>
+      apiPost<Asesoria>(`/api/asesorias/asesorias/${id}/marcar_asistencia/`, { asistio }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asesorias'] }),
+  })
+}
+
+export function useGuardarNotas() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, texto }: { id: number; texto: string }) =>
+      apiPost<Asesoria>(`/api/asesorias/asesorias/${id}/notas/`, { texto }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asesorias'] }),
   })
 }
