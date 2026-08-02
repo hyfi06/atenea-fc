@@ -38,3 +38,65 @@ body {
   background-color: var(--color-background);
   color: var(--color-on-background);
 }
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes entrada-lista {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulso-exito {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-container) 25%,
+    var(--color-surface-container-high) 50%,
+    var(--color-surface-container) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.entrada-lista {
+  animation: entrada-lista 300ms ease-out backwards;
+}
+
+.salida-lista {
+  animation: entrada-lista 200ms ease-in reverse forwards;
+}
+
+.pulso-exito {
+  animation: pulso-exito 400ms ease-out;
+}
+
+.spinner {
+  display: inline-block;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: girar 600ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .entrada-lista,
+  .salida-lista,
+  .pulso-exito,
+  .spinner {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
