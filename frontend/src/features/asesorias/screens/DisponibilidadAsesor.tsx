@@ -10,10 +10,11 @@ import {
   useEliminarDisponibilidad,
 } from '../api'
 import { useMapaMaterias } from '../../catalogo/api'
-import { semestreActual } from '../logica'
+import { semestreActual, claveSlot } from '../logica'
 import { GrillaDisponibilidad } from '../components/GrillaDisponibilidad'
 import { DialogoNuevoBloque } from '../components/DialogoNuevoBloque'
 import { DialogoAgregarMateria } from '../components/DialogoAgregarMateria'
+import { DialogoBloqueActivo } from '../components/DialogoBloqueActivo'
 import { Boton } from '../../../components/ui/Boton'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
 import { ApiError } from '../../../api/client'
@@ -51,6 +52,9 @@ export function DisponibilidadAsesor() {
   const [errorBloque, setErrorBloque] = useState<string | null>(null)
   const [dialogoMateriaAbierto, setDialogoMateriaAbierto] = useState(false)
   const [errorMateria, setErrorMateria] = useState<string | null>(null)
+  const [bloqueActivoSeleccionado, setBloqueActivoSeleccionado] = useState<Disponibilidad | null>(null)
+  const [claveRecienCreada, setClaveRecienCreada] = useState<string | null>(null)
+  const [saliendo, setSaliendo] = useState<Set<string>>(new Set())
 
   if (cargandoRegistros) {
     return <p className="p-6 text-sm text-on-surface-variant">Cargando…</p>
@@ -94,20 +98,45 @@ export function DisponibilidadAsesor() {
   }
 
   function manejarCeldaActiva(disponibilidad: Disponibilidad) {
-    if (window.confirm('¿Eliminar este bloque de disponibilidad?')) {
-      eliminarDisponibilidad.mutate(disponibilidad.id, {
+    setBloqueActivoSeleccionado(disponibilidad)
+  }
+
+  function manejarDesactivarBloque() {
+    if (!bloqueActivoSeleccionado) return
+    actualizarDisponibilidad.mutate(
+      { id: bloqueActivoSeleccionado.id, activa: false },
+      {
+        onSuccess: () => {
+          mostrar('Bloque actualizado')
+          setBloqueActivoSeleccionado(null)
+        },
+      },
+    )
+  }
+
+  function manejarEliminarBloque() {
+    if (!bloqueActivoSeleccionado) return
+    const clave = claveSlot(bloqueActivoSeleccionado.dia_semana, bloqueActivoSeleccionado.hora_inicio)
+    const id = bloqueActivoSeleccionado.id
+    setSaliendo((previo) => new Set(previo).add(clave))
+    setBloqueActivoSeleccionado(null)
+    setTimeout(() => {
+      eliminarDisponibilidad.mutate(id, {
         onSuccess: () => mostrar('Bloque eliminado'),
+        onSettled: () => {
+          setSaliendo((previo) => {
+            const siguiente = new Set(previo)
+            siguiente.delete(clave)
+            return siguiente
+          })
+        },
       })
-    } else {
-      actualizarDisponibilidad.mutate(
-        { id: disponibilidad.id, activa: !disponibilidad.activa },
-        { onSuccess: () => mostrar('Bloque actualizado') },
-      )
-    }
+    }, 200)
   }
 
   function manejarConfirmarBloque(datos: { formato: FormatoAsesoria; ubicacion: string; liga_virtual: string }) {
     if (!celdaSeleccionada || !registroActual) return
+    const clave = claveSlot(celdaSeleccionada.dia, celdaSeleccionada.hora)
     crearDisponibilidad.mutate(
       {
         registro: registroActual.id,
@@ -119,6 +148,8 @@ export function DisponibilidadAsesor() {
         onSuccess: () => {
           setCeldaSeleccionada(null)
           mostrar('Bloque creado')
+          setClaveRecienCreada(clave)
+          setTimeout(() => setClaveRecienCreada(null), 450)
         },
         onError: (error) => setErrorBloque(primerMensajeDeError(error)),
       },
@@ -153,10 +184,21 @@ export function DisponibilidadAsesor() {
         <GrillaDisponibilidad
           disponibilidades={disponibilidades}
           cargando={cargandoDisponibilidades}
+          claveRecienCreada={claveRecienCreada}
+          saliendo={saliendo}
           onCeldaVacia={manejarCeldaVacia}
           onCeldaActiva={manejarCeldaActiva}
         />
       </section>
+
+      <DialogoBloqueActivo
+        abierto={bloqueActivoSeleccionado !== null}
+        disponibilidad={bloqueActivoSeleccionado}
+        cargando={actualizarDisponibilidad.isPending}
+        onDesactivar={manejarDesactivarBloque}
+        onEliminar={manejarEliminarBloque}
+        onCerrar={() => setBloqueActivoSeleccionado(null)}
+      />
 
       <DialogoNuevoBloque
         abierto={celdaSeleccionada !== null}
