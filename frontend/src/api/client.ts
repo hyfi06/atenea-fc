@@ -1,11 +1,80 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`)
+export const CLAVE_ACCESS = 'atenea_access'
+export const CLAVE_REFRESH = 'atenea_refresh'
 
-  if (!response.ok) {
-    throw new Error(`API error ${response.status}: ${response.statusText}`)
+export class ApiError extends Error {
+  status: number
+  body: unknown
+  constructor(status: number, body: unknown) {
+    super(`API error ${status}`)
+    this.name = 'ApiError'
+    this.status = status
+    this.body = body
+  }
+}
+
+function tokenDeAcceso(): string | null {
+  return import.meta.env.PROD ? null : localStorage.getItem(CLAVE_ACCESS)
+}
+
+async function refrescarToken(): Promise<boolean> {
+  const body = import.meta.env.PROD ? {} : { refresh: localStorage.getItem(CLAVE_REFRESH) }
+  const response = await fetch(`${API_BASE_URL}/api/auth/token/refresh/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) return false
+  if (!import.meta.env.PROD) {
+    const data = (await response.json()) as { access: string }
+    localStorage.setItem(CLAVE_ACCESS, data.access)
+  }
+  return true
+}
+
+async function solicitar<T>(path: string, init: RequestInit = {}, permitirReintento = true): Promise<T> {
+  const headers = new Headers(init.headers)
+  headers.set('Content-Type', 'application/json')
+  const token = tokenDeAcceso()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers,
+    credentials: 'include',
+  })
+
+  if (response.status === 401 && permitirReintento) {
+    const seRefresco = await refrescarToken()
+    if (seRefresco) return solicitar<T>(path, init, false)
   }
 
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    throw new ApiError(response.status, body)
+  }
+
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
+}
+
+export function apiGet<T>(path: string): Promise<T> {
+  return solicitar<T>(path, { method: 'GET' })
+}
+
+export function apiPost<T>(path: string, data?: unknown): Promise<T> {
+  return solicitar<T>(path, {
+    method: 'POST',
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+  })
+}
+
+export function apiPatch<T>(path: string, data: unknown): Promise<T> {
+  return solicitar<T>(path, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function apiDelete(path: string): Promise<void> {
+  return solicitar<void>(path, { method: 'DELETE' })
 }
