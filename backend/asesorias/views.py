@@ -10,7 +10,9 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Asesoria, Disponibilidad, RegistroAsesor
-from .permissions import EsAlumno, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria
+from .permissions import (
+    EsAlumno, EsAlumnoOAsesorAcademico, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
+)
 from .serializers import (
     AgregarMateriaSerializer, AsesoriaSerializer, CancelarSerializer, DisponibilidadSerializer,
     MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer, ResultadoBusquedaSerializer,
@@ -108,7 +110,7 @@ class AsesoriaViewSet(ModelViewSet):
         if self.action == "create":
             return [EsAlumno()]
         if self.action == "cancelar":
-            return [EsAlumno(), EsDuenoDeLaAsesoria()]
+            return [EsAlumnoOAsesorAcademico(), EsDuenoDeLaAsesoria()]
         if self.action in ("marcar_asistencia", "notas"):
             return [EsAsesorAcademico(), EsDuenoDeLaAsesoria()]
         return [IsAuthenticated()]
