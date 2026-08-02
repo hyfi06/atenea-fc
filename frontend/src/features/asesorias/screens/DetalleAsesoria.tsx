@@ -8,10 +8,20 @@ import { Skeleton } from '../../../components/ui/Skeleton'
 import { Boton } from '../../../components/ui/Boton'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
 import { DialogoCancelar } from '../components/DialogoCancelar'
+import { ApiError } from '../../../api/client'
 import type { Asesoria } from '../../../api/types'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const FORMATEADOR_HORA = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' })
+
+function primerMensajeDeError(error: unknown): string {
+  if (error instanceof ApiError) {
+    const body = error.body as { detail?: string[] | string } | null
+    if (Array.isArray(body?.detail)) return body.detail[0]
+    if (typeof body?.detail === 'string') return body.detail
+  }
+  return 'Ocurrió un error inesperado.'
+}
 
 export function DetalleAsesoria() {
   const { id } = useParams<{ id: string }>()
@@ -108,6 +118,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
   const guardarNotas = useGuardarNotas()
   const [dialogoCancelarAbierto, setDialogoCancelarAbierto] = useState(false)
   const [notas, setNotas] = useState(asesoria.notas)
+  const [error, setError] = useState<string | null>(null)
 
   if (asesoria.estado === 'cancelada') {
     return (
@@ -141,13 +152,20 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
               onClick={() =>
                 guardarNotas.mutate(
                   { id: asesoria.id, texto: notas },
-                  { onSuccess: () => mostrar('Notas guardadas') },
+                  {
+                    onSuccess: () => {
+                      setError(null)
+                      mostrar('Notas guardadas')
+                    },
+                    onError: (err) => setError(primerMensajeDeError(err)),
+                  },
                 )
               }
               className="w-fit px-6"
             >
               Guardar notas
             </Boton>
+            {error && <p role="alert" className="text-xs text-error">{error}</p>}
           </>
         ) : null}
         <Retroalimentacion mensaje={mensaje} />
@@ -166,7 +184,18 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
             <Boton
               type="button"
               cargando={marcarAsistencia.isPending}
-              onClick={() => marcarAsistencia.mutate({ id: asesoria.id, asistio: true }, { onSuccess: () => mostrar('Asistencia registrada') })}
+              onClick={() =>
+                marcarAsistencia.mutate(
+                  { id: asesoria.id, asistio: true },
+                  {
+                    onSuccess: () => {
+                      setError(null)
+                      mostrar('Asistencia registrada')
+                    },
+                    onError: (err) => setError(primerMensajeDeError(err)),
+                  },
+                )
+              }
               className="flex-1"
             >
               Asistió
@@ -175,12 +204,24 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
               type="button"
               variante="secundario"
               cargando={marcarAsistencia.isPending}
-              onClick={() => marcarAsistencia.mutate({ id: asesoria.id, asistio: false }, { onSuccess: () => mostrar('Asistencia registrada') })}
+              onClick={() =>
+                marcarAsistencia.mutate(
+                  { id: asesoria.id, asistio: false },
+                  {
+                    onSuccess: () => {
+                      setError(null)
+                      mostrar('Asistencia registrada')
+                    },
+                    onError: (err) => setError(primerMensajeDeError(err)),
+                  },
+                )
+              }
               className="flex-1"
             >
               No asistió
             </Boton>
           </div>
+          {error && <p role="alert" className="text-xs text-error">{error}</p>}
         </div>
       ) : (
         <p className="text-xs text-on-surface-variant">
@@ -195,14 +236,17 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
       <DialogoCancelar
         abierto={dialogoCancelarAbierto}
         cargando={cancelar.isPending}
+        error={error}
         onConfirmar={(motivo) =>
           cancelar.mutate(
             { id: asesoria.id, motivo },
             {
               onSuccess: () => {
                 setDialogoCancelarAbierto(false)
+                setError(null)
                 mostrar('Asesoría cancelada')
               },
+              onError: (err) => setError(primerMensajeDeError(err)),
             },
           )
         }

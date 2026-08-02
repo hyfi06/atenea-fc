@@ -5,11 +5,12 @@ import { Boton } from '../../../components/ui/Boton'
 interface DialogoCancelarProps {
   abierto: boolean
   cargando: boolean
+  error: string | null
   onConfirmar: (motivo: string) => void
   onCerrar: () => void
 }
 
-export function DialogoCancelar({ abierto, cargando, onConfirmar, onCerrar }: DialogoCancelarProps) {
+export function DialogoCancelar({ abierto, cargando, error, onConfirmar, onCerrar }: DialogoCancelarProps) {
   const [motivo, setMotivo] = useState('')
 
   return (
@@ -31,6 +32,8 @@ export function DialogoCancelar({ abierto, cargando, onConfirmar, onCerrar }: Di
               className="rounded-md border border-outline bg-transparent px-2 py-1.5 text-sm text-on-surface"
             />
           </label>
+
+          {error && <p role="alert" className="mb-3 text-xs text-error">{error}</p>}
 
           <div className="flex gap-2">
             <Boton variante="secundario" type="button" onClick={onCerrar} className="flex-1">
