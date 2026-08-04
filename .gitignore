@@ -17,3 +17,6 @@ dist-ssr/
 pnpm-debug.log*
 
 .DS_Store
+
+# graphify (índice de conocimiento generado, ver docs/superpowers/plans/2026-08-04-login-y-componentes-PROGRESO.md)
+graphify-out/
