@@ -43,6 +43,7 @@ Contexto en una línea: el login (frontend+backend, dev/prod) ya funciona y est�
 - Deuda técnica 0010 (perfil/rol no expuesto en `/api/auth/user/`) se dejó **explícitamente fuera de esta spec** — decisión de scope, no omisión silenciosa; registrada como pendiente a resolver antes del paso 9 (plan de implementación de login frontend).
 - Artefactos: spec (`docs/superpowers/specs/2026-08-04-login-oauth-design.md`), ADR nueva (`docs/decisions/0019-transporte-login-google-id-token.md`), changelog agregado a ADR 0018 (decisión 1 marcada como superada, decisiones 2 y 3 confirmadas sin cambios).
 - Se usó `/graphify query` para confirmar el número de ADR más alto y las conexiones auth↔asesorías antes de escribir, en vez de releer archivos — consistente con la práctica establecida en el paso 1.
+- Corrección post-cierre: al leer el plan completo (`~/.claude/plans/parece-que-hubo-un-groovy-unicorn.md`) antes de empezar el paso 3, se detectó que la primera versión del spec no cubría dos requisitos explícitos del paso 2 (fix del placeholder de `Landing.tsx`, decisión razonada sí/no sobre CSRF/deuda 0009). Se corrigió el spec antes de avanzar — ver commit siguiente.
 
 ## Próximo paso
 
