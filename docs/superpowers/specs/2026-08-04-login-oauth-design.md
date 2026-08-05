@@ -23,6 +23,8 @@ Se evaluaron tres opciones (detalle completo de trade-offs y esfuerzo en [ADR 00
 2. **Storage/transporte del JWT propio de Atenea no cambia.** Split dev/prod (`localStorage` + header `Authorization` en dev, cookie `httpOnly` en prod) sigue vigente tal como lo fija la decisión 2 de ADR 0018. Esta spec no reabre esa decisión.
 3. **Logout sin invalidar refresh token en servidor no cambia.** Sigue como deuda técnica aceptada (decisión 3 de ADR 0018, [deuda técnica 0007](../../technical-debt/0007-logout-sin-invalidacion-refresh-token.md)).
 4. **Deuda técnica 0010 (API no expone perfil/rol del usuario autenticado) queda explícitamente fuera de esta spec** — ver la nota dedicada más abajo. No se resuelve aquí, pero se deja registrada la razón y la señal de cuándo debe dejar de posponerse.
+5. **El placeholder de `Landing.tsx` se corrige como parte de esta spec.** El botón "Continuar con Correo Ciencias" (`Landing.tsx:25`) hoy hace `navigate('/home')` directo, sin llamar el login — es el único defecto funcional real detectado en el flujo de login (no un problema de arquitectura). Se corrige en el plan de implementación del paso 9: el botón pasa a invocar el mismo flujo que `Login.tsx` (`useAuth().loginWithGoogle()`, con manejo de carga/error análogo), y navega a `/home` solo tras un login exitoso.
+6. **CSRF en cookie JWT (deuda técnica 0009) se decide explícitamente: no se activa en este trabajo.** `JWT_AUTH_COOKIE_USE_CSRF` sigue en `False`. Razón (ya registrada en la propia deuda 0009, reafirmada aquí): `JWT_AUTH_SAMESITE="Lax"` ya bloquea el escenario clásico de CSRF cross-site; el hueco residual es acceso desde un subdominio hermano del mismo dominio padre, y su señal de revisión documentada (endpoint de escritura explotado así, o despliegue compartiendo dominio con contenido de terceros no confiable) no se ha dado. Activarlo además exigiría trabajo de frontend (leer y reenviar el token CSRF en cada `POST`/`PATCH`/`DELETE`) no motivado por el cambio de transporte de Google que sí decide esta spec.
 
 ### Cambios de backend
 
@@ -37,6 +39,7 @@ Se evaluaron tres opciones (detalle completo de trade-offs y esfuerzo en [ADR 00
 - Ya no se solicita `scope: 'email profile'` — el `id_token` trae las claims de identidad por defecto, sin pedir un grant de autorización de API.
 - `frontend/src/auth/AuthContext.tsx` (`loginWithGoogle`) — cambia de `apiPost('/api/auth/google/', { access_token: accessToken })` a `apiPost('/api/auth/google/', { id_token: idToken })`.
 - `frontend/src/screens/Login.tsx` — el botón "Continuar con Correo Ciencias" sigue disparando el mismo flujo desde `useAuth().loginWithGoogle()`; no cambia su UX de cara al usuario (sigue siendo popup/One Tap, no navegación de página completa).
+- `frontend/src/screens/Landing.tsx` — el botón "Continuar con Correo Ciencias" (línea 25) deja de hacer `navigate('/home')` directo; pasa a invocar `useAuth().loginWithGoogle()` (mismo flujo de `id_token` que `Login.tsx`) con manejo de carga/error, y navega a `/home` solo si el login resuelve. Ver decisión 5.
 
 ### Variables de entorno
 
@@ -73,11 +76,12 @@ Ninguna variable nueva — las tres opciones evaluadas reusan el mismo par ya ex
 - Authorization Code + PKCE — evaluada y descartada, ver [ADR 0019](../../decisions/0019-transporte-login-google-id-token.md).
 - Invalidación de refresh token en logout (`token_blacklist`) — deuda técnica 0007, sin cambios.
 - Resolver deuda técnica 0010 en esta pasada — ver nota dedicada arriba.
-- CSRF explícito en cookie JWT — deuda técnica 0009, sin cambios, no relacionado con el transporte de Google.
+- Activar CSRF en cookie JWT (`JWT_AUTH_COOKIE_USE_CSRF`) — deuda técnica 0009, decisión explícita de no activar en este trabajo, ver decisión 6.
 
 ### Self-review
 
 - Sin placeholders/TBD — cada decisión tiene un valor concreto, confirmado por el usuario en esta conversación (elegir explícitamente la opción "Sign In With Google / ID token").
 - Sin contradicciones con ADR 0018: las decisiones 2 y 3 de esa ADR se reafirman explícitamente sin cambios; solo la decisión 1 se reemplaza, y queda registrado en el changelog de esa misma ADR.
-- Alcance cohesivo: esta spec cubre solo el transporte de autenticación con Google (backend + frontend); no mezcla con la forma de datos de `/api/auth/user/` (deuda técnica 0010, explícitamente diferida) ni con el ciclo de vida del refresh token (deuda técnica 0007, sin cambios).
-- Deuda técnica generada: ninguna nueva — este cambio cierra una brecha de seguridad, no la abre. La deuda técnica 0010 ya existía y se deja registrada su vigencia, no se genera aquí.
+- Alcance cohesivo: esta spec cubre el transporte de autenticación con Google (backend + frontend) y el único defecto funcional real del flujo de login (`Landing.tsx`); no mezcla con la forma de datos de `/api/auth/user/` (deuda técnica 0010, explícitamente diferida) ni con el ciclo de vida del refresh token (deuda técnica 0007, sin cambios).
+- Deuda técnica generada: ninguna nueva — este cambio cierra una brecha de seguridad, no la abre. Las deudas técnicas 0009 y 0010 ya existían; esta spec decide explícitamente no tocarlas ahora, con razón documentada en cada caso, tal como exige el plan que originó este paso.
+- Completitud contra el plan original (`~/.claude/plans/parece-que-hubo-un-groovy-unicorn.md`, paso 2): cubre las cuatro cosas que ese paso pedía — reabrir la alternativa de transporte, reconfirmar el storage de JWT, decidir explícitamente sobre 0009/0010, e incluir el fix de `Landing.tsx`.
