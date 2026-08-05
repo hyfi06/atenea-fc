@@ -6,13 +6,15 @@ Plan completo (fuera del repo, en el harness): `~/.claude/plans/parece-que-hubo-
 
 Contexto en una línea: el login (frontend+backend, dev/prod) ya funciona y está documentado (ADR 0003/0018); lo que se construyó sin visualización/aprobación previa fue el flujo de asesorías. Este trabajo es solo documentación/specs/planes — cero código de aplicación.
 
+Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2) y en `dev-ux-ui` (paso 3) en paralelo — el paso 4 (cherry-pick a `dev-backend`) reconcilia cualquier divergencia entre copias, tal como ya preveía el plan original.
+
 ## Estado por paso
 
 | # | Paso | Rama | Estado | Artefacto(s) |
 |---|------|------|--------|--------------|
 | 1 | Mapa de conocimiento (/graphify) | dev-frontend | Completo | `graphify-out/` (local, gitignored) — 923 nodos, 1866 aristas, 101 comunidades |
 | 2 | Spec de login frontend+backend | dev-frontend | Completo | `docs/superpowers/specs/2026-08-04-login-oauth-design.md`, [ADR 0019](../../decisions/0019-transporte-login-google-id-token.md), changelog en ADR 0018 |
-| 3 | Revisión retroactiva de vistas de asesorías | dev-ux-ui | Pendiente | `docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md` |
+| 3 | Revisión retroactiva de vistas de asesorías | dev-ux-ui | Completo | `docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md` |
 | 4 | Cherry-pick docs + plan de login backend (Opus) | dev-backend | Pendiente | `docs/superpowers/plans/2026-08-04-login-oauth-backend.md` |
 | 5 | Decisión de reset de dev-frontend | dev-frontend | Pendiente | rama `legacy-frontend-202608` (si aplica) |
 | 6 | Spec de componentes reutilizables | dev-frontend | Pendiente | `docs/superpowers/specs/2026-08-04-sistema-componentes-design.md` |
@@ -43,8 +45,18 @@ Contexto en una línea: el login (frontend+backend, dev/prod) ya funciona y est�
 - Deuda técnica 0010 (perfil/rol no expuesto en `/api/auth/user/`) se dejó **explícitamente fuera de esta spec** — decisión de scope, no omisión silenciosa; registrada como pendiente a resolver antes del paso 9 (plan de implementación de login frontend).
 - Artefactos: spec (`docs/superpowers/specs/2026-08-04-login-oauth-design.md`), ADR nueva (`docs/decisions/0019-transporte-login-google-id-token.md`), changelog agregado a ADR 0018 (decisión 1 marcada como superada, decisiones 2 y 3 confirmadas sin cambios).
 - Se usó `/graphify query` para confirmar el número de ADR más alto y las conexiones auth↔asesorías antes de escribir, en vez de releer archivos — consistente con la práctica establecida en el paso 1.
-- Corrección post-cierre: al leer el plan completo (`~/.claude/plans/parece-que-hubo-un-groovy-unicorn.md`) antes de empezar el paso 3, se detectó que la primera versión del spec no cubría dos requisitos explícitos del paso 2 (fix del placeholder de `Landing.tsx`, decisión razonada sí/no sobre CSRF/deuda 0009). Se corrigió el spec antes de avanzar — ver commit siguiente.
+- Corrección post-cierre: al leer el plan completo (`~/.claude/plans/parece-que-hubo-un-groovy-unicorn.md`) antes de empezar el paso 3, se detectó que la primera versión del spec no cubría dos requisitos explícitos del paso 2 (fix del placeholder de `Landing.tsx`, decisión razonada sí/no sobre CSRF/deuda 0009). Se corrigió el spec antes de avanzar.
+
+## Hallazgos del Paso 3 (revisión retroactiva de vistas de asesorías, en dev-ux-ui)
+
+- Método: app real corriendo (`dev-ux-ui`, backend+frontend locales contra Postgres/Redis ya activos) + datos de demo sembrados (asesor con sesiones en los 3 estados) + Playwright para capturas reales — no mockups aislados. Datos y servidores locales, nada de esto se comitea.
+- Primera pasada (solo lectura, sin cambios de diseño): 5 hallazgos reales — impacto visible de la deuda técnica 0010 (`Alumno #N` en vez de nombre), un bug de React confirmado (`key` prop faltante en `GrillaDisponibilidad.tsx`, fragmento sin key en `HORAS.map()`), y el hallazgo más importante: la grilla semanal de `DisponibilidadAsesor` (7×28 celdas, 640px de ancho) solo mostraba ~3 de 7 columnas en un viewport de 390px sin ninguna pista visual de scroll horizontal.
+- Segunda pasada (rediseño, con `superpowers:brainstorming` + `ui-ux-pro-max`): la grilla se reemplaza por dos pantallas nuevas — "Mis materias" y "Mi horario" (tabs por día) — en vez de un ajuste puntual a la grilla original. Se estableció una convención de botones para diálogos (2 acciones = fila horizontal; 3+ acciones = columna con orden fijo: reversible arriba, destructivo en outline al medio, salir al final como texto plano) que corrige una inconsistencia real encontrada entre diálogos existentes y nuevos, más un bug de overflow (`flex:1` sin `min-width:0`).
+- Ícono nuevo (`IconAsesoriasAcademicas`) diseñado para Home, mismo lenguaje visual del set existente.
+- Home gana su primera tarjeta condicional a rol (asesor o alumno) — esto disparó una decisión explícita sobre deuda técnica 0010: **se decide resolverla en el paso 4** (exponer perfil/rol en una sola llamada) en vez de agregar un segundo sondeo "parche gemelo" a `useEsAsesor()`.
+- Nueva superficie de backend identificada, pendiente para el paso 4 (ninguna existe hoy): confirmar sesiones futuras antes de desactivar un horario, quitar una materia del registro del asesor, y filtrar el historial de asesorías por semestre (este último conecta con la deuda técnica 0006, sin paginación — la cubre parcialmente, no la reemplaza).
+- Artefacto: `docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md` — autocontenido (no depende de los artefactos HTML de la sesión de diseño para ser implementable en otra sesión).
 
 ## Próximo paso
 
-Paso 3: revisión retroactiva de vistas de asesorías, en la rama `dev-ux-ui` (`docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md`). Checkpoint pendiente de confirmación del usuario antes de cambiar de rama y empezar.
+Paso 4: cherry-pick de documentación relevante (specs, ADRs, deuda técnica de los pasos 2-3) desde `dev-frontend`/`dev-ux-ui` hacia `dev-backend`, y generación del plan de implementación de backend (`docs/superpowers/plans/2026-08-04-login-oauth-backend.md`, agente `model: opus`) cubriendo tanto el transporte de login (ADR 0019) como la nueva superficie de asesorías identificada en el paso 3 (0010, sesiones-futuras, quitar materia, filtro de semestre). Checkpoint pendiente de confirmación del usuario antes de cambiar de rama y empezar.
