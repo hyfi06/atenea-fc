@@ -19,7 +19,7 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2, 5-9) y en paralelo
 | 5 | Decisión de reset de dev-frontend | dev-frontend | Completo | Sin reset — ver hallazgos abajo |
 | 6 | Spec de componentes reutilizables | dev-frontend | Completo | `docs/superpowers/specs/2026-08-04-sistema-componentes-design.md`, [ADR 0020](../../decisions/0020-sistema-componentes-shadcn.md) |
 | 7 | Marco de trabajo para nuevos componentes | dev-frontend | Completo | `docs/development/contribuir-componentes.md` |
-| 8 | Plan de implementación de componentes (Opus) | dev-frontend | Pendiente | `docs/superpowers/plans/2026-08-04-sistema-componentes.md` |
+| 8 | Plan de implementación de componentes (Opus) | dev-frontend | Completo | `docs/superpowers/plans/2026-08-04-sistema-componentes.md` (plan escrito, 12 tasks, ejecución diferida) |
 | 9 | Plan de implementación de login frontend (Opus) | dev-frontend | Pendiente | `docs/superpowers/plans/2026-08-04-login-oauth-frontend.md` |
 
 ## Decisiones tomadas hasta ahora
@@ -91,6 +91,15 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2, 5-9) y en paralelo
 - Especificación ligera de componente: se referencia el formato de `ui-ux-pro-max:design-system` (tabla de variantes, estados en orden de prioridad `disabled > loading > active > focus > hover > default`, anatomía) en vez de inventar un formato propio — con nota explícita de que esa misma tabla es el insumo que `superpowers:writing-plans` ya consume, sin reescritura intermedia.
 - Artefacto: `docs/development/contribuir-componentes.md`.
 
+## Hallazgos del Paso 8 (plan de implementación de componentes, `dev-frontend`)
+
+- Generado con un agente `model: opus` (tipo `Plan`, solo lectura) siguiendo `superpowers:writing-plans`, con el spec del paso 6 + el ADR 0020 + el marco del paso 7 + el spec del paso 3 + ADR 0014 como requirements — ninguno el historial completo de esta conversación. Antes de despachar el agente se usó `graphify query` para confirmar en código el estado real de los 4 diálogos duplicados y del catálogo `components/ui/` actual, para que el agente no tuviera que redescubrirlo.
+- El reporte del agente llegó truncado por el harness en tres entregas separadas (primero Tasks 11-12 + self-review + decisiones, luego el encabezado + Tasks 1-6, y por último las Tasks 7-10 que el propio agente creía ya haber enviado) — se verificaron las 12 tasks presentes y en orden antes de ensamblar el documento final en `docs/superpowers/plans/2026-08-04-sistema-componentes.md` (3853 líneas).
+- El plan resultante (12 tasks TDD, RED→implementación→verde→commit atómico) cubre: inicialización de shadcn/ui con mapeo de tokens shadcn→M3 (sin duplicar la paleta de ADR 0014), primitivos `dialog.tsx`/`tabs.tsx` curados a mano (sin `lucide-react` ni `tw-animate-css`, que el CLI instala por default y que chocan con ADR 0014 y con el sistema de motion propio), el componente compartido `Dialogo.tsx` que codifica la convención de botones del paso 3 una sola vez, migración de los 4 diálogos duplicados, y las dos pantallas nuevas ("Mis materias" y "Mi horario") que reemplazan la grilla de `DisponibilidadAsesor`.
+- 12 decisiones de diseño no fijadas por los specs quedaron documentadas al final del plan para revisión puntual en checkpoint (p. ej. nombrar el componente compartido `Dialogo` y no `ConfirmDialog`, que `Dialogo` renderice sus propios botones en vez de componer `Boton`, migrar `SesionesAsesor` a `tabs.tsx` de paso aunque la spec no lo pedía explícitamente).
+- Dependencia explícita hacia el paso 4: tres acciones de las pantallas nuevas (quitar materia, sesiones futuras, desactivar con cancelación) se implementan contra los contratos exactos del plan de backend del paso 4, todavía sin ejecutar — los tests no tocan red, así que la suite pasaría igual, pero esas acciones fallarán en runtime hasta que ese plan se ejecute.
+- Checkpoint cerrado por el usuario con el plan escrito pero **sin ejecutar** — igual que el paso 4, la ejecución (`superpowers:executing-plans` o `superpowers:subagent-driven-development` sobre las 12 tasks) queda pendiente para una sesión futura, sin fecha fijada.
+
 ## Próximo paso
 
-Paso 8 (`dev-frontend`, modelo Opus): plan de implementación del spec de componentes (`docs/superpowers/plans/2026-08-04-sistema-componentes.md`), generado con un agente `model: opus` siguiendo `superpowers:writing-plans` — recibe el spec del paso 6 + el marco del paso 7 como requirements. Incluye migración de los 4 diálogos duplicados al componente compartido, mapeo de tokens shadcn→M3, y tests. Checkpoint pendiente de confirmación del usuario antes de empezar.
+Paso 9 (`dev-frontend`, modelo Opus): plan de implementación del spec de login frontend (`docs/superpowers/plans/2026-08-04-login-oauth-frontend.md`), generado con un agente `model: opus` siguiendo `superpowers:writing-plans` — recibe el spec del paso 2 y, ya escrito, el plan de componentes del paso 8 como requirements. Cubre el flujo OAuth, el fix del placeholder de `Landing.tsx`, y las decisiones de 0009/0010 que toquen frontend. Checkpoint pendiente de confirmación del usuario antes de empezar.
