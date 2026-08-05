@@ -15,7 +15,7 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2) y en `dev-ux-ui` (
 | 1 | Mapa de conocimiento (/graphify) | dev-frontend | Completo | `graphify-out/` (local, gitignored) — 923 nodos, 1866 aristas, 101 comunidades |
 | 2 | Spec de login frontend+backend | dev-frontend | Completo | `docs/superpowers/specs/2026-08-04-login-oauth-design.md`, [ADR 0019](../../decisions/0019-transporte-login-google-id-token.md), changelog en ADR 0018 |
 | 3 | Revisión retroactiva de vistas de asesorías | dev-ux-ui | Completo | `docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md` |
-| 4 | Cherry-pick docs + plan de login backend (Opus) | dev-backend | Pendiente | `docs/superpowers/plans/2026-08-04-login-oauth-backend.md` |
+| 4 | Cherry-pick docs + plan de login backend (Opus) | dev-backend | En progreso | `docs/superpowers/plans/2026-08-04-login-oauth-backend.md` |
 | 5 | Decisión de reset de dev-frontend | dev-frontend | Pendiente | rama `legacy-frontend-202608` (si aplica) |
 | 6 | Spec de componentes reutilizables | dev-frontend | Pendiente | `docs/superpowers/specs/2026-08-04-sistema-componentes-design.md` |
 | 7 | Marco de trabajo para nuevos componentes | dev-frontend | Pendiente | `docs/development/contribuir-componentes.md` |
@@ -57,6 +57,13 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2) y en `dev-ux-ui` (
 - Nueva superficie de backend identificada, pendiente para el paso 4 (ninguna existe hoy): confirmar sesiones futuras antes de desactivar un horario, quitar una materia del registro del asesor, y filtrar el historial de asesorías por semestre (este último conecta con la deuda técnica 0006, sin paginación — la cubre parcialmente, no la reemplaza).
 - Artefacto: `docs/superpowers/specs/2026-08-04-revision-vistas-asesorias-design.md` — autocontenido (no depende de los artefactos HTML de la sesión de diseño para ser implementable en otra sesión).
 
+## Hallazgos del Paso 4 (cherry-pick a dev-backend, en progreso)
+
+- `dev-backend` estaba exactamente en el commit de divergencia (`7007f01`, `merge-base` con `dev-frontend` confirmado) — ningún cherry-pick de código tuvo conflicto real más allá de un `.gitignore` (dos líneas nuevas en paralelo, resuelto a mano conservando ambas).
+- Se evaluó y se decidió portar los 2 commits de código backend que solo vivían en `dev-frontend`/`dev-ux-ui` (`3bec031` CORS_ALLOW_CREDENTIALS en dev, `d6ade66` asesor cancela su propia asesoría): son fixes backend-only, con tests y ADRs actualizados, y `git log 7007f01..dev-frontend -- backend/` confirmó que son los únicos dos commits que tocan `backend/` desde la divergencia — no hay mezcla de frontend que filtrar.
+- Orden de cherry-pick (cronológico, con `-x` para dejar rastro del commit origen): `3bec031` → `d6ade66` → `d766733` → `6fd72e5` → `06e6159` → `95cba79` → `d7fae54` → `50654b8`. El ledger (`PROGRESO.md`) llegó a un estado equivalente al de `dev-ux-ui` (una sola diferencia cosmética: encabezado del paso 3 anota "en dev-ux-ui").
+- Pendiente de este paso: generar `docs/superpowers/plans/2026-08-04-login-oauth-backend.md` con agente `model: opus` (`superpowers:writing-plans`), cubriendo ADR 0019 (transporte id_token) + deuda 0010 (perfil/rol en `/api/auth/user/`) + superficie nueva de asesorías (confirmar sesiones futuras, quitar materia, filtro de semestre).
+
 ## Próximo paso
 
-Paso 4: cherry-pick de documentación relevante (specs, ADRs, deuda técnica de los pasos 2-3) desde `dev-frontend`/`dev-ux-ui` hacia `dev-backend`, y generación del plan de implementación de backend (`docs/superpowers/plans/2026-08-04-login-oauth-backend.md`, agente `model: opus`) cubriendo tanto el transporte de login (ADR 0019) como la nueva superficie de asesorías identificada en el paso 3 (0010, sesiones-futuras, quitar materia, filtro de semestre). Checkpoint pendiente de confirmación del usuario antes de cambiar de rama y empezar.
+Paso 4 (continuación): generación del plan de implementación de backend (`docs/superpowers/plans/2026-08-04-login-oauth-backend.md`, agente `model: opus`, sigue `superpowers:writing-plans`) cubriendo el transporte de login (ADR 0019), deuda técnica 0010, y la nueva superficie de asesorías identificada en el paso 3 (sesiones-futuras, quitar materia, filtro de semestre). Checkpoint: revisar el plan generado antes de pasar al paso 5.
