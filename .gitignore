@@ -17,3 +17,4 @@ dist-ssr/
 pnpm-debug.log*
 
 .DS_Store
+.playwright-mcp/
