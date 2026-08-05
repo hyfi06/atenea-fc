@@ -18,7 +18,7 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2, 5-9) y en paralelo
 | 4 | Cherry-pick docs + plan de login backend (Opus) | dev-backend | Completo | `docs/superpowers/plans/2026-08-04-login-oauth-backend.md` (plan escrito, ejecución diferida) |
 | 5 | Decisión de reset de dev-frontend | dev-frontend | Completo | Sin reset — ver hallazgos abajo |
 | 6 | Spec de componentes reutilizables | dev-frontend | Completo | `docs/superpowers/specs/2026-08-04-sistema-componentes-design.md`, [ADR 0020](../../decisions/0020-sistema-componentes-shadcn.md) |
-| 7 | Marco de trabajo para nuevos componentes | dev-frontend | Pendiente | `docs/development/contribuir-componentes.md` |
+| 7 | Marco de trabajo para nuevos componentes | dev-frontend | Completo | `docs/development/contribuir-componentes.md` |
 | 8 | Plan de implementación de componentes (Opus) | dev-frontend | Pendiente | `docs/superpowers/plans/2026-08-04-sistema-componentes.md` |
 | 9 | Plan de implementación de login frontend (Opus) | dev-frontend | Pendiente | `docs/superpowers/plans/2026-08-04-login-oauth-frontend.md` |
 
@@ -83,6 +83,14 @@ Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2, 5-9) y en paralelo
 - Como la decisión formaliza una omisión previa (nunca hubo ADR de librería de componentes), se registró como **ADR 0020** (no solo spec) — siguiente número disponible después de ADR 0019 (paso 2).
 - Artefactos: `docs/superpowers/specs/2026-08-04-sistema-componentes-design.md`, [ADR 0020](../../decisions/0020-sistema-componentes-shadcn.md).
 
+## Hallazgos del Paso 7 (marco de trabajo para componentes, `dev-frontend`)
+
+- Decisión de alcance confirmada por el usuario: el documento **sí incluye** una regla explícita de cuándo un componente nuevo necesita `superpowers:brainstorming`/revisión visual antes de código vs. cuándo es seguro escribir directo — conecta el documento con el problema raíz de todo este plan (asesorías se construyó sin visualización previa), no solo cubre convenciones estéticas/técnicas.
+- Dos gaps reales encontrados en el código actual y convertidos en requisitos hacia adelante (no corregidos retroactivamente, fuera de alcance de este paso): (1) cero tests en los 4 primitivos de `components/ui/` y los 4 diálogos de asesorías — todo componente nuevo con lógica propia debe llevar al menos un test de comportamiento; (2) foco de teclado casi inexistente en todo el proyecto (una sola regla, `Login.tsx`, sin ring visible) — todo elemento interactivo nuevo necesita un estado `:focus-visible` perceptible.
+- Criterio `components/ui/` (sin conocimiento del dominio) vs `features/<feature>/components/` (con conocimiento del dominio) documentado a partir del patrón ya existente (`Boton.tsx` vs `TarjetaAsesoria.tsx`) — no fue una decisión nueva, fue formalizar lo que el código ya hacía.
+- Especificación ligera de componente: se referencia el formato de `ui-ux-pro-max:design-system` (tabla de variantes, estados en orden de prioridad `disabled > loading > active > focus > hover > default`, anatomía) en vez de inventar un formato propio — con nota explícita de que esa misma tabla es el insumo que `superpowers:writing-plans` ya consume, sin reescritura intermedia.
+- Artefacto: `docs/development/contribuir-componentes.md`.
+
 ## Próximo paso
 
-Paso 7 (`dev-frontend`): marco de trabajo para componentes nuevos (`docs/development/contribuir-componentes.md`). Depende del resultado del paso 6 (patrón shadcn/ui, carpeta plana `components/ui/`, mapeo de tokens M3). Cubre estructura de un componente nuevo, lineamientos de diseño (tokens de ADR 0014, sistema de motion de `index.css`), checklist de accesibilidad, y criterio `components/ui/` vs específico de feature — apoyado en `ui-ux-pro-max:design-system` como referencia de arquitectura de tokens. Checkpoint pendiente de confirmación del usuario antes de empezar.
+Paso 8 (`dev-frontend`, modelo Opus): plan de implementación del spec de componentes (`docs/superpowers/plans/2026-08-04-sistema-componentes.md`), generado con un agente `model: opus` siguiendo `superpowers:writing-plans` — recibe el spec del paso 6 + el marco del paso 7 como requirements. Incluye migración de los 4 diálogos duplicados al componente compartido, mapeo de tokens shadcn→M3, y tests. Checkpoint pendiente de confirmación del usuario antes de empezar.
