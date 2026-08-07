@@ -24,16 +24,15 @@ class GoogleLoginSerializer(SocialLoginSerializer):
         adapter = adapter_class(request)
         app = adapter.get_provider().app
 
-        access_token = attrs.get("access_token")
-        if not access_token:
-            raise serializers.ValidationError(_("Incorrect input. access_token is required."))
-
-        tokens_to_parse = {"access_token": access_token}
+        # ADR 0019: el único transporte soportado es el ID token (OIDC). El
+        # access_token de OAuth se rechaza a propósito: su ruta de validación
+        # en allauth (_fetch_user_info) no verifica que el token se haya
+        # emitido para el client_id de Atenea.
         id_token = attrs.get("id_token")
-        if id_token:
-            tokens_to_parse["id_token"] = id_token
+        if not id_token:
+            raise serializers.ValidationError(_("Incorrect input. id_token is required."))
 
-        social_token = adapter.parse_token(tokens_to_parse)
+        social_token = adapter.parse_token({"id_token": id_token})
         social_token.app = app
 
         try:

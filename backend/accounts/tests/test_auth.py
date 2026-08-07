@@ -37,6 +37,11 @@ def _complete_login_as(email):
 class GoogleLoginTests(APITestCase):
     def _post_google_login(self):
         return self.client.post(
+            "/api/auth/google/", {"id_token": "fake-token"}, format="json"
+        )
+
+    def _post_google_login_con_access_token(self):
+        return self.client.post(
             "/api/auth/google/", {"access_token": "fake-token"}, format="json"
         )
 
@@ -74,6 +79,22 @@ class GoogleLoginTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("atenea-access-token", response.cookies)
         self.assertIn("atenea-refresh-token", response.cookies)
+
+    @patch.object(GoogleOAuth2Adapter, "complete_login")
+    def test_rechaza_access_token_sin_id_token(self, mock_complete_login):
+        """El transporte de access_token queda cerrado explícitamente (ADR 0019)."""
+        user = User.objects.create_user("legacy@ciencias.unam.mx")
+        mock_complete_login.side_effect = _complete_login_as(user.email)
+
+        response = self._post_google_login_con_access_token()
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_complete_login.assert_not_called()
+
+    def test_rechaza_peticion_sin_ningun_token(self):
+        response = self.client.post("/api/auth/google/", {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetLoginFlowTests(APITestCase):
