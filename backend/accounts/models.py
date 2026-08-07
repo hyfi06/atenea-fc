@@ -24,6 +24,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = _("user")
         verbose_name_plural = _("users")
 
+    @property
+    def nombre_completo(self):
+        partes = [self.first_name, self.apellido1, self.apellido2]
+        return " ".join(p for p in partes if p) or self.email
+
     def __str__(self):
         return self.email
 

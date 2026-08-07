@@ -145,6 +145,10 @@ REST_AUTH = {
     "SESSION_LOGIN": False,
     "JWT_AUTH_HTTPONLY": False,
     "PASSWORD_RESET_SERIALIZER": "accounts.serializers.PasswordResetSerializer",
+    # Deuda técnica 0010: el payload default de dj-rest-auth solo trae
+    # {pk, email, first_name}; el SPA necesita perfil/rol para decidir qué
+    # renderizar sin sondear un endpoint por cada rol.
+    "USER_DETAILS_SERIALIZER": "accounts.serializers.UserDetailsSerializer",
 }
 
 SIMPLE_JWT = {
