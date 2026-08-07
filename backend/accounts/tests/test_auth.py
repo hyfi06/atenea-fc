@@ -299,3 +299,101 @@ class CookieBasedLoginTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], user.email)
+
+
+import time
+
+import jwt
+from allauth.socialaccount.internal import jwtkit
+from django.test import RequestFactory
+
+from accounts.adapters import GoogleIdTokenAdapter
+
+# Clave simétrica de prueba: los tests firman su propio id_token y parchean
+# jwtkit.fetch_key (el único punto que haría red contra las llaves públicas
+# de Google) para devolverla. Todo lo demás de la verificación —issuer,
+# expiración y sobre todo audience, que es la razón de ser de ADR 0019—
+# corre con el código real de allauth, sin mock.
+LLAVE_DE_PRUEBA = "llave-simetrica-solo-para-tests-de-id-token-de-google"
+
+
+def _id_token_de_prueba(*, audience, email):
+    return jwt.encode(
+        {
+            "iss": "https://accounts.google.com",
+            "aud": audience,
+            "sub": "1234567890",
+            "email": email,
+            "email_verified": True,
+            "given_name": "Nombre",
+            "family_name": "Apellido",
+            "exp": int(time.time()) + 600,
+        },
+        LLAVE_DE_PRUEBA,
+        algorithm="HS256",
+    )
+
+
+class GoogleIdTokenVerificacionTests(APITestCase):
+    """Ejercita la verificación real de allauth, sin mockear complete_login."""
+
+    @staticmethod
+    def _client_id_configurado():
+        adapter = GoogleIdTokenAdapter(RequestFactory().get("/"))
+        return adapter.get_provider().app.client_id
+
+    @patch.object(jwtkit, "fetch_key", return_value=("HS256", LLAVE_DE_PRUEBA))
+    def test_id_token_con_audience_correcto_autentica(self, _fetch_key):
+        user = User.objects.create_user("audiencia-ok@ciencias.unam.mx")
+        token = _id_token_de_prueba(
+            audience=self._client_id_configurado(), email=user.email
+        )
+
+        response = self.client.post(
+            "/api/auth/google/", {"id_token": token}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertTrue(
+            SocialAccount.objects.filter(user=user, provider="google").exists()
+        )
+
+    @patch.object(jwtkit, "fetch_key", return_value=("HS256", LLAVE_DE_PRUEBA))
+    def test_id_token_con_audience_ajeno_devuelve_400(self, _fetch_key):
+        """El caso que el transporte viejo de access_token no cubría."""
+        user = User.objects.create_user("audiencia-mala@ciencias.unam.mx")
+        token = _id_token_de_prueba(
+            audience="client-id-de-otra-aplicacion", email=user.email
+        )
+
+        response = self.client.post(
+            "/api/auth/google/", {"id_token": token}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(
+            SocialAccount.objects.filter(user=user, provider="google").exists()
+        )
+
+    @patch.object(jwtkit, "fetch_key", return_value=("HS256", LLAVE_DE_PRUEBA))
+    def test_id_token_expirado_devuelve_400(self, _fetch_key):
+        user = User.objects.create_user("expirado@ciencias.unam.mx")
+        token = jwt.encode(
+            {
+                "iss": "https://accounts.google.com",
+                "aud": self._client_id_configurado(),
+                "sub": "1234567890",
+                "email": user.email,
+                "email_verified": True,
+                "exp": int(time.time()) - 60,
+            },
+            LLAVE_DE_PRUEBA,
+            algorithm="HS256",
+        )
+
+        response = self.client.post(
+            "/api/auth/google/", {"id_token": token}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

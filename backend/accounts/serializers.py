@@ -1,5 +1,6 @@
 from allauth.account.utils import user_pk_to_url_str
 from allauth.socialaccount.helpers import complete_social_login
+from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 from django.utils.translation import gettext_lazy as _
@@ -40,6 +41,13 @@ class GoogleLoginSerializer(SocialLoginSerializer):
             ret = complete_social_login(request, login)
         except HTTPError:
             raise serializers.ValidationError(_("Incorrect value"))
+        except OAuth2Error:
+            # allauth levanta OAuth2Error cuando el id_token no pasa la
+            # verificación de firma, issuer, expiración o audience
+            # (_verify_and_decode -> jwtkit.verify_and_decode). Sin este
+            # except, un token inválido revienta como error no manejado en
+            # vez de dar el 400 que fija la spec de login.
+            raise serializers.ValidationError(_("El id_token de Google no es válido."))
 
         if isinstance(ret, HttpResponseBadRequest):
             raise serializers.ValidationError(ret.content)
