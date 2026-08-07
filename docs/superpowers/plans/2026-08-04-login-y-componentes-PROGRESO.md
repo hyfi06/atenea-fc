@@ -6,8 +6,6 @@ Plan completo (fuera del repo, en el harness): `~/.claude/plans/parece-que-hubo-
 
 Contexto en una línea: el login (frontend+backend, dev/prod) ya funciona y está documentado (ADR 0003/0018); lo que se construyó sin visualización/aprobación previa fue el flujo de asesorías. Este trabajo es solo documentación/specs/planes — cero código de aplicación.
 
-Nota de rama: este archivo vive en `dev-frontend` (pasos 1-2, 5-9) y en paralelo en `dev-ux-ui` (paso 3) y `dev-backend` (paso 4) — cada rama actualiza su copia al cerrar el paso que le toca; no se reconcilian entre sí salvo que un paso lo requiera explícitamente (como hizo el paso 4).
-
 ## Estado por paso
 
 | # | Paso | Rama | Estado | Artefacto(s) |
