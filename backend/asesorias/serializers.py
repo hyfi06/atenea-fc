@@ -66,15 +66,18 @@ class ResultadoBusquedaSerializer(serializers.Serializer):
 
 
 class AsesoriaSerializer(serializers.ModelSerializer):
+    cancelado_por_rol = serializers.SerializerMethodField()
+
     class Meta:
         model = Asesoria
         fields = [
             "id", "alumno", "disponibilidad", "materia", "carrera", "fecha", "hora_inicio",
-            "formato", "ubicacion", "liga_virtual", "estado", "asistio", "notas", "creado_en",
+            "formato", "ubicacion", "liga_virtual", "estado", "asistio", "notas",
+            "motivo_cancelacion", "cancelado_por", "cancelado_por_rol", "creado_en",
         ]
         read_only_fields = [
             "id", "alumno", "carrera", "hora_inicio", "formato", "ubicacion", "liga_virtual",
-            "estado", "asistio", "notas", "creado_en",
+            "estado", "asistio", "notas", "motivo_cancelacion", "cancelado_por", "creado_en",
         ]
         # DRF genera un UniqueTogetherValidator automático a partir del
         # UniqueConstraint condicional de Asesoria, lo que rechazaría el
@@ -83,6 +86,21 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         # de carrera se resuelva en la base de datos y se traduzca a 409,
         # no que se prevenga con un chequeo optimista en la vista.
         validators = []
+
+    def get_cancelado_por_rol(self, obj):
+        """Quién canceló, en términos de la sesión — no de la identidad.
+
+        `cancelado_por` es un id de User, y ninguna de las dos partes conoce
+        el id de User de la otra (el asesor solo ve PerfilAlumno.id), así que
+        el id crudo no alcanza para renderizar el panel de cancelación.
+        """
+        if not obj.cancelado_por_id:
+            return None
+        if obj.cancelado_por_id == obj.alumno.user_id:
+            return "alumno"
+        if obj.cancelado_por_id == obj.disponibilidad.registro.asesor.user_id:
+            return "asesor"
+        return "otro"
 
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]

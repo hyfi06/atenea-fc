@@ -204,3 +204,43 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.client.force_authenticate(user=otro_user)
         response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
         self.assertEqual(response.status_code, 403)
+
+    def test_cancelacion_expone_motivo_y_rol_de_quien_cancelo(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/",
+            {"motivo": "Se empalmó con un examen."},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["motivo_cancelacion"], "Se empalmó con un examen.")
+        self.assertEqual(response.data["cancelado_por"], self.alumno_user.id)
+        self.assertEqual(response.data["cancelado_por_rol"], "alumno")
+
+    def test_el_asesor_ve_el_motivo_de_una_cancelacion_del_alumno(self):
+        self.asesoria.cancelar(usuario=self.alumno_user, motivo="Ya no lo necesito.")
+
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["motivo_cancelacion"], "Ya no lo necesito.")
+        self.assertEqual(response.data["cancelado_por_rol"], "alumno")
+
+    def test_cancelacion_del_asesor_reporta_rol_asesor(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/",
+            {"motivo": "Junta académica."},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["cancelado_por_rol"], "asesor")
+
+    def test_sesion_no_cancelada_reporta_campos_vacios(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+
+        self.assertEqual(response.data["motivo_cancelacion"], "")
+        self.assertIsNone(response.data["cancelado_por"])
+        self.assertIsNone(response.data["cancelado_por_rol"])
