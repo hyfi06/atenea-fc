@@ -7,6 +7,7 @@ import { RutaDeAsesor } from './auth/RutaProtegida'
 import { SesionesAsesor } from './features/asesorias/screens/SesionesAsesor'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { DisponibilidadAsesor } from './features/asesorias/screens/DisponibilidadAsesor'
+import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 
 function App() {
   return (
@@ -29,6 +30,14 @@ function App() {
           element={
             <RutaDeAsesor>
               <DisponibilidadAsesor />
+            </RutaDeAsesor>
+          }
+        />
+        <Route
+          path="/asesorias/materias"
+          element={
+            <RutaDeAsesor>
+              <MisMaterias />
             </RutaDeAsesor>
           }
         />

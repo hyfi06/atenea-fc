@@ -40,6 +40,25 @@ export function useAgregarMateria(registroId: number) {
   })
 }
 
+/**
+ * Quita una materia del registro del asesor.
+ *
+ * Contrato definido en la task 8 del plan de backend
+ * (`docs/superpowers/plans/2026-08-04-login-oauth-backend.md`): es POST y no
+ * DELETE para no habilitar el método DELETE en un viewset que lo excluye a
+ * propósito. Ese endpoint todavía no existe en la rama de backend actual.
+ */
+export function useQuitarMateria(registroId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (materiaId: number) =>
+      apiPost<RegistroAsesor>(`/api/asesorias/registros/${registroId}/materias/quitar/`, {
+        materia_id: materiaId,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['registros'] }),
+  })
+}
+
 export function useMisDisponibilidades() {
   return useQuery({
     queryKey: ['disponibilidades'],
