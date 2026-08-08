@@ -25,21 +25,35 @@ function envolver({ children }: { children: React.ReactNode }) {
   )
 }
 
+function montar() {
+  vi.spyOn(api, 'useMisAsesorias').mockReturnValue({
+    data: [
+      crearAsesoria({ id: 1, estado: 'agendada' }),
+      crearAsesoria({ id: 2, estado: 'realizada' }),
+    ],
+    isPending: false,
+  } as ReturnType<typeof api.useMisAsesorias>)
+  vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(
+    new Map([[1, { id: 1, nombre: 'Cálculo I' } as never]]),
+  )
+
+  render(<SesionesAsesor />, { wrapper: envolver })
+}
+
 describe('SesionesAsesor', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('la tab Próximas muestra solo agendadas por default', () => {
-    vi.spyOn(api, 'useMisAsesorias').mockReturnValue({
-      data: [
-        crearAsesoria({ id: 1, estado: 'agendada' }),
-        crearAsesoria({ id: 2, estado: 'realizada' }),
-      ],
-      isPending: false,
-    } as ReturnType<typeof api.useMisAsesorias>)
-    vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[1, { id: 1, nombre: 'Cálculo I' } as never]]))
-
-    render(<SesionesAsesor />, { wrapper: envolver })
+    montar()
 
     expect(screen.getAllByText('Cálculo I')).toHaveLength(1)
+  })
+
+  it('ofrece las dos pantallas de disponibilidad en vez del link único', () => {
+    montar()
+
+    expect(screen.getByRole('button', { name: 'Mis materias' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mi horario' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Disponibilidad' })).not.toBeInTheDocument()
   })
 })

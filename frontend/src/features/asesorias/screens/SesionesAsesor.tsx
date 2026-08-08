@@ -13,14 +13,22 @@ export function SesionesAsesor() {
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-on-background">Asesorías</h1>
+      <h1 className="text-lg font-semibold text-on-background">Asesorías</h1>
+
+      <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => navigate('/asesorias/disponibilidad')}
-          className="text-xs font-medium text-primary"
+          onClick={() => navigate('/asesorias/materias')}
+          className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
         >
-          Disponibilidad
+          Mis materias
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/asesorias/horario')}
+          className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
+        >
+          Mi horario
         </button>
       </div>
 

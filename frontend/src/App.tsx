@@ -6,7 +6,6 @@ import { HealthCheck } from './screens/HealthCheck'
 import { RutaDeAsesor } from './auth/RutaProtegida'
 import { SesionesAsesor } from './features/asesorias/screens/SesionesAsesor'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
-import { DisponibilidadAsesor } from './features/asesorias/screens/DisponibilidadAsesor'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 import { MiHorario } from './features/asesorias/screens/MiHorario'
 
@@ -26,15 +25,7 @@ function App() {
             </RutaDeAsesor>
           }
         />
-        <Route
-          path="/asesorias/disponibilidad"
-          element={
-            <RutaDeAsesor>
-              <DisponibilidadAsesor />
-            </RutaDeAsesor>
-          }
-        />
-        <Route
+<Route
           path="/asesorias/materias"
           element={
             <RutaDeAsesor>
