@@ -146,3 +146,45 @@ class SesionesFuturasTests(TestCase):
 
     def test_sin_sesiones_devuelve_vacio(self):
         self.assertEqual(list(self.disponibilidad.sesiones_futuras()), [])
+
+
+class DesactivarDisponibilidadTests(SesionesFuturasTests):
+    def test_desactivar_sin_cancelar_conserva_las_sesiones(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+
+        canceladas = self.disponibilidad.desactivar(usuario=self.asesor_user)
+
+        self.assertEqual(canceladas, 0)
+        self.disponibilidad.refresh_from_db()
+        self.assertFalse(self.disponibilidad.activa)
+        futura.refresh_from_db()
+        self.assertEqual(futura.estado, "agendada")
+
+    def test_desactivar_cancelando_cancela_solo_las_futuras(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+        pasada = self._crear_asesoria(hoy - datetime.timedelta(days=7))
+
+        canceladas = self.disponibilidad.desactivar(
+            usuario=self.asesor_user, cancelar_sesiones=True, motivo="Cambio de horario.",
+        )
+
+        self.assertEqual(canceladas, 1)
+        self.disponibilidad.refresh_from_db()
+        self.assertFalse(self.disponibilidad.activa)
+        futura.refresh_from_db()
+        self.assertEqual(futura.estado, "cancelada")
+        self.assertEqual(futura.motivo_cancelacion, "Cambio de horario.")
+        self.assertEqual(futura.cancelado_por, self.asesor_user)
+        pasada.refresh_from_db()
+        self.assertEqual(pasada.estado, "agendada")
+
+    def test_motivo_vacio_usa_el_texto_por_defecto(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+
+        self.disponibilidad.desactivar(usuario=self.asesor_user, cancelar_sesiones=True)
+
+        futura.refresh_from_db()
+        self.assertEqual(futura.motivo_cancelacion, "El asesor dio de baja este horario.")

@@ -14,9 +14,9 @@ from .permissions import (
     EsAlumno, EsAlumnoOAsesorAcademico, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
-    AgregarMateriaSerializer, AsesoriaSerializer, CancelarSerializer, DisponibilidadSerializer,
-    MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer, ResultadoBusquedaSerializer,
-    SesionFuturaSerializer,
+    AgregarMateriaSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
+    DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer,
+    ResultadoBusquedaSerializer, SesionFuturaSerializer,
 )
 from .servicios import ventana_agendable
 
@@ -63,6 +63,21 @@ class DisponibilidadViewSet(ModelViewSet):
         return Response({
             "total": len(sesiones),
             "sesiones": SesionFuturaSerializer(sesiones, many=True).data,
+        })
+
+    @action(detail=True, methods=["post"])
+    def desactivar(self, request, pk=None):
+        disponibilidad = self.get_object()
+        serializer = DesactivarDisponibilidadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        canceladas = disponibilidad.desactivar(
+            usuario=request.user,
+            cancelar_sesiones=serializer.validated_data["cancelar_sesiones"],
+            motivo=serializer.validated_data["motivo"],
+        )
+        return Response({
+            "disponibilidad": DisponibilidadSerializer(disponibilidad).data,
+            "sesiones_canceladas": canceladas,
         })
 
 class BuscarDisponibilidadView(APIView):

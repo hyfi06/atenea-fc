@@ -77,6 +77,11 @@ class SesionFuturaSerializer(serializers.Serializer):
     materia_nombre = serializers.CharField(source="materia.nombre")
 
 
+class DesactivarDisponibilidadSerializer(serializers.Serializer):
+    cancelar_sesiones = serializers.BooleanField(required=False, default=False)
+    motivo = serializers.CharField(required=False, allow_blank=True, default="")
+
+
 class AsesoriaSerializer(serializers.ModelSerializer):
     cancelado_por_rol = serializers.SerializerMethodField()
     alumno_nombre = serializers.CharField(source="alumno.user.nombre_completo", read_only=True)

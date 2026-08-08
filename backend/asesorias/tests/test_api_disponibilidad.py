@@ -203,3 +203,64 @@ class SesionesFuturasApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 403)
 
+
+class DesactivarDisponibilidadApiTests(SesionesFuturasApiTests):
+    def test_desactivar_sin_cancelar(self):
+        futura = self._crear_asesoria_futura(7)
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/desactivar/",
+            {"cancelar_sesiones": False},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["sesiones_canceladas"], 0)
+        self.assertFalse(response.data["disponibilidad"]["activa"])
+        futura.refresh_from_db()
+        self.assertEqual(futura.estado, "agendada")
+
+    def test_desactivar_cancelando_sesiones(self):
+        futura = self._crear_asesoria_futura(7)
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/desactivar/",
+            {"cancelar_sesiones": True, "motivo": "Cambio de horario."},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["sesiones_canceladas"], 1)
+        self.assertFalse(response.data["disponibilidad"]["activa"])
+        futura.refresh_from_db()
+        self.assertEqual(futura.estado, "cancelada")
+        self.assertEqual(futura.motivo_cancelacion, "Cambio de horario.")
+
+    def test_body_vacio_equivale_a_no_cancelar(self):
+        futura = self._crear_asesoria_futura(7)
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/desactivar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["sesiones_canceladas"], 0)
+        futura.refresh_from_db()
+        self.assertEqual(futura.estado, "agendada")
+
+    def test_desactivar_bloque_ajeno_devuelve_403(self):
+        self.client.force_authenticate(user=self.otro_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/desactivar/",
+            {"cancelar_sesiones": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+

@@ -98,6 +98,28 @@ class Disponibilidad(models.Model):
             .order_by("fecha", "hora_inicio")
         )
 
+    MOTIVO_BAJA_DE_HORARIO = "El asesor dio de baja este horario."
+
+    def desactivar(self, *, usuario, cancelar_sesiones=False, motivo=""):
+        """Deja de ofrecer este bloque. Devuelve cuántas sesiones canceló.
+
+        Con `cancelar_sesiones=False` las sesiones ya agendadas se
+        conservan (el bloque solo deja de aparecer en búsquedas); con
+        `True` se cancelan todas las futuras en la misma transacción, para
+        que no quede un estado intermedio con la mitad canceladas.
+        """
+        with transaction.atomic():
+            canceladas = 0
+            if cancelar_sesiones:
+                for asesoria in list(self.sesiones_futuras()):
+                    asesoria.cancelar(
+                        usuario=usuario, motivo=motivo or self.MOTIVO_BAJA_DE_HORARIO
+                    )
+                    canceladas += 1
+            self.activa = False
+            self.save()
+        return canceladas
+
     def __str__(self):
         return f"{self.registro} — {self.get_dia_semana_display()} {self.hora_inicio}"
 
