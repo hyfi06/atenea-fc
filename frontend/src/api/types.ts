@@ -64,3 +64,18 @@ export interface Asesoria {
   notas: string
   creado_en: string
 }
+
+/** Vista mínima de una asesoría agendada sobre un bloque de disponibilidad.
+ *  Contrato de GET /api/asesorias/disponibilidades/{id}/sesiones-futuras/. */
+export interface SesionFutura {
+  id: number
+  fecha: string
+  hora_inicio: string
+  alumno_nombre: string
+  materia_nombre: string
+}
+
+export interface SesionesFuturas {
+  total: number
+  sesiones: SesionFutura[]
+}

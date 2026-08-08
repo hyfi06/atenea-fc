@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
-import type { RegistroAsesor, Disponibilidad, Asesoria } from '../../api/types'
+import type { RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas } from '../../api/types'
 import { semestreActual } from './logica'
 
 export function useMisRegistros() {
@@ -123,5 +123,46 @@ export function useGuardarNotas() {
     mutationFn: ({ id, texto }: { id: number; texto: string }) =>
       apiPost<Asesoria>(`/api/asesorias/asesorias/${id}/notas/`, { texto }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asesorias'] }),
+  })
+}
+
+/**
+ * Sesiones agendadas a futuro sobre un bloque. Se consulta al abrir el
+ * diálogo del bloque, para saber si desactivarlo requiere la advertencia de
+ * 3 opciones. `enabled` evita la petición mientras no hay bloque abierto.
+ *
+ * Contrato de la task 6 del plan de backend; todavía no existe en
+ * dev-backend.
+ */
+export function useSesionesFuturas(disponibilidadId: number | null) {
+  return useQuery({
+    queryKey: ['disponibilidades', disponibilidadId, 'sesiones-futuras'],
+    queryFn: () =>
+      apiGet<SesionesFuturas>(`/api/asesorias/disponibilidades/${disponibilidadId}/sesiones-futuras/`),
+    enabled: disponibilidadId !== null,
+    staleTime: 0,
+  })
+}
+
+/**
+ * Desactiva un bloque, con o sin cancelar sus sesiones futuras.
+ *
+ * Las dos opciones del modal de advertencia se sirven con un solo endpoint
+ * distinguido por `cancelar_sesiones` (task 7 del plan de backend), así que
+ * aquí también son una sola mutación. Invalida `asesorias` además de
+ * `disponibilidades` porque la variante que cancela cambia las dos listas.
+ */
+export function useDesactivarDisponibilidad() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, cancelarSesiones, motivo = '' }: { id: number; cancelarSesiones: boolean; motivo?: string }) =>
+      apiPost<{ disponibilidad: Disponibilidad; sesiones_canceladas: number }>(
+        `/api/asesorias/disponibilidades/${id}/desactivar/`,
+        { cancelar_sesiones: cancelarSesiones, motivo },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['disponibilidades'] })
+      queryClient.invalidateQueries({ queryKey: ['asesorias'] })
+    },
   })
 }

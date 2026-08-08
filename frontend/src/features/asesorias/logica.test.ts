@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { semestreActual, claveSlot, mapaDisponibilidades, proximas, historial, sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas } from './logica'
+import { semestreActual, claveSlot, mapaDisponibilidades, proximas, historial, sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas, horasDelDia, slotsDelDia, diaSemanaHoy } from './logica'
 import type { Disponibilidad, Asesoria } from '../../api/types'
 
 describe('semestreActual', () => {
@@ -100,5 +100,64 @@ describe('puedeGuardarNotas', () => {
     expect(puedeGuardarNotas({ estado: 'realizada', asistio: true })).toBe(true)
     expect(puedeGuardarNotas({ estado: 'realizada', asistio: false })).toBe(false)
     expect(puedeGuardarNotas({ estado: 'agendada', asistio: null })).toBe(false)
+  })
+})
+
+describe('horasDelDia', () => {
+  it('produce los 28 slots de media hora de 07:00 a 20:30', () => {
+    const horas = horasDelDia()
+    expect(horas).toHaveLength(28)
+    expect(horas[0]).toBe('07:00:00')
+    expect(horas[1]).toBe('07:30:00')
+    expect(horas.at(-1)).toBe('20:30:00')
+  })
+})
+
+describe('slotsDelDia', () => {
+  const base: Disponibilidad = {
+    id: 1,
+    registro: 1,
+    dia_semana: 0,
+    hora_inicio: '09:00:00',
+    formato: 'virtual',
+    ubicacion: '',
+    liga_virtual: 'https://meet.example/x',
+    activa: true,
+  }
+
+  it('devuelve un slot por cada media hora del día', () => {
+    expect(slotsDelDia(0, [])).toHaveLength(28)
+  })
+
+  it('marca activo el slot con una disponibilidad activa de ese día', () => {
+    const slots = slotsDelDia(0, [base])
+    const slot = slots.find((s) => s.hora === '09:00:00')
+
+    expect(slot?.activo).toBe(true)
+    expect(slot?.disponibilidad).toEqual(base)
+  })
+
+  it('un bloque inactivo se reporta como no activo pero conserva su disponibilidad', () => {
+    const slots = slotsDelDia(0, [{ ...base, activa: false }])
+    const slot = slots.find((s) => s.hora === '09:00:00')
+
+    expect(slot?.activo).toBe(false)
+    expect(slot?.disponibilidad?.id).toBe(1)
+  })
+
+  it('ignora las disponibilidades de otros días', () => {
+    const slots = slotsDelDia(1, [base])
+
+    expect(slots.every((s) => s.disponibilidad === null)).toBe(true)
+  })
+})
+
+describe('diaSemanaHoy', () => {
+  it('traduce el domingo de JavaScript (0) al índice 6 del proyecto', () => {
+    expect(diaSemanaHoy(new Date('2026-08-02T10:00:00'))).toBe(6)
+  })
+
+  it('traduce el lunes al índice 0', () => {
+    expect(diaSemanaHoy(new Date('2026-08-03T10:00:00'))).toBe(0)
   })
 })
