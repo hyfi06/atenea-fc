@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+
+import { Dialogo } from '../../../components/ui/Dialogo'
 import { useMaterias } from '../../catalogo/api'
-import { Boton } from '../../../components/ui/Boton'
 
 interface DialogoAgregarMateriaProps {
   abierto: boolean
@@ -11,7 +11,13 @@ interface DialogoAgregarMateriaProps {
   onCerrar: () => void
 }
 
-export function DialogoAgregarMateria({ abierto, cargando, error, onConfirmar, onCerrar }: DialogoAgregarMateriaProps) {
+export function DialogoAgregarMateria({
+  abierto,
+  cargando,
+  error,
+  onConfirmar,
+  onCerrar,
+}: DialogoAgregarMateriaProps) {
   const { data: materias = [] } = useMaterias()
   const [busqueda, setBusqueda] = useState('')
   const [seleccionada, setSeleccionada] = useState<number | null>(null)
@@ -25,54 +31,55 @@ export function DialogoAgregarMateria({ abierto, cargando, error, onConfirmar, o
   )
 
   return (
-    <Dialog.Root open={abierto} onOpenChange={(open) => !open && onCerrar()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg bg-surface-container p-5">
-          <Dialog.Title className="mb-4 text-sm font-semibold text-on-surface">Agregar materia</Dialog.Title>
-
+    <Dialogo
+      abierto={abierto}
+      titulo="Agregar materia"
+      error={error}
+      etiquetaSalir="Cancelar"
+      onCerrar={onCerrar}
+      acciones={[
+        {
+          etiqueta: 'Agregar',
+          cargando,
+          deshabilitada: seleccionada === null,
+          onClick: () => seleccionada !== null && onConfirmar(seleccionada),
+        },
+      ]}
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="busqueda-materia" className="text-xs text-on-surface-variant">
+            Buscar materia
+          </label>
           <input
+            id="busqueda-materia"
             type="text"
-            placeholder="Buscar materia…"
+            placeholder="Escribe para filtrar…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="mb-3 h-10 w-full rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
+            className="foco-visible h-10 w-full rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
           />
+        </div>
 
-          <ul className="mb-3 max-h-48 overflow-y-auto">
-            {filtradas.map((materia) => (
-              <li key={materia.id}>
-                <button
-                  type="button"
-                  onClick={() => setSeleccionada(materia.id)}
-                  className={`w-full rounded-md px-2 py-2 text-left text-sm ${
-                    seleccionada === materia.id ? 'bg-primary-container text-on-primary-container' : 'text-on-surface hover:bg-surface-container-high'
-                  }`}
-                >
-                  {materia.nombre}
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {error && <p role="alert" className="mb-3 text-xs text-error">{error}</p>}
-
-          <div className="flex gap-2">
-            <Boton variante="secundario" type="button" onClick={onCerrar} className="flex-1">
-              Cancelar
-            </Boton>
-            <Boton
-              type="button"
-              disabled={seleccionada === null}
-              cargando={cargando}
-              onClick={() => seleccionada !== null && onConfirmar(seleccionada)}
-              className="flex-1"
-            >
-              Agregar
-            </Boton>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        <ul className="max-h-48 overflow-y-auto">
+          {filtradas.map((materia) => (
+            <li key={materia.id}>
+              <button
+                type="button"
+                onClick={() => setSeleccionada(materia.id)}
+                aria-pressed={seleccionada === materia.id}
+                className={`foco-visible min-h-11 w-full rounded-md px-2 py-2 text-left text-sm ${
+                  seleccionada === materia.id
+                    ? 'bg-primary-container text-on-primary-container'
+                    : 'text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                {materia.nombre}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Dialogo>
   )
 }
