@@ -2,6 +2,7 @@ import datetime
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -166,12 +167,17 @@ class AsesoriaViewSet(ModelViewSet):
             # -> el 403 explícito que exige el ADR 0017 se perdería.
             return base
 
+        # Unión de ambos lados: un usuario con doble rol (alumno y asesor) ve
+        # tanto las sesiones que agendó como alumno como las que recibe como
+        # asesor. Con mono-rol, solo una rama aporta condiciones (deuda 0011).
+        condiciones = Q()
         if hasattr(user, "perfil_alumno"):
-            queryset = base.filter(alumno=user.perfil_alumno)
-        elif hasattr(user, "perfil_asesor_academico"):
-            queryset = base.filter(disponibilidad__registro__asesor__user=user)
-        else:
+            condiciones |= Q(alumno=user.perfil_alumno)
+        if hasattr(user, "perfil_asesor_academico"):
+            condiciones |= Q(disponibilidad__registro__asesor__user=user)
+        if not condiciones:
             return Asesoria.objects.none()
+        queryset = base.filter(condiciones)
 
         # Filtro de historial por semestre. Comparación manual, igual que
         # materias/views.py — el proyecto no usa django-filter. Permisivo a

@@ -118,6 +118,54 @@ class ListarAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(len(response.data), 1)
 
 
+class DobleRolListadoApiTests(AsesoriaApiTestsBase):
+    """Un usuario con perfil de alumno Y de asesor ve la unión de sus sesiones:
+    las que agendó como alumno y las que recibe como asesor (deuda 0011)."""
+
+    def setUp(self):
+        super().setUp()
+        # Promover al asesor a también-alumno.
+        self.asesor_como_alumno = PerfilAlumno.objects.create(
+            user=self.asesor_user, numero_cuenta="312345680", carrera=self.carrera, generacion=2023,
+        )
+        # Sesión donde es ASESOR (sobre su propia disponibilidad, semestre 20271).
+        self.sesion_como_asesor = Asesoria.objects.create(
+            alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        # Disponibilidad de OTRO asesor, en otro semestre, donde él es el ALUMNO.
+        self.otro_asesor_user = User.objects.create_user(email="otro_asesor@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=self.otro_asesor_user, numero_trabajador="70003")
+        self.otro_asesor = PerfilAsesorAcademico.objects.create(user=self.otro_asesor_user, area=self.area)
+        self.registro_otro = RegistroAsesor.objects.create(asesor=self.otro_asesor, semestre="20262")
+        self.disponibilidad_otro = Disponibilidad.objects.create(
+            registro=self.registro_otro, dia_semana=1, hora_inicio=datetime.time(11, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/o",
+        )
+        self.sesion_como_alumno = Asesoria.objects.create(
+            alumno=self.asesor_como_alumno, disponibilidad=self.disponibilidad_otro, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes + datetime.timedelta(days=1),
+            hora_inicio=self.disponibilidad_otro.hora_inicio, formato="virtual",
+            liga_virtual="https://meet.example.com/o",
+        )
+
+    def test_listado_devuelve_la_union_de_ambos_lados(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/")
+
+        self.assertEqual(response.status_code, 200)
+        ids = {fila["id"] for fila in response.data}
+        self.assertEqual(ids, {self.sesion_como_asesor.id, self.sesion_como_alumno.id})
+
+    def test_semestres_incluye_los_de_ambos_lados(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/semestres/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data), {"20271", "20262"})
+
+
 class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
     def setUp(self):
         super().setUp()
