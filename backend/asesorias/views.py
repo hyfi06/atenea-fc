@@ -14,7 +14,7 @@ from .permissions import (
     EsAlumno, EsAlumnoOAsesorAcademico, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
-    AgregarMateriaSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
+    MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
     DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer,
     ResultadoBusquedaSerializer, SesionFuturaSerializer,
 )
@@ -37,7 +37,7 @@ class RegistroAsesorViewSet(ModelViewSet):
     @action(detail=True, methods=["post"], url_path="materias")
     def materias(self, request, pk=None):
         registro = self.get_object()
-        serializer = AgregarMateriaSerializer(data=request.data)
+        serializer = MateriaDelRegistroSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         materia = serializer.validated_data["materia_id"]
         try:

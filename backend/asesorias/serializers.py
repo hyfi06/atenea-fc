@@ -13,7 +13,10 @@ class RegistroAsesorSerializer(serializers.ModelSerializer):
         read_only_fields = ["materias"]
 
 
-class AgregarMateriaSerializer(serializers.Serializer):
+class MateriaDelRegistroSerializer(serializers.Serializer):
+    """Valida el `materia_id` del body de las acciones de agregar y quitar
+    materia de un RegistroAsesor."""
+
     materia_id = serializers.IntegerField()
 
     def validate_materia_id(self, value):
