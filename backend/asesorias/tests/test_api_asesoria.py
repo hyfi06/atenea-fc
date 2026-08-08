@@ -244,3 +244,54 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.data["motivo_cancelacion"], "")
         self.assertIsNone(response.data["cancelado_por"])
         self.assertIsNone(response.data["cancelado_por_rol"])
+
+
+class NombresEnAsesoriaApiTests(AsesoriaApiTestsBase):
+    def setUp(self):
+        super().setUp()
+        self.alumno_user.first_name = "Ana"
+        self.alumno_user.apellido1 = "López"
+        self.alumno_user.apellido2 = "Ruiz"
+        self.alumno_user.save()
+        self.asesor_user.first_name = "Beto"
+        self.asesor_user.apellido1 = "Martínez"
+        self.asesor_user.save()
+        self.asesoria = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes,
+            hora_inicio=self.disponibilidad.hora_inicio, formato=self.disponibilidad.formato,
+            liga_virtual=self.disponibilidad.liga_virtual,
+        )
+
+    def test_el_asesor_ve_el_nombre_del_alumno(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["alumno_nombre"], "Ana López Ruiz")
+        self.assertEqual(response.data["alumno"], self.alumno.id)
+
+    def test_el_alumno_ve_el_nombre_del_asesor(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["asesor_nombre"], "Beto Martínez")
+
+    def test_listar_no_dispara_consultas_por_sesion(self):
+        """Regresión de N+1: los nombres se resuelven con select_related."""
+        for delta in (7, 14):
+            Asesoria.objects.create(
+                alumno=self.otro_alumno, disponibilidad=self.disponibilidad,
+                materia=self.materia, carrera=self.carrera,
+                fecha=self.proximo_lunes + datetime.timedelta(days=delta),
+                hora_inicio=self.disponibilidad.hora_inicio,
+                formato=self.disponibilidad.formato,
+                liga_virtual=self.disponibilidad.liga_virtual,
+            )
+        self.client.force_authenticate(user=self.asesor_user)
+
+        with self.assertNumQueries(2):
+            response = self.client.get("/api/asesorias/asesorias/")
+
+        self.assertEqual(len(response.data), 3)

@@ -67,13 +67,18 @@ class ResultadoBusquedaSerializer(serializers.Serializer):
 
 class AsesoriaSerializer(serializers.ModelSerializer):
     cancelado_por_rol = serializers.SerializerMethodField()
+    alumno_nombre = serializers.CharField(source="alumno.user.nombre_completo", read_only=True)
+    asesor_nombre = serializers.CharField(
+        source="disponibilidad.registro.asesor.user.nombre_completo", read_only=True
+    )
 
     class Meta:
         model = Asesoria
         fields = [
-            "id", "alumno", "disponibilidad", "materia", "carrera", "fecha", "hora_inicio",
-            "formato", "ubicacion", "liga_virtual", "estado", "asistio", "notas",
-            "motivo_cancelacion", "cancelado_por", "cancelado_por_rol", "creado_en",
+            "id", "alumno", "alumno_nombre", "asesor_nombre", "disponibilidad", "materia",
+            "carrera", "fecha", "hora_inicio", "formato", "ubicacion", "liga_virtual",
+            "estado", "asistio", "notas", "motivo_cancelacion", "cancelado_por",
+            "cancelado_por_rol", "creado_en",
         ]
         read_only_fields = [
             "id", "alumno", "carrera", "hora_inicio", "formato", "ubicacion", "liga_virtual",

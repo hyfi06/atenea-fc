@@ -117,16 +117,21 @@ class AsesoriaViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # alumno_nombre/asesor_nombre del serializer recorren dos cadenas de
+        # FK; sin esto cada sesión del listado dispara consultas extra.
+        base = Asesoria.objects.select_related(
+            "alumno__user", "disponibilidad__registro__asesor__user", "materia"
+        )
         if self.action in ("cancelar", "marcar_asistencia", "notas"):
             # get_object() resuelve desde este queryset ANTES de aplicar
             # has_object_permission. Si se filtrara aquí por dueño, un
             # objeto ajeno daría 404 y nunca llegaría a EsDuenoDeLaAsesoria
             # -> el 403 explícito que exige el ADR 0017 se perdería.
-            return Asesoria.objects.all()
+            return base
         if hasattr(user, "perfil_alumno"):
-            return Asesoria.objects.filter(alumno=user.perfil_alumno)
+            return base.filter(alumno=user.perfil_alumno)
         if hasattr(user, "perfil_asesor_academico"):
-            return Asesoria.objects.filter(disponibilidad__registro__asesor__user=user)
+            return base.filter(disponibilidad__registro__asesor__user=user)
         return Asesoria.objects.none()
 
     def create(self, request, *args, **kwargs):
