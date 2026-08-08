@@ -34,8 +34,13 @@ class EsDuenoDeLaAsesoria(BasePermission):
     message = "No puedes operar sobre una sesión ajena."
 
     def has_object_permission(self, request, view, obj):
-        if hasattr(request.user, "perfil_alumno"):
-            return obj.alumno_id == request.user.perfil_alumno.id
-        if hasattr(request.user, "perfil_asesor_academico"):
-            return obj.disponibilidad.registro.asesor.user_id == request.user.id
-        return False
+        user = request.user
+        es_alumno_dueno = (
+            hasattr(user, "perfil_alumno")
+            and obj.alumno_id == user.perfil_alumno.id
+        )
+        es_asesor_dueno = (
+            hasattr(user, "perfil_asesor_academico")
+            and obj.disponibilidad.registro.asesor.user_id == user.id
+        )
+        return es_alumno_dueno or es_asesor_dueno
