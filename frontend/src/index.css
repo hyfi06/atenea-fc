@@ -34,6 +34,34 @@
   --color-surface-container-high: #2d3436;
 }
 
+/* Alias de shadcn/ui → tokens M3 de ADR 0014.
+   Los componentes que genera el CLI de shadcn usan su propio vocabulario de
+   color (bg-popover, text-muted-foreground, border-border, ring-ring...).
+   Aquí cada uno de esos nombres se declara como token de Tailwind que apunta
+   con var() al rol M3 equivalente ya definido arriba: no hay una segunda
+   paleta, ningún valor de color se repite en este bloque. ADR 0014 sigue
+   siendo la fuente canónica de color.
+   Los nombres que shadcn comparte con ADR 0014 (background, primary,
+   secondary) ya existen arriba y por eso no aparecen aquí. */
+@theme {
+  --color-foreground: var(--color-on-surface);
+  --color-card: var(--color-surface-container);
+  --color-card-foreground: var(--color-on-surface);
+  --color-popover: var(--color-surface-container);
+  --color-popover-foreground: var(--color-on-surface);
+  --color-primary-foreground: var(--color-on-primary);
+  --color-secondary-foreground: var(--color-on-secondary);
+  --color-muted: var(--color-surface-container-high);
+  --color-muted-foreground: var(--color-on-surface-variant);
+  --color-accent: var(--color-surface-container-high);
+  --color-accent-foreground: var(--color-on-surface);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-on-error);
+  --color-border: var(--color-outline-variant);
+  --color-input: var(--color-outline);
+  --color-ring: var(--color-primary);
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-on-background);
@@ -57,6 +85,16 @@ body {
 
 @keyframes girar {
   to { transform: rotate(360deg); }
+}
+
+@keyframes entrada-dialogo {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes entrada-velo {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .skeleton {
@@ -90,12 +128,31 @@ body {
   animation: girar 600ms linear infinite;
 }
 
+.entrada-dialogo {
+  animation: entrada-dialogo 180ms ease-out;
+}
+
+.entrada-velo {
+  animation: entrada-velo 180ms ease-out;
+}
+
+/* Checklist de accesibilidad del paso 7: todo elemento interactivo nuevo
+   necesita un foco perceptible, no solo la ausencia del outline del
+   navegador. Se declara una vez aquí, como .skeleton/.spinner, en vez de
+   repetir el mismo grupo de utilidades en cada componente. */
+.foco-visible:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton,
   .entrada-lista,
   .salida-lista,
   .pulso-exito,
-  .spinner {
+  .spinner,
+  .entrada-dialogo,
+  .entrada-velo {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
