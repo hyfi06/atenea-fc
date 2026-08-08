@@ -20,8 +20,8 @@ Ante la duda, pesa hacia brainstorming primero — es más barato descartar un m
 ## `components/ui/` vs específico de feature
 
 - `frontend/src/components/ui/` — componentes sin conocimiento del dominio de negocio: no importan tipos de `api/types.ts` de un feature específico, no saben qué es una "asesoría" o una "materia". Primitivos de shadcn viven aquí. Ejemplo actual: `Boton.tsx`, `Skeleton.tsx`.
-- `frontend/src/features/<feature>/components/` — componentes que sí conocen el dominio de ese feature (reciben/producen sus tipos, encapsulan su copy). Ejemplo actual: `TarjetaAsesoria.tsx`, `GrillaDisponibilidad.tsx`.
-- Un componente puede vivir en `features/` y **componer** algo de `components/ui/` (p. ej. un diálogo específico de asesorías que envuelve el `Dialogo` compartido) — eso es lo esperado, no una excepción.
+- `frontend/src/features/<feature>/components/` — componentes que sí conocen el dominio de ese feature (reciben/producen sus tipos, encapsulan su copy). Ejemplo actual: `TarjetaAsesoria.tsx`.
+- Un componente puede vivir en `features/` y **componer** algo de `components/ui/` — es lo esperado, no una excepción. Ejemplo real: los cuatro diálogos de asesorías (`DialogoCancelar`, `DialogoNuevoBloque`, `DialogoAgregarMateria`, `DialogoBloqueActivo`) más los dos nuevos (`DialogoQuitarMateria`, `DialogoDesactivarConSesiones`) componen `components/ui/Dialogo.tsx` y no montan Radix por su cuenta.
 - `components/ui/` es plana (decisión de ADR 0020): no hay subcarpeta para separar shadcn de lo propio.
 
 ## Estructura de un componente nuevo
@@ -29,7 +29,20 @@ Ante la duda, pesa hacia brainstorming primero — es más barato descartar un m
 - **Nombre de archivo:** los primitivos generados por shadcn conservan el nombre que trae el CLI (minúsculas/kebab-case, p. ej. `dialog.tsx`, `dropdown-menu.tsx`) — no se traducen ni se renombran (ADR 0020). Los componentes propios del proyecto siguen la convención ya establecida: PascalCase (`Boton.tsx`, `InsigniaEstado.tsx`), nombre en español si es específico del dominio de Atenea.
 - **Export:** nombrado (`export function Boton(...)`), no `export default` — única excepción existente es `App.tsx` (convención de punto de entrada de React Router, no aplica a componentes).
 - **Props:** interfaz de TypeScript explícita; si envuelve un elemento nativo, extiende sus atributos en vez de reinventarlos (patrón ya usado: `interface BotonProps extends ButtonHTMLAttributes<HTMLButtonElement>`).
-- **Tests:** co-localizados (`Componente.test.tsx` junto al componente) — patrón ya usado en `AuthContext.test.tsx`, `SesionesAsesor.test.tsx`. Gap conocido: ningún primitivo de `components/ui/` ni los 4 diálogos de asesorías tiene test hoy. No se corrige retroactivamente como parte de este documento, pero **todo componente nuevo con lógica propia (estado, validación, efectos) debe llevar al menos un test de comportamiento** — sigue `superpowers:test-driven-development` cuando la lógica lo amerite; un componente puramente presentacional (sin estado ni ramas) puede quedarse con un smoke test o ninguno si el costo no se justifica.
+- **Tests:** co-localizados (`Componente.test.tsx` junto al componente) — patrón ya usado en `AuthContext.test.tsx`, `SesionesAsesor.test.tsx`, `Dialogo.test.tsx`. **Todo componente nuevo con lógica propia (estado, validación, efectos) debe llevar al menos un test de comportamiento**; sigue `superpowers:test-driven-development` cuando la lógica lo amerite. Un componente puramente presentacional (sin estado ni ramas) puede quedarse con un smoke test o ninguno si el costo no se justifica — es el caso de `UiIcons.tsx`. Gap conocido que sigue abierto: `Boton.tsx`, `InsigniaEstado.tsx`, `Retroalimentacion.tsx` y `Skeleton.tsx` no tienen test; se cubren el día que se los toque, no retroactivamente.
+
+## Diálogos
+
+Cualquier diálogo nuevo compone `components/ui/Dialogo.tsx`; no se monta `Dialog.Root`/`Portal`/`Overlay` de Radix a mano ni se importa `components/ui/dialog.tsx` directo desde un feature.
+
+`Dialogo` recibe `acciones` ordenadas de menor a mayor consecuencia y **construye la acción de salir por su cuenta** a partir de `onCerrar`, porque dónde va y con qué estilo es justamente la convención del paso 3:
+
+| `acciones` | Layout | Estilos |
+|---|---|---|
+| 1 | fila | salir a la izquierda en contorno, la confirmación a la derecha rellena con su tono |
+| 2 o más | columna a ancho completo | la primera (reversible) rellena, las siguientes en contorno, salir al final como texto plano |
+
+El fix de overflow del paso 3 (`min-w-0` + `whitespace-normal` + altura mínima en vez de fija) ya está dentro del componente: no hay que repetirlo por diálogo.
 
 ## Lineamientos de diseño
 
@@ -38,7 +51,7 @@ Ante la duda, pesa hacia brainstorming primero — es más barato descartar un m
 
 ## Checklist de accesibilidad
 
-- **Foco visible:** gap real encontrado en el código actual — la única regla de foco en todo el proyecto (`Login.tsx`) usa `outline-none focus:border-primary`, sin un ring perceptible; no hay un patrón `:focus-visible` sistemático. A partir de este documento, **todo elemento interactivo nuevo necesita un estado de foco visible** (ring o cambio de color con suficiente contraste), no solo quitar el outline por defecto del navegador.
+- **Foco visible:** todo elemento interactivo nuevo lleva la clase `.foco-visible` (definida en `index.css`, ring de 2px en `--color-primary` con offset). No basta con quitar el outline por defecto del navegador. Gap conocido que sigue abierto: `Login.tsx` usa `outline-none focus:border-primary`, sin ring perceptible — se corrige cuando se toque esa pantalla (paso 9).
 - **Live regions:** mensajes transitorios (confirmaciones, errores async) usan `role="status"` o `role="alert"` según si interrumpen o no — patrón ya usado en `Retroalimentacion.tsx`.
 - **Decorativo:** elementos puramente visuales (skeletons, íconos sin significado propio) llevan `aria-hidden` — patrón ya usado en `Skeleton.tsx`.
 - **Teclado:** si el componente compone Radix/shadcn, la navegación por teclado ya viene resuelta por la librería — no capturar/interceptar eventos de teclado que Radix ya maneja (foco atrapado en diálogos, `Esc` para cerrar, flechas en tabs).

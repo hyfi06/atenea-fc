@@ -43,4 +43,5 @@ Detalle completo de la decisión, el mapeo de tokens y qué migra/no migra: [spe
 
 ## Changelog
 
+- **2026-08-05** — Decisión ejecutada (paso 8, `dev-frontend`). `components.json` + alias `@/`, bloque de alias shadcn→M3 en `index.css` (16 nombres, cero valores de color duplicados), primitivos `dialog.tsx` y `tabs.tsx` generados y curados —sin `lucide-react` ni `tw-animate-css`, que el CLI instala por default y que chocan con ADR 0014 y con el sistema de motion propio—, `components/ui/Dialogo.tsx` como el único lugar donde vive la convención de botones, y los 4 diálogos duplicados migrados: ninguna feature importa ya `@radix-ui/react-dialog` ni `@radix-ui/react-tabs`. Plan: `docs/superpowers/plans/2026-08-04-sistema-componentes.md`.
 - **2026-08-05** — ADR creada al retomar el paso 6 del plan de rediseño de login y componentes, formalizando una decisión que hasta ahora era de facto (Radix + Tailwind sin documentar) y decidiendo explícitamente adoptar el patrón shadcn/ui sobre ella.
