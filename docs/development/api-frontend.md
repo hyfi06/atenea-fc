@@ -186,6 +186,12 @@ Otros `400` posibles en creación: `"La fecha no coincide con el día de la disp
 | `GET` | `/api/asesorias/asesorias/?semestre=20262` | requerida | filtra el listado por `disponibilidad__registro__semestre`. Permisivo: un semestre desconocido devuelve `[]`, no `400` |
 | `GET` | `/api/asesorias/asesorias/semestres/` | requerida | `["20262", "20261"]` — claves de semestre en las que el usuario tiene sesiones, de la más reciente a la más antigua. Sostiene los subtabs del historial |
 
+Para un usuario con **doble rol** (perfil de alumno y de asesor a la vez), el
+listado `GET /api/asesorias/asesorias/` —y `semestres/`— devuelve la **unión** de
+sus sesiones: las que agendó como alumno y las que recibe como asesor. Cada fila se
+distingue por `alumno_nombre` / `asesor_nombre`; la API no ofrece un selector de rol
+(`?rol=`), el frontend decide cómo presentar cada lado.
+
 `Asesoria.estado`: `agendada` (default) → `cancelada` | `realizada`. Nunca se borra un registro. `asistio` es tri-estado: `null` (aún no ocurre/no marcada), `true`, `false`.
 
 El payload de `Asesoria` incluye además `motivo_cancelacion` (string, vacío si no está cancelada), `cancelado_por` (id de `User` o `null`), `cancelado_por_rol` (`"alumno"` | `"asesor"` | `"otro"` | `null`), `alumno_nombre` y `asesor_nombre` — todos de solo lectura. `alumno` sigue siendo un id plano de `PerfilAlumno`; `alumno_nombre` es un campo hermano, no un reemplazo.

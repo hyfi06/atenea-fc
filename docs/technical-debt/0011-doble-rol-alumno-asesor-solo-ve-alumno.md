@@ -1,6 +1,6 @@
 # 0011 — Un usuario con doble rol (alumno y asesor) solo ve el lado de alumno
 
-**Estado:** Activa
+**Estado:** Resuelta — 2026-08-08 (commits del [plan 2026-08-08-doble-rol-asesorias](../superpowers/plans/2026-08-08-doble-rol-asesorias.md))
 **Origen:** [ADR 0017](../decisions/0017-asesorias-academicas-api.md); detectada en la revisión final de rama del [plan de backend 2026-08-04](../superpowers/plans/2026-08-04-login-oauth-backend.md)
 
 ## Qué se simplificó
@@ -49,11 +49,24 @@ señal es el frontend empezando a consumir `roles` como lista de verdad (un swit
 de "actuar como alumno / como asesor"): ese es el momento en que el backend tiene
 que dejar de asumir un solo rol por usuario.
 
-## Cómo resolverla
+## Cómo se resolvió
 
-Plan de resolución: [`docs/superpowers/plans/2026-08-08-doble-rol-asesorias.md`](../superpowers/plans/2026-08-08-doble-rol-asesorias.md).
-En una frase: `EsDuenoDeLaAsesoria` pasa a comprobar **ambas** ramas con un `or`
-(el usuario es dueño si es el alumno **o** el asesor de la sesión), y
-`get_queryset` devuelve la **unión** (`Q(alumno=…) | Q(disponibilidad__registro__asesor__user=…)`)
-para el usuario con doble rol, preservando la rama de acciones (403 del ADR 0017),
-los `select_related` y el filtro `?semestre=`.
+Resuelta según el plan [`docs/superpowers/plans/2026-08-08-doble-rol-asesorias.md`](../superpowers/plans/2026-08-08-doble-rol-asesorias.md),
+sin cambios de esquema:
+
+- **Permiso** (`EsDuenoDeLaAsesoria.has_object_permission`): se sustituyó la cadena
+  `if … return` por dos comprobaciones independientes combinadas con `or` —
+  `es_alumno_dueno` (`hasattr(perfil_alumno) and obj.alumno_id == …`) **o**
+  `es_asesor_dueno` (`hasattr(perfil_asesor_academico) and
+  obj.disponibilidad.registro.asesor.user_id == user.id`). El usuario es dueño si
+  es el alumno **o** el asesor de la sesión.
+- **Listado** (`AsesoriaViewSet.get_queryset`): se sustituyó el `if/elif/else`
+  alumno-primero por una unión con `Q` —
+  `condiciones |= Q(alumno=…)` si tiene perfil de alumno,
+  `condiciones |= Q(disponibilidad__registro__asesor__user=…)` si tiene perfil de
+  asesor; sin perfiles, `Asesoria.objects.none()`. Un usuario con doble rol ve la
+  unión de ambos lados, también en `/semestres/`.
+
+Se preservaron intactos la rama de acciones que devuelve `base` sin filtrar por
+dueño (para que el 403 del ADR 0017 lo dé `EsDuenoDeLaAsesoria`, no un 404), los
+`select_related` (sin N+1) y el filtro `?semestre=` aplicado sobre la unión.

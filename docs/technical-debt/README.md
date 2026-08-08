@@ -19,8 +19,8 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md)
 - [0008 — `PerfilAlumno` solo registra una carrera vigente](0008-perfil-alumno-una-sola-carrera.md)
 - [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md)
-- [0011 — Un usuario con doble rol (alumno y asesor) solo ve el lado de alumno](0011-doble-rol-alumno-asesor-solo-ve-alumno.md)
 
 ### Resuelta
 
 - [0010 — API no expone perfil ni rol del usuario autenticado](0010-api-no-expone-perfil-usuario-autenticado.md) — resuelta 2026-08-04
+- [0011 — Un usuario con doble rol (alumno y asesor) solo ve el lado de alumno](0011-doble-rol-alumno-asesor-solo-ve-alumno.md) — resuelta 2026-08-08
