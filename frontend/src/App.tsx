@@ -8,6 +8,7 @@ import { SesionesAsesor } from './features/asesorias/screens/SesionesAsesor'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { DisponibilidadAsesor } from './features/asesorias/screens/DisponibilidadAsesor'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
+import { MiHorario } from './features/asesorias/screens/MiHorario'
 
 function App() {
   return (
@@ -38,6 +39,14 @@ function App() {
           element={
             <RutaDeAsesor>
               <MisMaterias />
+            </RutaDeAsesor>
+          }
+        />
+        <Route
+          path="/asesorias/horario"
+          element={
+            <RutaDeAsesor>
+              <MiHorario />
             </RutaDeAsesor>
           }
         />
