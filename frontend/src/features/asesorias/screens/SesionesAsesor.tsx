@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import * as Tabs from '@radix-ui/react-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs'
 import { useMisAsesorias } from '../api'
 import { useMapaMaterias } from '../../catalogo/api'
 import { proximas, historial } from '../logica'
@@ -24,29 +24,19 @@ export function SesionesAsesor() {
         </button>
       </div>
 
-      <Tabs.Root defaultValue="proximas">
-        <Tabs.List className="mb-4 flex gap-4 border-b border-outline-variant text-sm">
-          <Tabs.Trigger
-            value="proximas"
-            className="px-1 pb-2 text-on-surface-variant data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
-            Próximas
-          </Tabs.Trigger>
-          <Tabs.Trigger
-            value="historial"
-            className="px-1 pb-2 text-on-surface-variant data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
-            Historial
-          </Tabs.Trigger>
-        </Tabs.List>
+      <Tabs defaultValue="proximas">
+        <TabsList>
+          <TabsTrigger value="proximas">Próximas</TabsTrigger>
+          <TabsTrigger value="historial">Historial</TabsTrigger>
+        </TabsList>
 
-        <Tabs.Content value="proximas">
+        <TabsContent value="proximas">
           <ListaAsesorias asesorias={proximas(asesorias)} cargando={isPending} nombreMateria={(id) => mapaMaterias.get(id)?.nombre} vacio="No tienes asesorías próximas." />
-        </Tabs.Content>
-        <Tabs.Content value="historial">
+        </TabsContent>
+        <TabsContent value="historial">
           <ListaAsesorias asesorias={historial(asesorias)} cargando={isPending} nombreMateria={(id) => mapaMaterias.get(id)?.nombre} vacio="Aún no hay historial." />
-        </Tabs.Content>
-      </Tabs.Root>
+        </TabsContent>
+      </Tabs>
     </main>
   )
 }
