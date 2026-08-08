@@ -21,8 +21,8 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
 
 ### Login con Google (único flujo social soportado)
 
-1. El SPA usa Google Identity Services (`google.accounts.oauth2.initTokenClient`) para abrir un popup y obtener un `access_token` de OAuth directamente en el navegador. **No existe flujo de redirect/Authorization Code** — se eliminó del backend el 2026-08-01 (commit `cdefb7e`); no hay ruta de callback que implementar.
-2. `POST /api/auth/google/` con `{"access_token": "<token>"}`.
+1. El SPA usa Google Identity Services — **Sign In With Google** (`google.accounts.id`, no `google.accounts.oauth2`) para obtener un **ID token** (JWT OIDC) directamente en el navegador. **No existe flujo de redirect/Authorization Code** — se eliminó del backend el 2026-08-01 (commit `cdefb7e`); no hay ruta de callback que implementar.
+2. `POST /api/auth/google/` con `{"id_token": "<jwt>"}`. **Mandar `access_token` ya no funciona**: desde ADR 0019 el backend lo rechaza con `400`, porque el flujo de `access_token` no verificaba que el token se hubiera emitido para el `client_id` de Atenea (`audience`). Errores posibles: `400 {"detail": ["El id_token de Google no es válido."]}` (firma, issuer, expiración o `audience` inválidos) y `400 {"non_field_errors": ["Incorrect input. id_token is required."]}` (falta el campo).
 3. Regla de negocio (no auto-registro, [ADR 0013](../decisions/0013-bloqueo-autoregistro-social.md)): el correo de Google debe corresponder a un `User` ya existente, dado de alta por la SAE. Si no existe cuenta: `400 {"detail": ["No existe una cuenta para este correo. Contacta a la SAE."]}` y no se crea nada.
 4. Éxito: `200` con el mismo payload que `/api/auth/login/` (ver abajo).
 5. El frontend necesita su propia `VITE_GOOGLE_OAUTH_CLIENT_ID` — **hoy no está en `frontend/.env.example`**, hay que agregarla.
@@ -35,13 +35,28 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
 {
   "access": "<jwt>",
   "refresh": "<jwt o \"\" si JWT_AUTH_HTTPONLY>",
-  "user": { "pk": 1, "email": "...", "first_name": "..." }
+  "user": {
+    "pk": 1,
+    "email": "alguien@ciencias.unam.mx",
+    "first_name": "Ana",
+    "apellido1": "López",
+    "apellido2": "Ruiz",
+    "nombre_completo": "Ana López Ruiz",
+    "roles": ["alumno"],
+    "perfil_alumno": {"id": 3, "numero_cuenta": "312345678", "carrera": 5, "carrera_nombre": "Actuaría", "generacion": 2023},
+    "perfil_academico": null,
+    "perfil_asesor_academico": null
+  }
 }
 ```
 
 `400` si las credenciales son inválidas (`{"non_field_errors": [...]}`).
 
-**Ojo:** este payload de `user` **no incluye `apellido1`/`apellido2`**, aunque existen en el modelo `User` — `UserDetailsSerializer` (el default de dj-rest-auth, sin override) solo expone campos que calcen con nombres estándar de Django (`first_name`, no `last_name`, no apellidos). Si el frontend necesita nombre completo, hoy no está disponible vía API.
+El mismo objeto `user` es lo que devuelve `GET /api/auth/user/` (mismo serializer, `accounts.serializers.UserDetailsSerializer`), así que **el SPA conoce el rol desde el login mismo, sin una segunda llamada** — resuelve la [deuda técnica 0010](../technical-debt/0010-api-no-expone-perfil-usuario-autenticado.md), que el frontend suplía sondeando `GET /api/asesorias/registros/` y leyendo 200 vs 403.
+
+- `roles` es una lista de claves estables: `"alumno"`, `"academico"`, `"asesor_academico"`. Vacía si el usuario no tiene ningún perfil de negocio.
+- Cada `perfil_*` es un objeto o `null`. `perfil_asesor_academico.activo` puede ser `false`: el rol aparece en `roles` en cuanto el perfil existe, igual que hace la permission class `EsAsesorAcademico`.
+- Solo `first_name` es escribible vía `PUT`/`PATCH /api/auth/user/`. Todo lo demás (incluidos `apellido1`/`apellido2`) es de solo lectura — la identidad la aprovisiona la SAE.
 
 ### Transporte del JWT — difiere entre dev y prod
 
@@ -126,8 +141,11 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 | `GET`/`POST` | `/api/asesorias/registros/` | solo los propios; `asesor` se asigna server-side |
 | `GET` | `/api/asesorias/registros/{id}/` | |
 | `POST` | `/api/asesorias/registros/{id}/materias/` | agrega una materia al registro — `{materia_id}` |
+| `POST` | `/api/asesorias/registros/{id}/materias/quitar/` | quita una materia del registro — `{materia_id}`. `400` si la materia no está en el registro. **No cancela las asesorías ya agendadas.** Es `POST` y no `DELETE` porque este viewset no habilita el verbo `DELETE` (ver abajo) |
 | `GET`/`POST` | `/api/asesorias/disponibilidades/` | solo las propias |
 | `GET`/`PATCH`/`DELETE` | `/api/asesorias/disponibilidades/{id}/` | sin `PUT` |
+| `GET` | `/api/asesorias/disponibilidades/{id}/sesiones-futuras/` | `{"total": n, "sesiones": [{id, fecha, hora_inicio, alumno_nombre, materia_nombre}]}` — sesiones agendadas que aún no comienzan sobre ese bloque |
+| `POST` | `/api/asesorias/disponibilidades/{id}/desactivar/` | `{cancelar_sesiones?: bool = false, motivo?: string}` → `{"disponibilidad": {...}, "sesiones_canceladas": n}`. Con `cancelar_sesiones=true` cancela todas las sesiones futuras y desactiva el bloque en una sola transacción; el motivo por defecto es `"El asesor dio de baja este horario."` |
 
 `RegistroAsesor` no acepta `PUT`/`DELETE` en ningún caso; `materias` es de solo lectura en el serializer excepto vía la acción `materias/`, que puede fallar con `400 {"detail": ["La materia no está habilitada para asesorías."]}` o `{"detail": ["La materia no se imparte en este semestre."]}`.
 
@@ -165,8 +183,12 @@ Otros `400` posibles en creación: `"La fecha no coincide con el día de la disp
 | `POST` | `/api/asesorias/asesorias/{id}/cancelar/` | `EsAlumnoOAsesorAcademico` + dueño | `{motivo?}` — el alumno o el asesor dueño de la sesión pueden cancelarla |
 | `POST` | `/api/asesorias/asesorias/{id}/marcar_asistencia/` | `EsAsesorAcademico` + dueño | `{asistio: bool}` — falla si es antes de que ocurra la sesión |
 | `POST` | `/api/asesorias/asesorias/{id}/notas/` | `EsAsesorAcademico` + dueño | `{texto}` — falla si `asistio` no es `true` |
+| `GET` | `/api/asesorias/asesorias/?semestre=20262` | requerida | filtra el listado por `disponibilidad__registro__semestre`. Permisivo: un semestre desconocido devuelve `[]`, no `400` |
+| `GET` | `/api/asesorias/asesorias/semestres/` | requerida | `["20262", "20261"]` — claves de semestre en las que el usuario tiene sesiones, de la más reciente a la más antigua. Sostiene los subtabs del historial |
 
 `Asesoria.estado`: `agendada` (default) → `cancelada` | `realizada`. Nunca se borra un registro. `asistio` es tri-estado: `null` (aún no ocurre/no marcada), `true`, `false`.
+
+El payload de `Asesoria` incluye además `motivo_cancelacion` (string, vacío si no está cancelada), `cancelado_por` (id de `User` o `null`), `cancelado_por_rol` (`"alumno"` | `"asesor"` | `"otro"` | `null`), `alumno_nombre` y `asesor_nombre` — todos de solo lectura. `alumno` sigue siendo un id plano de `PerfilAlumno`; `alumno_nombre` es un campo hermano, no un reemplazo.
 
 Cancelar y crear una asesoría disparan notificaciones por correo vía Celery (asíncronas, no bloquean la response).
 
