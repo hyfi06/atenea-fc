@@ -46,6 +46,16 @@ class RegistroAsesor(models.Model):
             raise ValidationError("La materia no se imparte en este semestre.")
         self.materias.add(materia)
 
+    def quitar_materia(self, materia):
+        """Deja de ofrecer asesorías de esta materia.
+
+        No toca las asesorías ya agendadas — solo deja de aparecer en las
+        búsquedas de los alumnos de aquí en adelante.
+        """
+        if not self.materias.filter(pk=materia.pk).exists():
+            raise ValidationError("La materia no está en este registro.")
+        self.materias.remove(materia)
+
     def __str__(self):
         return f"{self.asesor}, {self.semestre}"
 

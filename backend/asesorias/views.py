@@ -46,6 +46,18 @@ class RegistroAsesorViewSet(ModelViewSet):
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         return Response(RegistroAsesorSerializer(registro).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="materias/quitar")
+    def quitar_materia(self, request, pk=None):
+        registro = self.get_object()
+        serializer = MateriaDelRegistroSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        materia = serializer.validated_data["materia_id"]
+        try:
+            registro.quitar_materia(materia)
+        except DjangoValidationError as exc:
+            return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(RegistroAsesorSerializer(registro).data, status=status.HTTP_200_OK)
+
 class DisponibilidadViewSet(ModelViewSet):
     serializer_class = DisponibilidadSerializer
     permission_classes = [EsAsesorAcademico, EsDuenoDelRegistro]

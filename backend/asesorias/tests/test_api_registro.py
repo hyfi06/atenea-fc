@@ -95,3 +95,54 @@ class RegistroAsesorApiTests(APITestCase):
             f"/api/asesorias/registros/{self.registro_ajeno.id}/materias/", {"materia_id": self.materia.id}
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_quitar_materia_exitoso(self):
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro.agregar_materia(self.materia)
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/registros/{registro.id}/materias/quitar/",
+            {"materia_id": self.materia.id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["materias"], [])
+        registro.refresh_from_db()
+        self.assertNotIn(self.materia, registro.materias.all())
+        registro.delete()
+
+    def test_quitar_materia_que_no_esta_devuelve_400(self):
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/registros/{registro.id}/materias/quitar/",
+            {"materia_id": self.materia.id},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        registro.delete()
+
+    def test_quitar_materia_de_registro_ajeno_devuelve_403(self):
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/registros/{self.registro_ajeno.id}/materias/quitar/",
+            {"materia_id": self.materia.id},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_alumno_no_puede_quitar_materia(self):
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro.agregar_materia(self.materia)
+        self.client.force_authenticate(user=self.alumno_user)
+
+        response = self.client.post(
+            f"/api/asesorias/registros/{registro.id}/materias/quitar/",
+            {"materia_id": self.materia.id},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        registro.delete()
