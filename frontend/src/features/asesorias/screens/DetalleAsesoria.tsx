@@ -8,20 +8,11 @@ import { Skeleton } from '../../../components/ui/Skeleton'
 import { Boton } from '../../../components/ui/Boton'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
 import { DialogoCancelar } from '../components/DialogoCancelar'
-import { ApiError } from '../../../api/client'
+import { primerMensajeDeError } from '../../../api/errores'
 import type { Asesoria } from '../../../api/types'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const FORMATEADOR_HORA = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' })
-
-function primerMensajeDeError(error: unknown): string {
-  if (error instanceof ApiError) {
-    const body = error.body as { detail?: string[] | string } | null
-    if (Array.isArray(body?.detail)) return body.detail[0]
-    if (typeof body?.detail === 'string') return body.detail
-  }
-  return 'Ocurrió un error inesperado.'
-}
 
 export function DetalleAsesoria() {
   const { id } = useParams<{ id: string }>()

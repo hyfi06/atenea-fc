@@ -1,12 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
 import type { RegistroAsesor, Disponibilidad, Asesoria } from '../../api/types'
+import { semestreActual } from './logica'
 
 export function useMisRegistros() {
   return useQuery({
     queryKey: ['registros'],
     queryFn: () => apiGet<RegistroAsesor[]>('/api/asesorias/registros/'),
   })
+}
+
+/**
+ * El registro de asesor del semestre pedido (el en curso por default).
+ * Las dos pantallas de disponibilidad ("Mis materias" y "Mi horario") lo
+ * necesitan igual, así que la búsqueda vive aquí y no en cada una.
+ */
+export function useRegistroDelSemestre(semestre: string = semestreActual()) {
+  const { data: registros, isPending } = useMisRegistros()
+  return {
+    registro: registros?.find((r) => r.semestre === semestre) ?? null,
+    cargando: isPending,
+  }
 }
 
 export function useCrearRegistro() {
