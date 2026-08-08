@@ -165,11 +165,24 @@ class AsesoriaViewSet(ModelViewSet):
             # objeto ajeno daría 404 y nunca llegaría a EsDuenoDeLaAsesoria
             # -> el 403 explícito que exige el ADR 0017 se perdería.
             return base
+
         if hasattr(user, "perfil_alumno"):
-            return base.filter(alumno=user.perfil_alumno)
-        if hasattr(user, "perfil_asesor_academico"):
-            return base.filter(disponibilidad__registro__asesor__user=user)
-        return Asesoria.objects.none()
+            queryset = base.filter(alumno=user.perfil_alumno)
+        elif hasattr(user, "perfil_asesor_academico"):
+            queryset = base.filter(disponibilidad__registro__asesor__user=user)
+        else:
+            return Asesoria.objects.none()
+
+        # Filtro de historial por semestre. Comparación manual, igual que
+        # materias/views.py — el proyecto no usa django-filter. Permisivo a
+        # propósito: un semestre desconocido devuelve [], no 400, porque no
+        # existe un modelo de calendario académico que defina qué claves son
+        # válidas (deuda técnica 0001).
+        if self.action == "list":
+            semestre = self.request.query_params.get("semestre")
+            if semestre:
+                queryset = queryset.filter(disponibilidad__registro__semestre=semestre)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         try:
@@ -213,3 +226,17 @@ class AsesoriaViewSet(ModelViewSet):
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AsesoriaSerializer(asesoria).data)
+
+    @action(detail=False, methods=["get"])
+    def semestres(self, request):
+        """Claves de semestre en las que el usuario tiene sesiones, de la más
+        reciente a la más antigua.
+
+        Sostiene los subtabs del historial: sin esto el frontend tendría que
+        cargar el historial completo para saber qué pestañas dibujar, que es
+        justo lo que el filtro `?semestre=` busca evitar.
+        """
+        claves = self.get_queryset().values_list(
+            "disponibilidad__registro__semestre", flat=True
+        )
+        return Response(sorted(set(claves), reverse=True))

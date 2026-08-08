@@ -295,3 +295,76 @@ class NombresEnAsesoriaApiTests(AsesoriaApiTestsBase):
             response = self.client.get("/api/asesorias/asesorias/")
 
         self.assertEqual(len(response.data), 3)
+
+
+class FiltroSemestreApiTests(AsesoriaApiTestsBase):
+    def setUp(self):
+        super().setUp()
+        # Un segundo registro/disponibilidad del mismo asesor, en otro semestre.
+        self.registro_viejo = RegistroAsesor.objects.create(
+            asesor=self.asesor, semestre="20262",
+        )
+        self.disponibilidad_vieja = Disponibilidad.objects.create(
+            registro=self.registro_viejo, dia_semana=0, hora_inicio=datetime.time(12, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/z",
+        )
+        self.sesion_actual = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes,
+            hora_inicio=self.disponibilidad.hora_inicio, formato="virtual",
+            liga_virtual="https://meet.example.com/x",
+        )
+        self.sesion_vieja = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad_vieja, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes - datetime.timedelta(days=7 * 20),
+            hora_inicio=self.disponibilidad_vieja.hora_inicio, formato="virtual",
+            liga_virtual="https://meet.example.com/z", estado="realizada", asistio=True,
+        )
+
+    def test_sin_filtro_devuelve_todas(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filtra_por_semestre(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/?semestre=20262")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], self.sesion_vieja.id)
+
+    def test_semestre_desconocido_devuelve_lista_vacia(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/?semestre=19991")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])
+
+    def test_el_alumno_tambien_puede_filtrar(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get("/api/asesorias/asesorias/?semestre=20271")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], self.sesion_actual.id)
+
+    def test_listar_semestres_del_asesor_en_orden_descendente(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/semestres/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, ["20271", "20262"])
+
+    def test_listar_semestres_solo_incluye_los_del_usuario(self):
+        otro_user = User.objects.create_user(email="otro_asesor@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=otro_user, numero_trabajador="99999")
+        PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
+        self.client.force_authenticate(user=otro_user)
+
+        response = self.client.get("/api/asesorias/asesorias/semestres/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])
