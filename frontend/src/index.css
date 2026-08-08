@@ -32,6 +32,7 @@
   --color-surface-container-low: #191d1f;
   --color-surface-container: #23292b;
   --color-surface-container-high: #2d3436;
+  --color-scrim: #000000;
 }
 
 /* Alias de shadcn/ui → tokens M3 de ADR 0014.
