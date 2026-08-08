@@ -65,6 +65,18 @@ class ResultadoBusquedaSerializer(serializers.Serializer):
     liga_virtual = serializers.CharField(allow_blank=True)
 
 
+class SesionFuturaSerializer(serializers.Serializer):
+    """Vista mínima de una Asesoria para el modal de advertencia al
+    desactivar un bloque: lo justo para que el asesor reconozca qué está
+    por cancelar."""
+
+    id = serializers.IntegerField()
+    fecha = serializers.DateField()
+    hora_inicio = serializers.TimeField()
+    alumno_nombre = serializers.CharField(source="alumno.user.nombre_completo")
+    materia_nombre = serializers.CharField(source="materia.nombre")
+
+
 class AsesoriaSerializer(serializers.ModelSerializer):
     cancelado_por_rol = serializers.SerializerMethodField()
     alumno_nombre = serializers.CharField(source="alumno.user.nombre_completo", read_only=True)

@@ -16,6 +16,7 @@ from .permissions import (
 from .serializers import (
     AgregarMateriaSerializer, AsesoriaSerializer, CancelarSerializer, DisponibilidadSerializer,
     MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer, ResultadoBusquedaSerializer,
+    SesionFuturaSerializer,
 )
 from .servicios import ventana_agendable
 
@@ -54,6 +55,15 @@ class DisponibilidadViewSet(ModelViewSet):
         if self.action == "list":
             return Disponibilidad.objects.filter(registro__asesor__user=self.request.user)
         return Disponibilidad.objects.all()
+
+    @action(detail=True, methods=["get"], url_path="sesiones-futuras")
+    def sesiones_futuras(self, request, pk=None):
+        disponibilidad = self.get_object()
+        sesiones = list(disponibilidad.sesiones_futuras())
+        return Response({
+            "total": len(sesiones),
+            "sesiones": SesionFuturaSerializer(sesiones, many=True).data,
+        })
 
 class BuscarDisponibilidadView(APIView):
     permission_classes = [EsAlumno]

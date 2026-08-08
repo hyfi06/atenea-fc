@@ -79,6 +79,25 @@ class Disponibilidad(models.Model):
         inicio = datetime.datetime.combine(datetime.date.min, self.hora_inicio)
         return (inicio + datetime.timedelta(minutes=30)).time()
 
+    def sesiones_futuras(self):
+        """Sesiones agendadas sobre este bloque que todavía no comienzan.
+
+        Criterio único para toda la app: lo consumen tanto el endpoint de
+        consulta (`sesiones-futuras/`) como `desactivar()`. Si divergieran,
+        el modal de advertencia podría anunciar N sesiones y la acción
+        cancelar otra cantidad.
+        """
+        ahora = timezone.localtime()
+        return (
+            self.asesorias.filter(estado="agendada")
+            .filter(
+                models.Q(fecha__gt=ahora.date())
+                | models.Q(fecha=ahora.date(), hora_inicio__gt=ahora.time())
+            )
+            .select_related("alumno__user", "materia")
+            .order_by("fecha", "hora_inicio")
+        )
+
     def __str__(self):
         return f"{self.registro} — {self.get_dia_semana_display()} {self.hora_inicio}"
 
