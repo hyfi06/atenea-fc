@@ -1,8 +1,29 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import { Boton } from '../components/ui/Boton'
+import { useAuth } from '../auth/AuthContext'
 
 export function Landing() {
   const navigate = useNavigate()
+  const { loginWithGoogle } = useAuth()
+  const [error, setError] = useState<string | null>(null)
+  const [conectandoGoogle, setConectandoGoogle] = useState(false)
+
+  // Mismo flujo, mismo manejo de carga/error y mismo copy de error que
+  // Login.tsx: son dos entradas a la misma acción, no dos comportamientos.
+  async function handleGoogleLogin() {
+    setError(null)
+    setConectandoGoogle(true)
+    try {
+      await loginWithGoogle()
+      navigate('/home')
+    } catch {
+      setError('No se pudo iniciar sesión con Google.')
+    } finally {
+      setConectandoGoogle(false)
+    }
+  }
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-between px-6 py-12">
@@ -20,17 +41,20 @@ export function Landing() {
       </div>
 
       <div className="flex w-full max-w-xs flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/home')}
-          className="h-11 rounded-full bg-primary text-sm font-semibold text-on-primary"
-        >
+        {error && (
+          <p role="alert" className="text-center text-sm text-error">
+            {error}
+          </p>
+        )}
+
+        <Boton type="button" onClick={handleGoogleLogin} cargando={conectandoGoogle}>
           Continuar con Correo Ciencias
-        </button>
+        </Boton>
+
         <button
           type="button"
           onClick={() => navigate('/login')}
-          className="h-11 text-sm font-semibold text-primary"
+          className="h-11 rounded-full text-sm font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           Entrar con correo y contraseña
         </button>
