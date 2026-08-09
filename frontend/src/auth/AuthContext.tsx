@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { apiGet, apiPost, ApiError, CLAVE_ACCESS, CLAVE_REFRESH } from '../api/client'
 import type { AuthUser, LoginResponse, RolUsuario } from '../api/types'
-import { solicitarAccessTokenDeGoogle } from './google'
+import { solicitarIdTokenDeGoogle } from './google'
 
 type EstadoSesion = 'loading' | 'authenticated' | 'unauthenticated'
 
@@ -54,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loginWithGoogle() {
     const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID
-    const accessToken = await solicitarAccessTokenDeGoogle(clientId)
-    const data = await apiPost<LoginResponse>('/api/auth/google/', { access_token: accessToken })
+    const idToken = await solicitarIdTokenDeGoogle(clientId)
+    const data = await apiPost<LoginResponse>('/api/auth/google/', { id_token: idToken })
     persistirSesion(data)
     setUser(data.user)
     setStatus('authenticated')

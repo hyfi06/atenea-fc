@@ -2,17 +2,21 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { AuthProvider, useAuth } from './AuthContext'
 import * as client from '../api/client'
+import * as google from './google'
 import { usuarioDePrueba } from '../test/factories'
 import type { AuthUser } from '../api/types'
 
 function Sonda() {
-  const { status, user, roles, loginWithPassword } = useAuth()
+  const { status, user, roles, loginWithPassword, loginWithGoogle } = useAuth()
   return (
     <>
       <div data-testid="estado">{status}:{user?.email ?? 'sin-usuario'}</div>
       <div data-testid="roles">{roles.join(',') || 'sin-roles'}</div>
       <button type="button" onClick={() => loginWithPassword('a@ciencias.unam.mx', 'x')}>
         Entrar con contraseña
+      </button>
+      <button type="button" onClick={() => loginWithGoogle()}>
+        Entrar con Google
       </button>
     </>
   )
@@ -109,5 +113,27 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('roles')).toHaveTextContent('alumno'))
     expect(apiGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('manda a POST /api/auth/google/ el id_token que devuelve Google', async () => {
+    vi.stubEnv('VITE_GOOGLE_OAUTH_CLIENT_ID', 'client-id-de-prueba')
+    vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
+    const solicitar = vi.spyOn(google, 'solicitarIdTokenDeGoogle').mockResolvedValue('jwt-de-google')
+    const apiPost = vi.spyOn(client, 'apiPost').mockResolvedValue({
+      access: 'jwt-access',
+      refresh: 'jwt-refresh',
+      user: usuarioDePrueba({ roles: ['alumno'] }),
+    })
+
+    montar()
+    await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('unauthenticated'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar con Google' }))
+
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/auth/google/', { id_token: 'jwt-de-google' }),
+    )
+    expect(solicitar).toHaveBeenCalledWith('client-id-de-prueba')
+    vi.unstubAllEnvs()
   })
 })
