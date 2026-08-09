@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { apiGet, apiPost, ApiError, CLAVE_ACCESS, CLAVE_REFRESH } from '../api/client'
-import type { AuthUser, LoginResponse } from '../api/types'
+import type { AuthUser, LoginResponse, RolUsuario } from '../api/types'
 import { solicitarAccessTokenDeGoogle } from './google'
 
 type EstadoSesion = 'loading' | 'authenticated' | 'unauthenticated'
 
 interface AuthContextValue {
   user: AuthUser | null
+  roles: RolUsuario[]
   status: EstadoSesion
   loginWithPassword: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
@@ -71,8 +72,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('unauthenticated')
   }
 
+  // `roles` se deriva de `user` en vez de guardarse aparte: hay una sola
+  // fuente de verdad. El `?? []` es el ÚNICO punto del frontend que tolera
+  // que el backend todavía no mande el campo (Task 3 del plan del paso 4);
+  // gracias a él ningún consumidor necesita defenderse por su cuenta.
+  const roles = user?.roles ?? []
+
   return (
-    <AuthContext.Provider value={{ user, status, loginWithPassword, loginWithGoogle, logout }}>
+    <AuthContext.Provider
+      value={{ user, roles, status, loginWithPassword, loginWithGoogle, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

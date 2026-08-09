@@ -1,7 +1,42 @@
+// Forma exacta de `accounts.serializers.UserDetailsSerializer` del backend.
+// El mismo objeto alimenta GET /api/auth/user/ y la clave `user` del body de
+// POST /api/auth/login/ y POST /api/auth/google/.
+export type RolUsuario = 'alumno' | 'academico' | 'asesor_academico'
+
+export interface PerfilAlumno {
+  id: number
+  numero_cuenta: string
+  carrera: number
+  carrera_nombre: string
+  generacion: number
+}
+
+export interface PerfilAcademico {
+  id: number
+  numero_trabajador: string
+}
+
+export interface PerfilAsesorAcademico {
+  id: number
+  area: number
+  area_nombre: string
+  // Ojo: `asesor_academico` aparece en `roles` aunque esto sea false — el rol
+  // sigue el criterio de la permission class EsAsesorAcademico del backend,
+  // que solo comprueba que el perfil exista.
+  activo: boolean
+}
+
 export interface AuthUser {
   pk: number
   email: string
   first_name: string
+  apellido1: string
+  apellido2: string
+  nombre_completo: string
+  roles: RolUsuario[]
+  perfil_alumno: PerfilAlumno | null
+  perfil_academico: PerfilAcademico | null
+  perfil_asesor_academico: PerfilAsesorAcademico | null
 }
 
 export interface LoginResponse {
