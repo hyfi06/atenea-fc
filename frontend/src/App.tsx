@@ -3,8 +3,10 @@ import { Landing } from './screens/Landing'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
-import { RutaDeAsesor } from './auth/RutaProtegida'
+import { RutaDeAsesor, RutaDeAsesorias } from './auth/RutaProtegida'
 import { Asesorias } from './features/asesorias/screens/Asesorias'
+import { OfertaAsesorias } from './features/asesorias/screens/OfertaAsesorias'
+import { AgendarAsesoria } from './features/asesorias/screens/AgendarAsesoria'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 import { MiHorario } from './features/asesorias/screens/MiHorario'
@@ -20,12 +22,28 @@ function App() {
         <Route
           path="/asesorias"
           element={
-            <RutaDeAsesor>
+            <RutaDeAsesorias>
               <Asesorias />
-            </RutaDeAsesor>
+            </RutaDeAsesorias>
           }
         />
-<Route
+        <Route
+          path="/asesorias/nueva"
+          element={
+            <RutaDeAsesorias>
+              <OfertaAsesorias />
+            </RutaDeAsesorias>
+          }
+        />
+        <Route
+          path="/asesorias/nueva/:materiaId"
+          element={
+            <RutaDeAsesorias>
+              <AgendarAsesoria />
+            </RutaDeAsesorias>
+          }
+        />
+        <Route
           path="/asesorias/materias"
           element={
             <RutaDeAsesor>
