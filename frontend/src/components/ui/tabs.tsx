@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
  * Primitivo `tabs` de shadcn/ui (ADR 0020), curado para este proyecto.
  *
  * El estilo por default es el subrayado que la app ya usaba en
- * `SesionesAsesor` (Próximas/Historial), no el "pill" con `bg-muted` que
+ * `Asesorias` (Próximas/Historial), no el "pill" con `bg-muted` que
  * trae shadcn: es el lenguaje visual establecido y evita introducir un
  * segundo patrón de pestañas. Cada consumidor puede afinar el layout con
  * `className` (p. ej. el espaciado de los 7 días en "Mi horario").

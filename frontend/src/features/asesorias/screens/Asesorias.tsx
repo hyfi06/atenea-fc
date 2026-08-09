@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs'
 import { useMisAsesorias, useSemestres, useAsesoriasDeSemestre } from '../api'
@@ -16,8 +16,20 @@ export function Asesorias() {
   const esAlumno = useEsAlumno()
   const { data: asesorias = [], isPending } = useMisAsesorias()
   const mapaMaterias = useMapaMaterias()
-  const nuevaAsesoriaId = (location.state as { nuevaAsesoriaId?: number } | null)?.nuevaAsesoriaId ?? null
+  // `location.state` sobrevive a refresh/back-nav, así que el resaltado se
+  // reactivaría sobre una asesoría vieja. Lo consumimos una vez: leemos el id
+  // a estado local y limpiamos el state de navegación para que el pulso/scroll
+  // dispare sólo tras el agendado real.
+  const [nuevaAsesoriaId, setNuevaAsesoriaId] = useState<number | null>(null)
   const nombreMateria = (id: number) => mapaMaterias.get(id)?.nombre ?? `Materia #${id}`
+
+  useEffect(() => {
+    const id = (location.state as { nuevaAsesoriaId?: number } | null)?.nuevaAsesoriaId
+    if (id != null) {
+      setNuevaAsesoriaId(id)
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location, navigate])
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
@@ -131,7 +143,7 @@ function ListaAsesorias({
     return (
       <ul className="flex flex-col gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16" />
+          <li key={i}><Skeleton className="h-16" /></li>
         ))}
       </ul>
     )

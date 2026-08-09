@@ -28,7 +28,7 @@ export function OfertaAsesorias() {
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
-      <button type="button" onClick={() => navigate('/asesorias')} className="w-fit text-sm text-primary">
+      <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">
         ← Volver a Asesorías
       </button>
       <h1 className="text-lg font-semibold text-on-background">Nueva asesoría</h1>
@@ -40,7 +40,7 @@ export function OfertaAsesorias() {
             id="filtro-carrera"
             value={carrera ?? ''}
             onChange={(e) => setCarrera(e.target.value === '' ? null : Number(e.target.value))}
-            className="foco-visible h-10 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
+            className="foco-visible min-h-11 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
           >
             <option value="">Todas</option>
             {carrerasEnOferta.map((c) => (
@@ -63,10 +63,16 @@ export function OfertaAsesorias() {
 
       {isPending ? (
         <ul className="flex flex-col gap-2">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li key={i}><Skeleton className="h-14" /></li>
+          ))}
         </ul>
       ) : filtradas.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">No hay materias con asesores disponibles.</p>
+        <p className="text-sm text-on-surface-variant">
+          {oferta.length === 0
+            ? 'No hay materias con asesores disponibles.'
+            : 'Ninguna materia coincide con tu búsqueda.'}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {filtradas.map((m) => (
