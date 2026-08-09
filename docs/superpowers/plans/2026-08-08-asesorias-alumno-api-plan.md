@@ -64,7 +64,7 @@ class OfertaApiTests(APITestCase):
     def setUp(self):
         self.area = Area.objects.get(nombre="Matemáticas")
         self.carrera = Carrera.objects.get(nombre="Actuaría")
-        self.otra_carrera = Carrera.objects.create(clave=200, nombre="Física", area=self.area)
+        self.otra_carrera = Carrera.objects.create(clave=900, nombre="Carrera Ajena Test", area=self.area)
 
         self.materia_con_asesor = Materia.objects.create(
             clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
@@ -519,7 +519,7 @@ class CarreraAlAgendarApiTests(APITestCase):
     def setUp(self):
         self.area = Area.objects.get(nombre="Matemáticas")
         self.carrera = Carrera.objects.get(nombre="Actuaría")
-        self.carrera_ajena = Carrera.objects.create(clave=300, nombre="Matemáticas Aplicadas", area=self.area)
+        self.carrera_ajena = Carrera.objects.create(clave=901, nombre="Carrera Ajena Test", area=self.area)
         self.materia = Materia.objects.create(
             clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
             habilitada_asesorias=True,
