@@ -78,8 +78,34 @@ class OfertaApiTests(APITestCase):
         response = self.client.get("/api/asesorias/oferta/")
         self.assertEqual(response.status_code, 403)
 
+    def test_num_asesores_cuadra_con_lista_de_asesores(self):
+        # Regresión de FIX-1: num_asesores debe contar registros con
+        # disponibilidad activa, igual que AsesoresDeMateriaView. Un asesor con
+        # dos registros (dos semestres) sobre la misma materia produce dos filas
+        # en la lista de asesores; num_asesores debe reflejar ese mismo conteo.
+        segundo_asesor_user = User.objects.create_user(email="asesor2@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=segundo_asesor_user, numero_trabajador="67890")
+        segundo_asesor = PerfilAsesorAcademico.objects.create(user=segundo_asesor_user, area=self.area)
+        registro_segundo = RegistroAsesor.objects.create(asesor=segundo_asesor, semestre="20271")
+        registro_segundo.materias.add(self.materia_con_asesor)
+        Disponibilidad.objects.create(
+            registro=registro_segundo, dia_semana=2, hora_inicio=datetime.time(12, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/y",
+        )
 
-from django.shortcuts import get_object_or_404  # no requerido en el test; ver implementación
+        # Segundo registro del PRIMER asesor, en otro semestre, misma materia.
+        registro_primero_otro_sem = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20272")
+        registro_primero_otro_sem.materias.add(self.materia_con_asesor)
+        Disponibilidad.objects.create(
+            registro=registro_primero_otro_sem, dia_semana=3, hora_inicio=datetime.time(13, 0),
+            formato="presencial", ubicacion="Salón 5",
+        )
+
+        self.client.force_authenticate(user=self.alumno_user)
+        oferta = self.client.get("/api/asesorias/oferta/")
+        fila = next(m for m in oferta.data if m["materia_id"] == self.materia_con_asesor.id)
+        asesores = self.client.get(f"/api/asesorias/oferta/{self.materia_con_asesor.id}/asesores/")
+        self.assertEqual(fila["num_asesores"], len(asesores.data))
 
 
 class AsesoresDeMateriaApiTests(APITestCase):

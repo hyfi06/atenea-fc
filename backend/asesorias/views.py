@@ -110,11 +110,13 @@ class BuscarDisponibilidadView(APIView):
         )
         if materia_id:
             disponibilidades = disponibilidades.filter(registro__materias__id=materia_id)
-        if carrera_id:
+        # Filtro lenient: un ?carrera no numérico se ignora en vez de romper con 500.
+        if carrera_id and carrera_id.isdigit():
             disponibilidades = disponibilidades.filter(registro__materias__carrera_id=carrera_id)
         if formato:
             disponibilidades = disponibilidades.filter(formato=formato)
-        if asesor_registro_id:
+        # Filtro lenient: un ?asesor no numérico se ignora en vez de romper con 500.
+        if asesor_registro_id and asesor_registro_id.isdigit():
             disponibilidades = disponibilidades.filter(registro_id=asesor_registro_id)
         disponibilidades = list(disponibilidades.distinct())
 
@@ -159,10 +161,12 @@ class OfertaView(APIView):
 
         materias = (
             Materia.objects.filter(registros_asesor__disponibilidades__activa=True)
-            .annotate(num_asesores=Count("registros_asesor__asesor", distinct=True))
+            .annotate(num_asesores=Count("registros_asesor", distinct=True))
             .distinct()
+            .order_by("nombre")
         )
-        if carrera_id:
+        # Filtro lenient: un ?carrera no numérico se ignora en vez de romper con 500.
+        if carrera_id and carrera_id.isdigit():
             materias = materias.filter(carrera_id=carrera_id)
         if buscar:
             materias = materias.filter(nombre__icontains=buscar)

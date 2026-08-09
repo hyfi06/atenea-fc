@@ -94,7 +94,9 @@ class AsesoriaSerializer(serializers.ModelSerializer):
     asesor_nombre = serializers.CharField(
         source="disponibilidad.registro.asesor.user.nombre_completo", read_only=True
     )
-    carrera = serializers.PrimaryKeyRelatedField(queryset=Carrera.objects.all(), required=False)
+    carrera = serializers.PrimaryKeyRelatedField(
+        queryset=Carrera.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = Asesoria
