@@ -22,7 +22,7 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
 ### Login con Google (único flujo social soportado)
 
 1. El SPA usa Google Identity Services — **Sign In With Google** (`google.accounts.id`, no `google.accounts.oauth2`) para obtener un **ID token** (JWT OIDC) directamente en el navegador. **No existe flujo de redirect/Authorization Code** — se eliminó del backend el 2026-08-01 (commit `cdefb7e`); no hay ruta de callback que implementar.
-2. `POST /api/auth/google/` con `{"id_token": "<jwt>"}`. **Mandar `access_token` ya no funciona**: desde ADR 0019 el backend lo rechaza con `400`, porque el flujo de `access_token` no verificaba que el token se hubiera emitido para el `client_id` de Atenea (`audience`). Errores posibles: `400 {"non_field_errors": ["El id_token de Google no es válido."]}` (firma, issuer, expiración o `audience` inválidos) y `400 {"non_field_errors": ["Incorrect input. id_token is required."]}` (falta el campo).
+2. `POST /api/auth/google/` con `{"id_token": "<jwt>"}`. **Mandar `access_token` ya no funciona**: desde ADR 0019 el backend lo rechaza con `400`, porque el flujo de `access_token` no verificaba que el token se hubiera emitido para el `client_id` de Atenea (`audience`). Errores posibles: `400 {"non_field_errors": ["El id_token de Google no es válido."]}` (firma, issuer, expiración o `audience` inválidos) y `400 {"non_field_errors": ["Incorrect input. id_token is required."]}` (falta el campo). El frontend implementa este transporte desde 2026-08-04 (`frontend/src/auth/google.ts`, `solicitarIdTokenDeGoogle`).
 3. Regla de negocio (no auto-registro, [ADR 0013](../decisions/0013-bloqueo-autoregistro-social.md)): el correo de Google debe corresponder a un `User` ya existente, dado de alta por la SAE. Si no existe cuenta: `400 {"non_field_errors": ["No existe una cuenta para este correo. Contacta a la SAE."]}` y no se crea nada.
 4. Éxito: `200` con el mismo payload que `/api/auth/login/` (ver abajo).
 5. El frontend necesita su propia `VITE_GOOGLE_OAUTH_CLIENT_ID` — **hoy no está en `frontend/.env.example`**, hay que agregarla.
@@ -86,6 +86,8 @@ El mismo objeto `user` es lo que devuelve `GET /api/auth/user/` (mismo serialize
 | `POST` | `/api/auth/password/reset/` | `AllowAny` | `{email}` → siempre `200`, incluso si el correo no existe. El link generado apunta a `{FRONTEND_URL}/reset-password/:uid/:token` — **esa ruta debe existir en el SPA** |
 | `POST` | `/api/auth/password/reset/confirm/` | `AllowAny` | `{uid, token, new_password1, new_password2}` |
 | `POST` | `/api/auth/password/change/` | requerida | `{old_password, new_password1, new_password2}` |
+
+El SPA consume `roles` de este payload para decidir qué puede ver el usuario (`frontend/src/auth/rol.ts`: `useEsAsesor`, `useEsAlumno`; `frontend/src/auth/RutaProtegida.tsx`). Ya **no** existe el sondeo de `GET /api/asesorias/registros/` con lectura de 200 vs 403 que describía la deuda técnica 0010: si `roles` no viene en la respuesta, el frontend trata al usuario como si no tuviera ningún rol.
 
 No existe endpoint de auto-registro (`dj_rest_auth.registration` no está incluido) — coherente con ADR 0013.
 

@@ -51,7 +51,7 @@ El fix de overflow del paso 3 (`min-w-0` + `whitespace-normal` + altura mínima 
 
 ## Checklist de accesibilidad
 
-- **Foco visible:** todo elemento interactivo nuevo lleva la clase `.foco-visible` (definida en `index.css`, ring de 2px en `--color-primary` con offset). No basta con quitar el outline por defecto del navegador. Gap conocido que sigue abierto: `Login.tsx` usa `outline-none focus:border-primary`, sin ring perceptible — se corrige cuando se toque esa pantalla (paso 9).
+- **Foco visible:** **todo elemento interactivo nuevo necesita un estado de foco visible** (ring o cambio de color con suficiente contraste), no solo quitar el outline por defecto del navegador. El patrón del proyecto es `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`, ya aplicado en `components/ui/Boton.tsx` (y por lo tanto en todos sus consumidores), `screens/Login.tsx` y `screens/Landing.tsx`. El gap original que motivó esta regla —`Login.tsx` usaba `outline-none focus:border-primary`, sin anillo perceptible— quedó corregido el 2026-08-04. Lo que sigue sin cubrir: los controles interactivos de `features/asesorias/` que no pasan por `Boton`.
 - **Live regions:** mensajes transitorios (confirmaciones, errores async) usan `role="status"` o `role="alert"` según si interrumpen o no — patrón ya usado en `Retroalimentacion.tsx`.
 - **Decorativo:** elementos puramente visuales (skeletons, íconos sin significado propio) llevan `aria-hidden` — patrón ya usado en `Skeleton.tsx`.
 - **Teclado:** si el componente compone Radix/shadcn, la navegación por teclado ya viene resuelta por la librería — no capturar/interceptar eventos de teclado que Radix ya maneja (foco atrapado en diálogos, `Esc` para cerrar, flechas en tabs).

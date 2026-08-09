@@ -60,3 +60,11 @@ Los tres puntos se cerraron en la misma pasada de backend:
 3. **Campos de cancelación:** `motivo_cancelacion` y `cancelado_por` entraron a `AsesoriaSerializer.Meta.fields`, más un `cancelado_por_rol` derivado (`"alumno"`/`"asesor"`/`"otro"`/`null`) — el id crudo de `User` no basta para renderizar el panel de cancelación, porque ninguna de las dos partes conoce el id de `User` de la otra.
 
 Lo que **no** cubre: sigue sin existir un endpoint donde un usuario resuelva el nombre de otro a partir de un id de perfil arbitrario, fuera del contexto de una `Asesoria` que comparten. La señal de revisión de la Fase 3 (panel de administración, que necesita listar todos los roles de todos los usuarios) sigue vigente y no se resolvió aquí.
+
+## Estado del consumidor en el frontend (2026-08-04)
+
+El workaround 1 (sondear `GET /api/asesorias/registros/` y leer 200 vs 403) **ya no existe en el código**: `frontend/src/auth/rol.ts` lee `roles` del contexto de autenticación, que a su vez lo toma del payload de `GET /api/auth/user/` y del body del login. Se agregó también `useEsAlumno()`, que con el sondeo habría exigido un segundo endpoint centinela — el escenario que la sección "Qué se simplificó" señalaba como el límite del parche.
+
+Se eliminó **sin fallback**: si el backend todavía no manda `roles`, el frontend trata al usuario como si no tuviera ningún rol y las rutas de asesor redirigen a Home. Es deliberado, para que la falta del contrato sea visible en vez de quedar enmascarada por el sondeo viejo (y porque el login con Google, en la misma pasada, ya depende del mismo plan de backend). Ver `docs/superpowers/plans/2026-08-04-login-oauth-frontend.md`.
+
+El workaround 2 (mostrar `"Alumno #<id>"` en vez de un nombre) **no** se tocó en el frontend: depende de `alumno_nombre`/`asesor_nombre` en `AsesoriaSerializer` y de las pantallas de asesorías, fuera del alcance del plan de login.
