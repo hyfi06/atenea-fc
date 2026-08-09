@@ -4,7 +4,7 @@ import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
 import { RutaDeAsesor } from './auth/RutaProtegida'
-import { SesionesAsesor } from './features/asesorias/screens/SesionesAsesor'
+import { Asesorias } from './features/asesorias/screens/Asesorias'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 import { MiHorario } from './features/asesorias/screens/MiHorario'
@@ -21,7 +21,7 @@ function App() {
           path="/asesorias"
           element={
             <RutaDeAsesor>
-              <SesionesAsesor />
+              <Asesorias />
             </RutaDeAsesor>
           }
         />
