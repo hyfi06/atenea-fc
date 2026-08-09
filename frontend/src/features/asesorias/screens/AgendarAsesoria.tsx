@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAsesoresDeMateria, useDisponibilidadDeAsesor, useAgendarAsesoria } from '../api'
 import { agruparPorDia } from '../logica'
 import { useAuth } from '../../../auth/AuthContext'
@@ -16,6 +17,7 @@ export function AgendarAsesoria() {
   const { materiaId } = useParams<{ materiaId: string }>()
   const idMateria = Number(materiaId)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
   const mapaCarreras = useMapaCarreras()
   const mapaMaterias = useMapaMaterias()
@@ -58,6 +60,11 @@ export function AgendarAsesoria() {
         onError: (err) => {
           setConfirmando(false)
           if (err instanceof ApiError && err.status === 409) {
+            // El bloque tomado sigue en la caché de disponibilidad (y `num_asesores`
+            // en la oferta pudo cambiar); invalidar ambos fuerza el refetch al
+            // regresar al paso de día y evita reofrecer el bloque ya ocupado.
+            queryClient.invalidateQueries({ queryKey: ['disponibilidad'] })
+            queryClient.invalidateQueries({ queryKey: ['oferta'] })
             setError('Ese horario ya fue tomado. Elige otro día.')
             setSlot(null)
             setFecha(null)
@@ -71,9 +78,27 @@ export function AgendarAsesoria() {
 
   const slotsDelDia = dias.find((d) => d.fecha === fecha)?.slots ?? []
 
+  if (!Number.isInteger(idMateria)) {
+    return (
+      <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+        <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">← Volver a Asesorías</button>
+        <p className="text-sm text-on-surface-variant">Materia inválida.</p>
+      </main>
+    )
+  }
+
+  if (carreraAlumno === null) {
+    return (
+      <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+        <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">← Volver a Asesorías</button>
+        <p className="text-sm text-on-surface-variant">Sólo los alumnos pueden agendar asesorías.</p>
+      </main>
+    )
+  }
+
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
-      <button type="button" onClick={volver} className="w-fit text-sm text-primary">← Atrás</button>
+      <button type="button" onClick={volver} className="foco-visible w-fit min-h-11 text-sm text-primary">← Atrás</button>
       <h1 className="text-lg font-semibold text-on-background">
         {mapaMaterias.get(idMateria)?.nombre ?? `Materia #${idMateria}`}
       </h1>
@@ -171,7 +196,7 @@ export function AgendarAsesoria() {
               id="carrera-agendar"
               value={carrera ?? ''}
               onChange={(e) => setCarrera(e.target.value === '' ? null : Number(e.target.value))}
-              className="foco-visible h-10 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
+              className="foco-visible min-h-11 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
             >
               {carreraAlumno !== null && (
                 <option value={carreraAlumno}>

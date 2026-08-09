@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AgendarAsesoria } from './AgendarAsesoria'
 import * as api from '../api'
 import * as auth from '../../../auth/AuthContext'
@@ -36,15 +37,19 @@ function mockComun(mutateImpl: ReturnType<typeof vi.fn>) {
   vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[12, { id: 12, nombre: 'Álgebra' } as never]]))
 }
 
-function montar() {
+function montar(entrada = '/asesorias/nueva/12') {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
-    <MemoryRouter initialEntries={['/asesorias/nueva/12']}>
-      <Routes>
-        <Route path="/asesorias/nueva/:materiaId" element={<AgendarAsesoria />} />
-        <Route path="/asesorias" element={<p>lista de asesorías</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[entrada]}>
+        <Routes>
+          <Route path="/asesorias/nueva/:materiaId" element={<AgendarAsesoria />} />
+          <Route path="/asesorias" element={<p>lista de asesorías</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
+  return queryClient
 }
 
 function avanzarHastaConfirmar() {
@@ -85,5 +90,26 @@ describe('AgendarAsesoria', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
     expect(await screen.findByText('Elige un día')).toBeInTheDocument()
     expect(screen.getByText(/ya fue tomado/i)).toBeInTheDocument()
+  })
+
+  it('un 409 invalida la búsqueda de disponibilidad para forzar el refetch', () => {
+    const mutate = vi.fn((_payload, { onError }) => onError(new ApiError(409, { detail: 'tomado' })))
+    mockComun(mutate)
+    const queryClient = montar()
+    const invalidar = vi.spyOn(queryClient, 'invalidateQueries')
+    avanzarHastaConfirmar()
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(invalidar).toHaveBeenCalledWith({ queryKey: ['disponibilidad'] })
+  })
+
+  it('un usuario sin perfil de alumno no puede agendar', () => {
+    mockComun(vi.fn())
+    vi.spyOn(auth, 'useAuth').mockReturnValue({
+      user: { perfil_alumno: null },
+      status: 'authenticated',
+    } as unknown as ReturnType<typeof auth.useAuth>)
+    montar()
+    expect(screen.getByText(/sólo los alumnos pueden agendar/i)).toBeInTheDocument()
+    expect(screen.queryByText('Ana López')).not.toBeInTheDocument()
   })
 })
