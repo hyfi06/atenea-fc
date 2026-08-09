@@ -2,13 +2,15 @@ import datetime
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+
+from materias.models import Materia
 
 from .models import Asesoria, Disponibilidad, RegistroAsesor
 from .permissions import (
@@ -138,6 +140,35 @@ class BuscarDisponibilidadView(APIView):
             fecha_cursor += datetime.timedelta(days=1)
 
         return Response(ResultadoBusquedaSerializer(resultados, many=True).data)
+
+
+class OfertaView(APIView):
+    permission_classes = [EsAlumno]
+
+    def get(self, request):
+        carrera_id = request.query_params.get("carrera")
+        buscar = request.query_params.get("buscar")
+
+        materias = (
+            Materia.objects.filter(registros_asesor__disponibilidades__activa=True)
+            .annotate(num_asesores=Count("registros_asesor__asesor", distinct=True))
+            .distinct()
+        )
+        if carrera_id:
+            materias = materias.filter(carrera_id=carrera_id)
+        if buscar:
+            materias = materias.filter(nombre__icontains=buscar)
+
+        data = [
+            {
+                "materia_id": m.id,
+                "nombre": m.nombre,
+                "carrera_id": m.carrera_id,
+                "num_asesores": m.num_asesores,
+            }
+            for m in materias
+        ]
+        return Response(data)
 
 
 class AsesoriaViewSet(ModelViewSet):
