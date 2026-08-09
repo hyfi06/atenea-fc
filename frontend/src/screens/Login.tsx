@@ -1,7 +1,10 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useId, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError } from '../api/client'
+import { Boton } from '../components/ui/Boton'
+
+const FOCO_VISIBLE = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
 interface TextFieldProps {
   label: string
@@ -12,20 +15,25 @@ interface TextFieldProps {
 }
 
 function TextField({ label, type, value, autoComplete, onChange }: TextFieldProps) {
+  const id = useId()
   return (
-    <label className="relative block">
-      <span className="absolute -top-2 left-3 bg-background px-1 text-xs text-on-surface-variant">
+    <div className="relative">
+      <label
+        htmlFor={id}
+        className="absolute -top-2 left-3 z-10 bg-background px-1 text-xs text-on-surface-variant"
+      >
         {label}
-      </span>
+      </label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={onChange}
         autoComplete={autoComplete}
         required
-        className="h-14 w-full rounded-md border border-outline bg-transparent px-3.5 text-sm text-on-surface outline-none focus:border-primary"
+        className={`h-14 w-full rounded-md border border-outline bg-transparent px-3.5 text-sm text-on-surface focus:border-primary ${FOCO_VISIBLE}`}
       />
-    </label>
+    </div>
   )
 }
 
@@ -46,7 +54,11 @@ export function Login() {
       await loginWithPassword(email, password)
       navigate('/home')
     } catch (err) {
-      setError(err instanceof ApiError ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión. Intenta de nuevo.')
+      setError(
+        err instanceof ApiError
+          ? 'Correo o contraseña incorrectos.'
+          : 'No se pudo iniciar sesión. Intenta de nuevo.',
+      )
     } finally {
       setEnviando(false)
     }
@@ -71,9 +83,9 @@ export function Login() {
         type="button"
         onClick={() => navigate(-1)}
         aria-label="Volver"
-        className="mb-8 flex h-9 w-9 items-center justify-center text-on-background"
+        className={`mb-8 flex h-9 w-9 items-center justify-center rounded-full text-on-background ${FOCO_VISIBLE}`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
           <path d="M15 19 L8 12 L15 5" />
         </svg>
       </button>
@@ -88,18 +100,13 @@ export function Login() {
           </p>
         )}
 
-        <button type="button" className="self-end text-xs font-medium text-primary">
+        <button type="button" className={`self-end rounded-md text-xs font-medium text-primary ${FOCO_VISIBLE}`}>
           ¿Olvidaste tu contraseña?
         </button>
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-on-primary disabled:opacity-60"
-        >
-          {enviando && <span className="spinner h-4 w-4" aria-hidden />}
+        <Boton type="submit" cargando={enviando}>
           Entrar
-        </button>
+        </Boton>
 
         <div className="flex items-center gap-3 text-xs text-on-surface-variant">
           <span className="h-px flex-1 bg-outline-variant" />
@@ -107,15 +114,9 @@ export function Login() {
           <span className="h-px flex-1 bg-outline-variant" />
         </div>
 
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={conectandoGoogle}
-          className="flex h-11 items-center justify-center gap-2 rounded-full border border-outline text-sm font-semibold text-primary disabled:opacity-60"
-        >
-          {conectandoGoogle && <span className="spinner h-4 w-4" aria-hidden />}
+        <Boton type="button" variante="secundario" onClick={handleGoogleLogin} cargando={conectandoGoogle}>
           Continuar con Correo Ciencias
-        </button>
+        </Boton>
       </form>
     </main>
   )
