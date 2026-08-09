@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from carreras.models import Carrera
 from materias.models import Materia
 
 from .models import Asesoria, Disponibilidad, RegistroAsesor
@@ -93,6 +94,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
     asesor_nombre = serializers.CharField(
         source="disponibilidad.registro.asesor.user.nombre_completo", read_only=True
     )
+    carrera = serializers.PrimaryKeyRelatedField(queryset=Carrera.objects.all(), required=False)
 
     class Meta:
         model = Asesoria
@@ -103,7 +105,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
             "cancelado_por_rol", "creado_en",
         ]
         read_only_fields = [
-            "id", "alumno", "carrera", "hora_inicio", "formato", "ubicacion", "liga_virtual",
+            "id", "alumno", "hora_inicio", "formato", "ubicacion", "liga_virtual",
             "estado", "asistio", "notas", "motivo_cancelacion", "cancelado_por", "creado_en",
         ]
         # DRF genera un UniqueTogetherValidator automático a partir del
@@ -132,11 +134,17 @@ class AsesoriaSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]
         alumno = self.context["request"].user.perfil_alumno
+        carrera = attrs.get("carrera") or alumno.carrera
+        # Hoy el alumno tiene exactamente una carrera (deuda 0008). Cuando el
+        # conjunto crezca, esta comprobación ya acepta cualquier carrera suya.
+        carreras_del_alumno = {alumno.carrera_id}
+        if carrera.id not in carreras_del_alumno:
+            raise serializers.ValidationError({"carrera": "La carrera no pertenece al alumno."})
         instance = Asesoria(
             alumno=alumno,
             disponibilidad=disponibilidad,
             materia=attrs["materia"],
-            carrera=alumno.carrera,
+            carrera=carrera,
             fecha=attrs["fecha"],
             hora_inicio=disponibilidad.hora_inicio,
             formato=disponibilidad.formato,
@@ -147,7 +155,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
             instance.clean()
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.messages)
-        attrs["carrera"] = alumno.carrera
+        attrs["carrera"] = carrera
         attrs["hora_inicio"] = disponibilidad.hora_inicio
         attrs["formato"] = disponibilidad.formato
         attrs["ubicacion"] = disponibilidad.ubicacion
