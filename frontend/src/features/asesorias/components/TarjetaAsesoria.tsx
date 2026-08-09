@@ -60,7 +60,7 @@ export function TarjetaAsesoria({ asesoria, nombreMateria, indice, destacar = fa
         // El alumno no navega a detalle: /asesorias/:id es asesor-only
         // (spec §Out of scope). tabIndex=-1 permite el focus programático de
         // `destacar` sin meterla en el orden de tabulación.
-        <div ref={(el) => { ref.current = el }} tabIndex={-1} className={clasesBase}>
+        <div ref={(el) => { ref.current = el }} tabIndex={-1} className={`foco-visible ${clasesBase}`}>
           {contenido}
         </div>
       )}
