@@ -86,6 +86,8 @@ export interface Disponibilidad {
 export interface Asesoria {
   id: number
   alumno: number
+  alumno_nombre: string
+  asesor_nombre: string
   disponibilidad: number
   materia: number
   carrera: number
@@ -96,6 +98,9 @@ export interface Asesoria {
   liga_virtual: string
   estado: EstadoAsesoria
   asistio: boolean | null
+  // El backend omite `notas` cuando quien pide no es el asesor dueño
+  // (ADR 0021). Ninguna pantalla del alumno la lee; sólo DetalleAsesoria
+  // (asesor-only) la consume.
   notas: string
   creado_en: string
 }
@@ -113,4 +118,32 @@ export interface SesionFutura {
 export interface SesionesFuturas {
   total: number
   sesiones: SesionFutura[]
+}
+
+export interface MateriaOferta {
+  materia_id: number
+  nombre: string
+  carrera_id: number
+  num_asesores: number
+}
+
+export interface AsesorDisponible {
+  registro_id: number
+  asesor_nombre: string
+  area_nombre: string
+  formatos: FormatoAsesoria[]
+}
+
+/** Resultado de GET /disponibilidad/buscar/?asesor=, extendido con la
+ *  identidad del asesor (ADR 0021). */
+export interface SlotDisponibilidad {
+  registro_id: number
+  asesor_nombre: string
+  disponibilidad_id: number
+  fecha: string
+  hora_inicio: string
+  hora_fin: string
+  formato: FormatoAsesoria
+  ubicacion: string
+  liga_virtual: string
 }

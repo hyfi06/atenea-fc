@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
-import type { RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas } from '../../api/types'
+import type {
+  RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas,
+  MateriaOferta, AsesorDisponible, SlotDisponibilidad,
+} from '../../api/types'
 import { semestreActual } from './logica'
 
 export function useMisRegistros() {
@@ -164,5 +167,64 @@ export function useDesactivarDisponibilidad() {
       queryClient.invalidateQueries({ queryKey: ['disponibilidades'] })
       queryClient.invalidateQueries({ queryKey: ['asesorias'] })
     },
+  })
+}
+
+export function useOferta() {
+  return useQuery({
+    queryKey: ['oferta'],
+    queryFn: () => apiGet<MateriaOferta[]>('/api/asesorias/oferta/'),
+  })
+}
+
+export function useAsesoresDeMateria(materiaId: number | null) {
+  return useQuery({
+    queryKey: ['oferta', materiaId, 'asesores'],
+    queryFn: () => apiGet<AsesorDisponible[]>(`/api/asesorias/oferta/${materiaId}/asesores/`),
+    enabled: materiaId !== null,
+  })
+}
+
+export function useDisponibilidadDeAsesor(materiaId: number | null, registroId: number | null) {
+  return useQuery({
+    queryKey: ['disponibilidad', materiaId, registroId],
+    queryFn: () =>
+      apiGet<SlotDisponibilidad[]>(
+        `/api/asesorias/disponibilidad/buscar/?materia=${materiaId}&asesor=${registroId}`,
+      ),
+    enabled: materiaId !== null && registroId !== null,
+  })
+}
+
+export interface PayloadAgendar {
+  disponibilidad: number
+  fecha: string
+  materia: number
+  carrera: number
+}
+
+export function useAgendarAsesoria() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: PayloadAgendar) => apiPost<Asesoria>('/api/asesorias/asesorias/', payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asesorias'] }),
+  })
+}
+
+export function useSemestres() {
+  return useQuery({
+    queryKey: ['asesorias', 'semestres'],
+    queryFn: () => apiGet<string[]>('/api/asesorias/asesorias/semestres/'),
+  })
+}
+
+/** Sesiones filtradas por semestre para los subtabs del historial. La key
+ *  comparte el prefijo ['asesorias'], así que `useAgendarAsesoria` la
+ *  invalida junto con la lista principal. */
+export function useAsesoriasDeSemestre(semestre: string | null) {
+  return useQuery({
+    queryKey: ['asesorias', { semestre }],
+    queryFn: () => apiGet<Asesoria[]>(`/api/asesorias/asesorias/?semestre=${semestre}`),
+    enabled: semestre !== null,
   })
 }
