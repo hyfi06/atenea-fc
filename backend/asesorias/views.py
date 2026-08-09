@@ -273,7 +273,7 @@ class AsesoriaViewSet(ModelViewSet):
             asesoria.cancelar(usuario=request.user, motivo=serializer.validated_data["motivo"])
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AsesoriaSerializer(asesoria).data)
+        return Response(AsesoriaSerializer(asesoria, context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="marcar_asistencia")
     def marcar_asistencia(self, request, pk=None):
@@ -284,7 +284,7 @@ class AsesoriaViewSet(ModelViewSet):
             asesoria.marcar_asistencia(serializer.validated_data["asistio"])
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AsesoriaSerializer(asesoria).data)
+        return Response(AsesoriaSerializer(asesoria, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
     def notas(self, request, pk=None):
@@ -295,7 +295,7 @@ class AsesoriaViewSet(ModelViewSet):
             asesoria.guardar_notas(serializer.validated_data["texto"])
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AsesoriaSerializer(asesoria).data)
+        return Response(AsesoriaSerializer(asesoria, context={"request": request}).data)
 
     @action(detail=False, methods=["get"])
     def semestres(self, request):

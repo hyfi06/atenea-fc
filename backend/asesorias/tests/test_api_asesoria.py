@@ -418,6 +418,57 @@ class FiltroSemestreApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.data, [])
 
 
+class NotasOcultasApiTests(APITestCase):
+    def setUp(self):
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+        self.materia = Materia.objects.create(
+            clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        OfertaMateria.objects.create(materia=self.materia, semestre="20271", se_imparte=True)
+
+        self.asesor_user = User.objects.create_user(email="asesor@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
+        self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
+        self.registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        self.registro.agregar_materia(self.materia)
+        self.disponibilidad = Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+
+        self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
+
+        from asesorias.models import Asesoria
+        self.asesoria = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=datetime.date.today(), hora_inicio=datetime.time(10, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+            estado="realizada", asistio=True, notas="El alumno debe repasar límites.",
+        )
+
+    def test_alumno_no_recibe_notas_en_list(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get("/api/asesorias/asesorias/")
+        self.assertTrue(response.data)
+        self.assertNotIn("notas", response.data[0])
+
+    def test_alumno_no_recibe_notas_en_retrieve(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+        self.assertNotIn("notas", response.data)
+
+    def test_asesor_dueno_si_recibe_notas(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+        self.assertIn("notas", response.data)
+        self.assertEqual(response.data["notas"], "El alumno debe repasar límites.")
+
+
 class CarreraAlAgendarApiTests(APITestCase):
     def setUp(self):
         self.area = Area.objects.get(nombre="Matemáticas")

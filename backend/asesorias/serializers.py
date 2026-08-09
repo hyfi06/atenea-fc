@@ -166,6 +166,19 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         validated_data["alumno"] = self.context["request"].user.perfil_alumno
         return Asesoria.objects.create(**validated_data)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        user_id = getattr(user, "id", None)
+        es_asesor_dueno = (
+            user_id is not None
+            and instance.disponibilidad.registro.asesor.user_id == user_id
+        )
+        if not es_asesor_dueno:
+            data.pop("notas", None)
+        return data
+
 
 class CancelarSerializer(serializers.Serializer):
     motivo = serializers.CharField(required=False, allow_blank=True, default="")
