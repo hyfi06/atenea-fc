@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
-import { RutaDeAsesor } from './RutaProtegida'
+import { RutaDeAsesor, RutaDeAsesorias } from './RutaProtegida'
 import * as client from '../api/client'
 import { usuarioDePrueba } from '../test/factories'
 
@@ -68,5 +68,57 @@ describe('RutaDeAsesor', () => {
     montar()
 
     expect(await screen.findByText('panel del asesor')).toBeInTheDocument()
+  })
+})
+
+function montarAsesorias() {
+  render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/asesorias']}>
+        <Routes>
+          <Route
+            path="/asesorias"
+            element={
+              <RutaDeAsesorias>
+                <p>vista de asesorías</p>
+              </RutaDeAsesorias>
+            }
+          />
+          <Route path="/home" element={<p>pantalla home</p>} />
+          <Route path="/login" element={<p>pantalla login</p>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>,
+  )
+}
+
+describe('RutaDeAsesorias', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('deja pasar al alumno', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
+    montarAsesorias()
+    expect(await screen.findByText('vista de asesorías')).toBeInTheDocument()
+  })
+
+  it('deja pasar al asesor', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(
+      usuarioDePrueba({ roles: ['academico', 'asesor_academico'] }),
+    )
+    montarAsesorias()
+    expect(await screen.findByText('vista de asesorías')).toBeInTheDocument()
+  })
+
+  it('manda a Home a quien no es alumno ni asesor', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['academico'] }))
+    montarAsesorias()
+    expect(await screen.findByText('pantalla home')).toBeInTheDocument()
+    expect(screen.queryByText('vista de asesorías')).not.toBeInTheDocument()
+  })
+
+  it('manda a Login a quien no tiene sesión', async () => {
+    vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
+    montarAsesorias()
+    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
   })
 })

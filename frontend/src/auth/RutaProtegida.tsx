@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
-import { useEsAsesor } from './rol'
+import { useEsAsesor, useEsAlumno } from './rol'
 
 function PantallaCargando() {
   return (
@@ -23,6 +23,21 @@ export function RutaDeAsesor({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
   if (!esAsesor) return <Navigate to="/home" replace />
+
+  return <>{children}</>
+}
+
+export function RutaDeAsesorias({ children }: { children: ReactNode }) {
+  const { status } = useAuth()
+  const esAsesor = useEsAsesor()
+  const esAlumno = useEsAlumno()
+  const location = useLocation()
+
+  if (status === 'loading') return <PantallaCargando />
+  if (status === 'unauthenticated') {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+  if (!esAsesor && !esAlumno) return <Navigate to="/home" replace />
 
   return <>{children}</>
 }
