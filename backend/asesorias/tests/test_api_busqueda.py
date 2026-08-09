@@ -93,3 +93,31 @@ class BuscarDisponibilidadApiTests(APITestCase):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get("/api/asesorias/disponibilidad/buscar/")
         self.assertEqual(response.status_code, 403)
+
+    def test_incluye_identidad_del_asesor(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(
+            f"/api/asesorias/disponibilidad/buscar/?materia={self.materia.id}"
+        )
+        self.assertTrue(response.data)
+        primero = response.data[0]
+        self.assertEqual(primero["registro_id"], self.registro.id)
+        self.assertEqual(primero["asesor_nombre"], self.asesor_user.nombre_completo)
+
+    def test_filtra_por_asesor(self):
+        otro_user = User.objects.create_user(email="asesor2@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=otro_user, numero_trabajador="99999")
+        otro_asesor = PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
+        otro_registro = RegistroAsesor.objects.create(asesor=otro_asesor, semestre="20271")
+        otro_registro.agregar_materia(self.materia)
+        Disponibilidad.objects.create(
+            registro=otro_registro, dia_semana=0, hora_inicio=datetime.time(12, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/y",
+        )
+
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(
+            f"/api/asesorias/disponibilidad/buscar/?materia={self.materia.id}&asesor={self.registro.id}"
+        )
+        registros = {r["registro_id"] for r in response.data}
+        self.assertEqual(registros, {self.registro.id})

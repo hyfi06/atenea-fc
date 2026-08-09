@@ -103,14 +103,19 @@ class BuscarDisponibilidadView(APIView):
         materia_id = request.query_params.get("materia")
         carrera_id = request.query_params.get("carrera")
         formato = request.query_params.get("formato")
+        asesor_registro_id = request.query_params.get("asesor")
 
-        disponibilidades = Disponibilidad.objects.filter(activa=True).select_related("registro")
+        disponibilidades = Disponibilidad.objects.filter(activa=True).select_related(
+            "registro__asesor__user"
+        )
         if materia_id:
             disponibilidades = disponibilidades.filter(registro__materias__id=materia_id)
         if carrera_id:
             disponibilidades = disponibilidades.filter(registro__materias__carrera_id=carrera_id)
         if formato:
             disponibilidades = disponibilidades.filter(formato=formato)
+        if asesor_registro_id:
+            disponibilidades = disponibilidades.filter(registro_id=asesor_registro_id)
         disponibilidades = list(disponibilidades.distinct())
 
         inicio, fin = ventana_agendable()
@@ -130,6 +135,8 @@ class BuscarDisponibilidadView(APIView):
                 if (disp.id, fecha_cursor) in ocupados:
                     continue
                 resultados.append({
+                    "registro_id": disp.registro_id,
+                    "asesor_nombre": disp.registro.asesor.user.nombre_completo,
                     "disponibilidad_id": disp.id,
                     "fecha": fecha_cursor,
                     "hora_inicio": disp.hora_inicio,

@@ -59,6 +59,8 @@ class DisponibilidadSerializer(serializers.ModelSerializer):
 
 
 class ResultadoBusquedaSerializer(serializers.Serializer):
+    registro_id = serializers.IntegerField()
+    asesor_nombre = serializers.CharField()
     disponibilidad_id = serializers.IntegerField()
     fecha = serializers.DateField()
     hora_inicio = serializers.TimeField()
