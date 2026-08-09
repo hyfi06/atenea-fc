@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { semestreActual, claveSlot, proximas, historial, sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas, horasDelDia, slotsDelDia, diaSemanaHoy } from './logica'
-import type { Disponibilidad, Asesoria } from '../../api/types'
+import { semestreActual, claveSlot, proximas, historial, sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas, horasDelDia, slotsDelDia, diaSemanaHoy, agruparPorDia } from './logica'
+import type { Disponibilidad, Asesoria, SlotDisponibilidad } from '../../api/types'
 
 describe('semestreActual', () => {
   it('devuelve año+1 para meses de enero a junio', () => {
@@ -139,5 +139,46 @@ describe('diaSemanaHoy', () => {
 
   it('traduce el lunes al índice 0', () => {
     expect(diaSemanaHoy(new Date('2026-08-03T10:00:00'))).toBe(0)
+  })
+})
+
+function slot(overrides: Partial<SlotDisponibilidad>): SlotDisponibilidad {
+  return {
+    registro_id: 7, asesor_nombre: 'Ana', disponibilidad_id: 1,
+    fecha: '2026-08-10', hora_inicio: '10:00:00', hora_fin: '10:30:00',
+    formato: 'virtual', ubicacion: '', liga_virtual: 'https://x', ...overrides,
+  }
+}
+
+describe('agruparPorDia', () => {
+  it('agrupa slots por fecha', () => {
+    const dias = agruparPorDia([
+      slot({ disponibilidad_id: 1, fecha: '2026-08-10' }),
+      slot({ disponibilidad_id: 2, fecha: '2026-08-10', hora_inicio: '11:00:00' }),
+      slot({ disponibilidad_id: 3, fecha: '2026-08-11' }),
+    ])
+    expect(dias.map((d) => d.fecha)).toEqual(['2026-08-10', '2026-08-11'])
+    expect(dias[0].slots).toHaveLength(2)
+    expect(dias[1].slots).toHaveLength(1)
+  })
+
+  it('ordena los días por fecha ascendente', () => {
+    const dias = agruparPorDia([
+      slot({ fecha: '2026-08-12' }),
+      slot({ fecha: '2026-08-10' }),
+    ])
+    expect(dias.map((d) => d.fecha)).toEqual(['2026-08-10', '2026-08-12'])
+  })
+
+  it('ordena los slots de cada día por hora_inicio', () => {
+    const [dia] = agruparPorDia([
+      slot({ disponibilidad_id: 1, hora_inicio: '12:00:00' }),
+      slot({ disponibilidad_id: 2, hora_inicio: '09:00:00' }),
+    ])
+    expect(dia.slots.map((s) => s.hora_inicio)).toEqual(['09:00:00', '12:00:00'])
+  })
+
+  it('devuelve lista vacía sin slots', () => {
+    expect(agruparPorDia([])).toEqual([])
   })
 })

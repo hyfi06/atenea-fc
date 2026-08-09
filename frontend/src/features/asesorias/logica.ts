@@ -1,4 +1,4 @@
-import type { Disponibilidad, Asesoria } from '../../api/types'
+import type { Disponibilidad, Asesoria, SlotDisponibilidad } from '../../api/types'
 
 export function semestreActual(hoy: Date = new Date()): string {
   const anio = hoy.getFullYear()
@@ -90,4 +90,27 @@ export function slotsDelDia(diaSemana: number, disponibilidades: Disponibilidad[
 /** Día de la semana de hoy en la convención del backend: 0 = lunes. */
 export function diaSemanaHoy(hoy: Date = new Date()): number {
   return (hoy.getDay() + 6) % 7
+}
+
+export interface DiaDisponible {
+  fecha: string
+  slots: SlotDisponibilidad[]
+}
+
+/** Agrupa los slots planos de la búsqueda en días (dos semanas), listos para
+ *  dibujar el paso "día" → "bloque" del wizard. Días por fecha asc; bloques
+ *  de cada día por hora asc. */
+export function agruparPorDia(slots: SlotDisponibilidad[]): DiaDisponible[] {
+  const porFecha = new Map<string, SlotDisponibilidad[]>()
+  for (const slot of slots) {
+    const lista = porFecha.get(slot.fecha) ?? []
+    lista.push(slot)
+    porFecha.set(slot.fecha, lista)
+  }
+  return [...porFecha.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([fecha, delDia]) => ({
+      fecha,
+      slots: [...delDia].sort((x, y) => x.hora_inicio.localeCompare(y.hora_inicio)),
+    }))
 }
