@@ -3,6 +3,7 @@ import datetime
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -168,6 +169,31 @@ class OfertaView(APIView):
             }
             for m in materias
         ]
+        return Response(data)
+
+
+class AsesoresDeMateriaView(APIView):
+    permission_classes = [EsAlumno]
+
+    def get(self, request, materia_id):
+        materia = get_object_or_404(Materia, pk=materia_id)
+        registros = (
+            RegistroAsesor.objects.filter(materias=materia, disponibilidades__activa=True)
+            .select_related("asesor__user", "asesor__area")
+            .distinct()
+            .order_by("id")
+        )
+        data = []
+        for registro in registros:
+            formatos = sorted(
+                set(registro.disponibilidades.filter(activa=True).values_list("formato", flat=True))
+            )
+            data.append({
+                "registro_id": registro.id,
+                "asesor_nombre": registro.asesor.user.nombre_completo,
+                "area_nombre": registro.asesor.area.nombre,
+                "formatos": formatos,
+            })
         return Response(data)
 
 

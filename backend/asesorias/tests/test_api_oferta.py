@@ -77,3 +77,66 @@ class OfertaApiTests(APITestCase):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get("/api/asesorias/oferta/")
         self.assertEqual(response.status_code, 403)
+
+
+from django.shortcuts import get_object_or_404  # no requerido en el test; ver implementación
+
+
+class AsesoresDeMateriaApiTests(APITestCase):
+    def setUp(self):
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+        self.materia = Materia.objects.create(
+            clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        self.materia_sin_asesores = Materia.objects.create(
+            clave="1802", nombre="Cálculo", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+
+        self.asesor_user = User.objects.create_user(email="asesor@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
+        self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
+        self.registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        self.registro.materias.add(self.materia)
+        Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+        Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=1, hora_inicio=datetime.time(11, 0),
+            formato="presencial", ubicacion="Salón 4",
+        )
+
+        self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
+
+    def test_lista_asesores_con_identidad_y_formatos(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(f"/api/asesorias/oferta/{self.materia.id}/asesores/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        fila = response.data[0]
+        self.assertEqual(fila["registro_id"], self.registro.id)
+        self.assertEqual(fila["asesor_nombre"], self.asesor_user.nombre_completo)
+        self.assertEqual(fila["area_nombre"], "Matemáticas")
+        self.assertEqual(sorted(fila["formatos"]), ["presencial", "virtual"])
+
+    def test_materia_sin_asesores_devuelve_lista_vacia(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(f"/api/asesorias/oferta/{self.materia_sin_asesores.id}/asesores/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])
+
+    def test_materia_inexistente_devuelve_404(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get("/api/asesorias/oferta/999999/asesores/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_no_alumno_recibe_403(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get(f"/api/asesorias/oferta/{self.materia.id}/asesores/")
+        self.assertEqual(response.status_code, 403)
