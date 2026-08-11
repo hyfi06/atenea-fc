@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from materias.models import Materia
+from accounts.models import PerfilAlumno
 
 from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from .permissions import (
@@ -440,3 +441,38 @@ class AdminAsesorDetalleView(APIView):
             "disponibilidades": disponibilidades,
         }
         return Response(AsesorDetalleAdminSerializer(payload).data)
+
+
+# Autocompletar, no listado: el frontend usa esto para resolver un alumno por
+# nombre o cuenta. Sin paginación en esta fase (deuda 0006), el corte fijo
+# evita devolver el padrón completo.
+LIMITE_AUTOCOMPLETAR_ALUMNOS = 20
+
+
+class AdminAlumnosView(APIView):
+    """Autocompletar de alumnos para el filtro `?alumno=` del área SAE."""
+
+    permission_classes = [EsMiembroSAE]
+
+    def get(self, request):
+        buscar = request.query_params.get("buscar")
+        alumnos = PerfilAlumno.objects.select_related("user")
+        if buscar:
+            # `nombre_completo` es una propiedad de Python: se busca sobre las
+            # columnas que la componen.
+            alumnos = alumnos.filter(
+                Q(numero_cuenta__icontains=buscar)
+                | Q(user__first_name__icontains=buscar)
+                | Q(user__apellido1__icontains=buscar)
+                | Q(user__apellido2__icontains=buscar)
+            )
+        alumnos = alumnos.order_by("user__first_name", "user__apellido1", "user__apellido2")
+        data = [
+            {
+                "perfil_id": alumno.id,
+                "nombre": alumno.user.nombre_completo,
+                "numero_cuenta": alumno.numero_cuenta,
+            }
+            for alumno in alumnos[:LIMITE_AUTOCOMPLETAR_ALUMNOS]
+        ]
+        return Response(data)

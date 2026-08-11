@@ -427,3 +427,76 @@ class AdminAsesorDetalleApiTests(APITestCase):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get(f"/api/asesorias/admin/asesores/{self.asesor.id}/")
         self.assertEqual(response.status_code, 403)
+
+
+class AdminAlumnosApiTests(APITestCase):
+    def setUp(self):
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+
+        self.juan_user = User.objects.create_user(
+            email="juan@ciencias.unam.mx", password="x", first_name="Juan",
+        )
+        self.juan_user.apellido1 = "Pérez"
+        self.juan_user.save()
+        self.juan = PerfilAlumno.objects.create(
+            user=self.juan_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        )
+
+        self.rosa_user = User.objects.create_user(
+            email="rosa@ciencias.unam.mx", password="x", first_name="Rosa",
+        )
+        self.rosa_user.apellido1 = "Gómez"
+        self.rosa_user.save()
+        self.rosa = PerfilAlumno.objects.create(
+            user=self.rosa_user, numero_cuenta="420000001", carrera=self.carrera, generacion=2024,
+        )
+
+        self.sae_user = User.objects.create_user(email="sae-alu@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=self.sae_user)
+
+    def test_busca_por_nombre(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=jua")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data,
+            [{"perfil_id": self.juan.id, "nombre": "Juan Pérez", "numero_cuenta": "312345678"}],
+        )
+
+    def test_busca_por_apellido(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=góm")
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.rosa.id})
+
+    def test_busca_por_numero_de_cuenta(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=4200")
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.rosa.id})
+
+    def test_busqueda_sin_coincidencias_devuelve_lista_vacia(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=zzzzz")
+        self.assertEqual(response.data, [])
+
+    def test_respeta_el_limite_de_resultados(self):
+        from asesorias.views import LIMITE_AUTOCOMPLETAR_ALUMNOS
+
+        for indice in range(LIMITE_AUTOCOMPLETAR_ALUMNOS + 5):
+            user = User.objects.create_user(
+                email=f"masivo{indice}@ciencias.unam.mx", password="x", first_name="Masivo",
+            )
+            PerfilAlumno.objects.create(
+                user=user, numero_cuenta=f"5000000{indice:02d}", carrera=self.carrera,
+                generacion=2025,
+            )
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=masivo")
+        self.assertEqual(len(response.data), LIMITE_AUTOCOMPLETAR_ALUMNOS)
+
+    def test_no_sae_recibe_403(self):
+        self.client.force_authenticate(user=self.juan_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=jua")
+        self.assertEqual(response.status_code, 403)
