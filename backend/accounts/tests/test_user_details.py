@@ -124,3 +124,39 @@ class UserDetailsApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["user"]["roles"], ["alumno"])
+
+    def test_miembro_sae_reporta_el_rol_sae(self):
+        from accounts.models import PerfilSAE
+
+        user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=user)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get("/api/auth/user/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["roles"], ["sae"])
+
+    def test_usuario_sin_perfil_sae_no_reporta_el_rol(self):
+        user = User.objects.create_user(email="no-sae@ciencias.unam.mx", password="x")
+        PerfilAlumno.objects.create(
+            user=user, numero_cuenta="312999999", carrera=self.carrera, generacion=2023,
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get("/api/auth/user/")
+
+        self.assertNotIn("sae", response.data["roles"])
+
+    def test_sae_inactivo_conserva_el_rol(self):
+        """El rol depende de que el perfil exista, no de `activo` — mismo
+        criterio que EsAsesorAcademico y que la permission EsMiembroSAE."""
+        from accounts.models import PerfilSAE
+
+        user = User.objects.create_user(email="sae-inactivo@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=user, activo=False)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get("/api/auth/user/")
+
+        self.assertIn("sae", response.data["roles"])

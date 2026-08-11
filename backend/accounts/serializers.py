@@ -117,6 +117,10 @@ class UserDetailsSerializer(BaseUserDetailsSerializer):
         # class EsAsesorAcademico. `activo` viaja dentro del objeto anidado.
         if hasattr(obj, "perfil_asesor_academico"):
             roles.append("asesor_academico")
+        # Mismo criterio que los demás roles: existe el perfil -> existe el
+        # rol. `activo` no participa (lo mismo que comprueba EsMiembroSAE).
+        if hasattr(obj, "perfil_sae"):
+            roles.append("sae")
         return roles
 
     def get_perfil_alumno(self, obj):
