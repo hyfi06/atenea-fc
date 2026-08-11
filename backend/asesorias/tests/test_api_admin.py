@@ -236,3 +236,81 @@ class AdminSemestresApiTests(APITestCase):
         self.client.force_authenticate(user=self.alumno_user)
         response = self.client.get("/api/asesorias/admin/semestres/")
         self.assertEqual(response.status_code, 403)
+
+
+class AdminAsesoresApiTests(APITestCase):
+    def setUp(self):
+        from asesorias.servicios import semestre_vigente
+
+        self.semestre = semestre_vigente()
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+        self.materia1 = Materia.objects.create(
+            clave="1821", nombre="Topología", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        self.materia2 = Materia.objects.create(
+            clave="1822", nombre="Variable Compleja", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+
+        # Asesor activo con 2 materias en el semestre vigente y 1 en otro.
+        self.activo_user = User.objects.create_user(
+            email="zeta@ciencias.unam.mx", password="x", first_name="Zoe",
+        )
+        PerfilAcademico.objects.create(user=self.activo_user, numero_trabajador="30001")
+        self.asesor_activo = PerfilAsesorAcademico.objects.create(
+            user=self.activo_user, area=self.area, activo=True,
+        )
+        registro_vigente = RegistroAsesor.objects.create(
+            asesor=self.asesor_activo, semestre=self.semestre,
+        )
+        registro_vigente.materias.add(self.materia1, self.materia2)
+        registro_viejo = RegistroAsesor.objects.create(asesor=self.asesor_activo, semestre="20191")
+        registro_viejo.materias.add(self.materia1)
+
+        # Asesor inactivo sin registro en el semestre vigente.
+        self.inactivo_user = User.objects.create_user(
+            email="alfa@ciencias.unam.mx", password="x", first_name="Aldo",
+        )
+        PerfilAcademico.objects.create(user=self.inactivo_user, numero_trabajador="30002")
+        self.asesor_inactivo = PerfilAsesorAcademico.objects.create(
+            user=self.inactivo_user, area=self.area, activo=False,
+        )
+
+        self.sae_user = User.objects.create_user(email="sae-dir@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=self.sae_user)
+
+    def test_lista_todos_los_asesores_ordenados_por_nombre(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        self.assertEqual(response.status_code, 200)
+        nombres = [a["nombre"] for a in response.data]
+        self.assertEqual(nombres, sorted(nombres))
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.asesor_activo.id, self.asesor_inactivo.id})
+
+    def test_incluye_area_y_activo(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        fila = next(a for a in response.data if a["perfil_id"] == self.asesor_inactivo.id)
+        self.assertEqual(fila["area_nombre"], "Matemáticas")
+        self.assertFalse(fila["activo"])
+        self.assertEqual(fila["nombre"], self.inactivo_user.nombre_completo)
+
+    def test_cuenta_materias_solo_del_semestre_vigente(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        fila = next(a for a in response.data if a["perfil_id"] == self.asesor_activo.id)
+        self.assertEqual(fila["num_materias_semestre_vigente"], 2)
+
+    def test_asesor_sin_registro_vigente_cuenta_cero(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        fila = next(a for a in response.data if a["perfil_id"] == self.asesor_inactivo.id)
+        self.assertEqual(fila["num_materias_semestre_vigente"], 0)
+
+    def test_no_sae_recibe_403(self):
+        self.client.force_authenticate(user=self.activo_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        self.assertEqual(response.status_code, 403)

@@ -14,7 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from materias.models import Materia
 
-from .models import Asesoria, Disponibilidad, RegistroAsesor
+from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from .permissions import (
     EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
@@ -23,7 +23,7 @@ from .serializers import (
     DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer,
     ResultadoBusquedaSerializer, SesionFuturaSerializer,
 )
-from .servicios import ventana_agendable
+from .servicios import semestre_vigente, ventana_agendable
 
 
 class RegistroAsesorViewSet(ModelViewSet):
@@ -373,3 +373,33 @@ class AdminSemestresView(APIView):
             "disponibilidad__registro__semestre", flat=True
         )
         return Response(sorted(set(claves), reverse=True))
+
+
+class AdminAsesoresView(APIView):
+    """Directorio de asesores para el área SAE."""
+
+    permission_classes = [EsMiembroSAE]
+
+    def get(self, request):
+        semestre = semestre_vigente()
+        asesores = PerfilAsesorAcademico.objects.select_related("user", "area").annotate(
+            num_materias_semestre_vigente=Count(
+                "registros__materias",
+                filter=Q(registros__semestre=semestre),
+                distinct=True,
+            )
+        )
+        data = [
+            {
+                "perfil_id": asesor.id,
+                "nombre": asesor.user.nombre_completo,
+                "area_nombre": asesor.area.nombre,
+                "activo": asesor.activo,
+                "num_materias_semestre_vigente": asesor.num_materias_semestre_vigente,
+            }
+            for asesor in asesores
+        ]
+        # `nombre_completo` es una propiedad de Python, no una columna: el
+        # orden se resuelve aquí y no con order_by.
+        data.sort(key=lambda fila: fila["nombre"])
+        return Response(data)
