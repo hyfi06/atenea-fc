@@ -1,7 +1,13 @@
+import { useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import { IconTutorias } from '../components/icons/ServiceIcons'
 import { services } from '../data/services'
+import { useEsMiembroSAE } from '../auth/rol'
 
 export function Home() {
+  const navigate = useNavigate()
+  const esMiembroSAE = useEsMiembroSAE()
+
   return (
     <main className="min-h-svh px-4 pb-8">
       <header className="flex items-center gap-2 py-4">
@@ -20,6 +26,16 @@ export function Home() {
       <p className="pb-4 text-sm text-on-surface-variant">Hola</p>
 
       <div className="grid grid-cols-3 gap-3">
+        {esMiembroSAE && (
+          <button
+            type="button"
+            onClick={() => navigate('/sae/asesorias')}
+            className="foco-visible flex min-h-11 flex-col items-center gap-2 rounded-2xl bg-secondary-container p-3 text-center text-on-secondary-container"
+          >
+            <IconTutorias className="h-6 w-6" />
+            <span className="text-xs font-semibold leading-tight">Asesorías · SAE</span>
+          </button>
+        )}
         {services.map(({ id, label, Icon, containerClassName, onContainerClassName }) => (
           <div
             key={id}
