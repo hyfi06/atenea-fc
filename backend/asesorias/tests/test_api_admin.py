@@ -168,3 +168,71 @@ class AdminAsesoriasApiTests(APITestCase):
     def test_sin_autenticar_recibe_401(self):
         response = self.client.get("/api/asesorias/admin/asesorias/")
         self.assertEqual(response.status_code, 401)
+
+
+class AdminSemestresApiTests(APITestCase):
+    def setUp(self):
+        self.hoy = timezone.localdate()
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+        self.materia = Materia.objects.create(
+            clave="1811", nombre="Geometría", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+
+        self.alumno_user = User.objects.create_user(email="alumno-sem@ciencias.unam.mx", password="x")
+        self.alumno = PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="313111111", carrera=self.carrera, generacion=2023,
+        )
+
+        # Dos asesores distintos, cada uno con su registro en un semestre
+        # distinto: ninguno es el usuario que consulta.
+        self.disponibilidades = {}
+        for indice, (correo, trabajador, semestre, dia) in enumerate(
+            [
+                ("asesor-sem-a@ciencias.unam.mx", "20001", "20261", 0),
+                ("asesor-sem-b@ciencias.unam.mx", "20002", "20262", 1),
+            ]
+        ):
+            user = User.objects.create_user(email=correo, password="x")
+            PerfilAcademico.objects.create(user=user, numero_trabajador=trabajador)
+            asesor = PerfilAsesorAcademico.objects.create(user=user, area=self.area)
+            registro = RegistroAsesor.objects.create(asesor=asesor, semestre=semestre)
+            registro.materias.add(self.materia)
+            disponibilidad = Disponibilidad.objects.create(
+                registro=registro, dia_semana=dia, hora_inicio=datetime.time(9 + indice, 0),
+                formato="virtual", liga_virtual=f"https://meet.example.com/{indice}",
+            )
+            self.disponibilidades[semestre] = disponibilidad
+            Asesoria.objects.create(
+                alumno=self.alumno, disponibilidad=disponibilidad, materia=self.materia,
+                carrera=self.carrera, fecha=self.hoy - datetime.timedelta(days=10 + indice),
+                hora_inicio=disponibilidad.hora_inicio, formato="virtual",
+                liga_virtual=disponibilidad.liga_virtual, estado="realizada", asistio=True,
+            )
+
+        self.sae_user = User.objects.create_user(email="sae-sem@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=self.sae_user)
+
+    def test_lista_todos_los_semestres_del_sistema_descendente(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/semestres/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, ["20262", "20261"])
+
+    def test_no_duplica_semestres(self):
+        segunda = self.disponibilidades["20261"]
+        Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=segunda, materia=self.materia,
+            carrera=self.carrera, fecha=self.hoy - datetime.timedelta(days=17),
+            hora_inicio=segunda.hora_inicio, formato="virtual",
+            liga_virtual=segunda.liga_virtual, estado="realizada", asistio=True,
+        )
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/semestres/")
+        self.assertEqual(response.data, ["20262", "20261"])
+
+    def test_no_sae_recibe_403(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get("/api/asesorias/admin/semestres/")
+        self.assertEqual(response.status_code, 403)

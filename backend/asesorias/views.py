@@ -359,3 +359,17 @@ class AdminAsesoriasView(APIView):
         return Response(
             AsesoriaSerializer(queryset, many=True, context={"request": request}).data
         )
+
+
+class AdminSemestresView(APIView):
+    """Todos los semestres del sistema con sesiones, de más reciente a más
+    antiguo. Alimenta los subtabs de histórico del área SAE; el endpoint
+    `asesorias/semestres/` existente sólo cubre los del usuario."""
+
+    permission_classes = [EsMiembroSAE]
+
+    def get(self, request):
+        claves = Asesoria.objects.values_list(
+            "disponibilidad__registro__semestre", flat=True
+        )
+        return Response(sorted(set(claves), reverse=True))
