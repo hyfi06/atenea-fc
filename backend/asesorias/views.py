@@ -15,7 +15,7 @@ from materias.models import Materia
 
 from .models import Asesoria, Disponibilidad, RegistroAsesor
 from .permissions import (
-    EsAlumno, EsAlumnoOAsesorAcademico, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
+    EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
     MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
@@ -97,7 +97,7 @@ class DisponibilidadViewSet(ModelViewSet):
         })
 
 class BuscarDisponibilidadView(APIView):
-    permission_classes = [EsAlumno]
+    permission_classes = [EsAlumnoOMiembroSAE]
 
     def get(self, request):
         materia_id = request.query_params.get("materia")
@@ -153,7 +153,7 @@ class BuscarDisponibilidadView(APIView):
 
 
 class OfertaView(APIView):
-    permission_classes = [EsAlumno]
+    permission_classes = [EsAlumnoOMiembroSAE]
 
     def get(self, request):
         carrera_id = request.query_params.get("carrera")
@@ -184,7 +184,7 @@ class OfertaView(APIView):
 
 
 class AsesoresDeMateriaView(APIView):
-    permission_classes = [EsAlumno]
+    permission_classes = [EsAlumnoOMiembroSAE]
 
     def get(self, request, materia_id):
         materia = get_object_or_404(Materia, pk=materia_id)

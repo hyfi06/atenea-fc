@@ -78,6 +78,17 @@ class OfertaApiTests(APITestCase):
         response = self.client.get("/api/asesorias/oferta/")
         self.assertEqual(response.status_code, 403)
 
+    def test_miembro_sae_puede_consultar_la_oferta(self):
+        from accounts.models import PerfilSAE
+
+        sae_user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=sae_user)
+        self.client.force_authenticate(user=sae_user)
+        response = self.client.get("/api/asesorias/oferta/")
+        self.assertEqual(response.status_code, 200)
+        ids = {m["materia_id"] for m in response.data}
+        self.assertIn(self.materia_con_asesor.id, ids)
+
     def test_num_asesores_cuadra_con_lista_de_asesores(self):
         # Regresión de FIX-1: num_asesores debe contar registros con
         # disponibilidad activa, igual que AsesoresDeMateriaView. Un asesor con
@@ -166,3 +177,13 @@ class AsesoresDeMateriaApiTests(APITestCase):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get(f"/api/asesorias/oferta/{self.materia.id}/asesores/")
         self.assertEqual(response.status_code, 403)
+
+    def test_miembro_sae_puede_consultar_los_asesores_de_la_materia(self):
+        from accounts.models import PerfilSAE
+
+        sae_user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=sae_user)
+        self.client.force_authenticate(user=sae_user)
+        response = self.client.get(f"/api/asesorias/oferta/{self.materia.id}/asesores/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)

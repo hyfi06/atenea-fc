@@ -121,3 +121,31 @@ class BuscarDisponibilidadApiTests(APITestCase):
         )
         registros = {r["registro_id"] for r in response.data}
         self.assertEqual(registros, {self.registro.id})
+
+    def test_miembro_sae_puede_usar_la_busqueda(self):
+        from accounts.models import PerfilSAE
+
+        sae_user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=sae_user)
+        self.client.force_authenticate(user=sae_user)
+        response = self.client.get(
+            f"/api/asesorias/disponibilidad/buscar/?materia={self.materia.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data)
+
+    def test_miembro_sae_no_puede_agendar(self):
+        from accounts.models import PerfilSAE
+
+        sae_user = User.objects.create_user(email="sae2@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=sae_user)
+        self.client.force_authenticate(user=sae_user)
+        response = self.client.post(
+            "/api/asesorias/asesorias/",
+            {
+                "disponibilidad": self.disponibilidad.id,
+                "materia": self.materia.id,
+                "fecha": str(self.proximo_lunes),
+            },
+        )
+        self.assertEqual(response.status_code, 403)
