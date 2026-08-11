@@ -179,8 +179,9 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         )
         # ADR 0023: el miembro SAE es casi-administrador del servicio y ve la
         # sesión completa. El alumno sigue excluido (no se reabre ADR 0021).
-        es_miembro_sae = hasattr(user, "perfil_sae")
-        if not (es_asesor_dueno or es_miembro_sae):
+        # hasattr dispara una consulta; evaluarlo con short-circuit evita
+        # tocar perfil_sae cuando el asesor dueño ya ve las notas (regresión N+1).
+        if not es_asesor_dueno and not hasattr(user, "perfil_sae"):
             data.pop("notas", None)
         return data
 
