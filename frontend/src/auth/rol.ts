@@ -18,3 +18,11 @@ export function useEsAsesor(): boolean {
 export function useEsAlumno(): boolean {
   return useAuth().roles.includes('alumno')
 }
+
+/**
+ * Miembro de la SAE (ADR 0023): el backend deriva el rol de la existencia de
+ * `PerfilSAE`, igual que los demás roles. Habilita el área `/sae/*`.
+ */
+export function useEsMiembroSAE(): boolean {
+  return useAuth().roles.includes('sae')
+}

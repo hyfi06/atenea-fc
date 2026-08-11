@@ -1,7 +1,7 @@
 // Forma exacta de `accounts.serializers.UserDetailsSerializer` del backend.
 // El mismo objeto alimenta GET /api/auth/user/ y la clave `user` del body de
 // POST /api/auth/login/ y POST /api/auth/google/.
-export type RolUsuario = 'alumno' | 'academico' | 'asesor_academico'
+export type RolUsuario = 'alumno' | 'academico' | 'asesor_academico'  | 'sae'
 
 export interface PerfilAlumno {
   id: number

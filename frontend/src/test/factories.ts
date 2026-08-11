@@ -22,3 +22,8 @@ export function usuarioDePrueba(overrides: Partial<AuthUser> = {}): AuthUser {
     ...overrides,
   }
 }
+
+/** Usuario con el rol de miembro de la SAE (ADR 0023/0024). */
+export function usuarioSAE(overrides: Partial<AuthUser> = {}): AuthUser {
+  return usuarioDePrueba({ roles: ['sae'], ...overrides })
+}

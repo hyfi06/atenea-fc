@@ -2,9 +2,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
-import { RutaDeAsesor, RutaDeAsesorias } from './RutaProtegida'
+import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './RutaProtegida'
 import * as client from '../api/client'
-import { usuarioDePrueba } from '../test/factories'
+import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 
 function montar() {
   render(
@@ -119,6 +119,52 @@ describe('RutaDeAsesorias', () => {
   it('manda a Login a quien no tiene sesión', async () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarAsesorias()
+    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+  })
+})
+
+function montarSAE() {
+  render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/sae/asesorias']}>
+        <Routes>
+          <Route
+            path="/sae/asesorias"
+            element={
+              <RutaDeSAE>
+                <p>área SAE</p>
+              </RutaDeSAE>
+            }
+          />
+          <Route path="/home" element={<p>pantalla home</p>} />
+          <Route path="/login" element={<p>pantalla login</p>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>,
+  )
+}
+
+describe('RutaDeSAE', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('deja pasar al miembro de la SAE', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioSAE())
+    montarSAE()
+    expect(await screen.findByText('área SAE')).toBeInTheDocument()
+  })
+
+  it('manda a Home a quien tiene sesión pero no es SAE', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(
+      usuarioDePrueba({ roles: ['alumno', 'asesor_academico'] }),
+    )
+    montarSAE()
+    expect(await screen.findByText('pantalla home')).toBeInTheDocument()
+    expect(screen.queryByText('área SAE')).not.toBeInTheDocument()
+  })
+
+  it('manda a Login a quien no tiene sesión', async () => {
+    vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
+    montarSAE()
     expect(await screen.findByText('pantalla login')).toBeInTheDocument()
   })
 })

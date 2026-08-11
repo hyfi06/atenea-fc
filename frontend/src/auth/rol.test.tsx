@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { AuthProvider } from './AuthContext'
-import { useEsAlumno, useEsAsesor } from './rol'
+import { useEsAlumno, useEsAsesor, useEsMiembroSAE } from './rol'
 import * as client from '../api/client'
-import { usuarioDePrueba } from '../test/factories'
+import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 import type { AuthUser } from '../api/types'
 
 function Sonda() {
@@ -86,5 +86,40 @@ describe('hooks de rol', () => {
     await waitFor(() => expect(screen.getByTestId('rol')).toHaveTextContent('asesor=true'))
     expect(apiGet).toHaveBeenCalledTimes(1)
     expect(apiGet).toHaveBeenCalledWith('/api/auth/user/')
+  })
+})
+
+function SondaSAE() {
+  const esSAE = useEsMiembroSAE()
+  return <div data-testid="sae">{`sae=${esSAE}`}</div>
+}
+
+describe('useEsMiembroSAE', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('reconoce al miembro de la SAE por el rol del contexto', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioSAE())
+    render(
+      <AuthProvider>
+        <SondaSAE />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sae')).toHaveTextContent('sae=true')
+    })
+  })
+
+  it('no reconoce como SAE a quien no tiene el rol', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
+    render(
+      <AuthProvider>
+        <SondaSAE />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sae')).toHaveTextContent('sae=false')
+    })
   })
 })
