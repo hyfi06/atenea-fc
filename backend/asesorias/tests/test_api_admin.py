@@ -169,6 +169,13 @@ class AdminAsesoriasApiTests(APITestCase):
         response = self.client.get("/api/asesorias/admin/asesorias/")
         self.assertEqual(response.status_code, 401)
 
+    def test_admin_asesorias_rechaza_escritura(self):
+        # Solo lectura: la superficie admin no expone métodos de escritura.
+        self.client.force_authenticate(user=self.sae_user)
+        for metodo in (self.client.post, self.client.patch, self.client.delete):
+            respuesta = metodo("/api/asesorias/admin/asesorias/")
+            self.assertEqual(respuesta.status_code, 405)
+
 
 class AdminSemestresApiTests(APITestCase):
     def setUp(self):

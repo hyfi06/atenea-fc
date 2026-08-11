@@ -372,8 +372,8 @@ class AdminSemestresView(APIView):
     def get(self, request):
         claves = Asesoria.objects.values_list(
             "disponibilidad__registro__semestre", flat=True
-        )
-        return Response(sorted(set(claves), reverse=True))
+        ).distinct()
+        return Response(sorted(claves, reverse=True))
 
 
 class AdminAsesoresView(APIView):
