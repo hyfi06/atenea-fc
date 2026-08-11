@@ -195,3 +195,39 @@ class MarcarAsistenciaSerializer(serializers.Serializer):
 
 class NotasSerializer(serializers.Serializer):
     texto = serializers.CharField(allow_blank=True)
+
+
+class MateriaAdminSerializer(serializers.Serializer):
+    """Materia del registro de un asesor, vista SAE de solo lectura."""
+
+    id = serializers.IntegerField()
+    clave = serializers.CharField()
+    nombre = serializers.CharField()
+
+
+class DisponibilidadAdminSerializer(serializers.Serializer):
+    """Bloque de disponibilidad con `hora_fin` calculada, vista SAE.
+
+    No reusa DisponibilidadSerializer: ese expone `registro` y valida
+    escritura; aquí sólo se lee y se necesita `hora_fin` (propiedad del
+    modelo, no columna).
+    """
+
+    id = serializers.IntegerField()
+    dia_semana = serializers.IntegerField()
+    hora_inicio = serializers.TimeField()
+    hora_fin = serializers.TimeField()
+    formato = serializers.CharField()
+    ubicacion = serializers.CharField(allow_blank=True)
+    liga_virtual = serializers.CharField(allow_blank=True)
+    activa = serializers.BooleanField()
+
+
+class AsesorDetalleAdminSerializer(serializers.Serializer):
+    perfil_id = serializers.IntegerField()
+    nombre = serializers.CharField()
+    area_nombre = serializers.CharField()
+    activo = serializers.BooleanField()
+    semestre = serializers.CharField()
+    materias = MateriaAdminSerializer(many=True)
+    disponibilidades = DisponibilidadAdminSerializer(many=True)

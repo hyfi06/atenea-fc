@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    AdminAsesoresView, AdminAsesoriasView, AdminSemestresView, AsesoresDeMateriaView, AsesoriaViewSet, BuscarDisponibilidadView,
+    AdminAsesorDetalleView, AdminAsesoresView, AdminAsesoriasView, AdminSemestresView, AsesoresDeMateriaView, AsesoriaViewSet, BuscarDisponibilidadView,
     DisponibilidadViewSet, OfertaView, RegistroAsesorViewSet,
 )
 
@@ -18,4 +18,9 @@ urlpatterns = [
     path("admin/asesorias/", AdminAsesoriasView.as_view(), name="admin-asesorias"),
     path("admin/semestres/", AdminSemestresView.as_view(), name="admin-semestres"),
     path("admin/asesores/", AdminAsesoresView.as_view(), name="admin-asesores"),
+    path(
+        "admin/asesores/<int:perfil_id>/",
+        AdminAsesorDetalleView.as_view(),
+        name="admin-asesor-detalle",
+    ),
 ] + router.urls

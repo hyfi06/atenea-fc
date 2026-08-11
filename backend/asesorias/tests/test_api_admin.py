@@ -314,3 +314,116 @@ class AdminAsesoresApiTests(APITestCase):
         self.client.force_authenticate(user=self.activo_user)
         response = self.client.get("/api/asesorias/admin/asesores/")
         self.assertEqual(response.status_code, 403)
+
+
+class AdminAsesorDetalleApiTests(APITestCase):
+    def setUp(self):
+        from asesorias.servicios import semestre_vigente
+
+        self.semestre = semestre_vigente()
+        self.area = Area.objects.get(nombre="Matemáticas")
+        self.carrera = Carrera.objects.get(nombre="Actuaría")
+        self.materia_vigente = Materia.objects.create(
+            clave="1831", nombre="Cálculo III", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        self.materia_vieja = Materia.objects.create(
+            clave="1832", nombre="Ecuaciones Diferenciales", carrera=self.carrera, nivel=1,
+            plan=2006, habilitada_asesorias=True,
+        )
+
+        self.asesor_user = User.objects.create_user(
+            email="detalle@ciencias.unam.mx", password="x", first_name="Ana",
+        )
+        self.asesor_user.apellido1 = "López"
+        self.asesor_user.save()
+        PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="40001")
+        self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
+
+        self.registro_vigente = RegistroAsesor.objects.create(
+            asesor=self.asesor, semestre=self.semestre,
+        )
+        self.registro_vigente.materias.add(self.materia_vigente)
+        self.disp_vigente = Disponibilidad.objects.create(
+            registro=self.registro_vigente, dia_semana=1, hora_inicio=datetime.time(10, 0),
+            formato="presencial", ubicacion="Salón 4",
+        )
+
+        self.registro_viejo = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20191")
+        self.registro_viejo.materias.add(self.materia_vieja)
+        self.disp_vieja = Disponibilidad.objects.create(
+            registro=self.registro_viejo, dia_semana=3, hora_inicio=datetime.time(16, 30),
+            formato="virtual", liga_virtual="https://meet.example.com/viejo",
+        )
+
+        self.sae_user = User.objects.create_user(email="sae-det@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=self.sae_user)
+
+    def test_detalle_por_defecto_usa_el_semestre_vigente(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get(f"/api/asesorias/admin/asesores/{self.asesor.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["perfil_id"], self.asesor.id)
+        self.assertEqual(response.data["nombre"], "Ana López")
+        self.assertEqual(response.data["area_nombre"], "Matemáticas")
+        self.assertTrue(response.data["activo"])
+        self.assertEqual(response.data["semestre"], self.semestre)
+        self.assertEqual(
+            [m["clave"] for m in response.data["materias"]], ["1831"]
+        )
+
+    def test_materias_incluyen_id_clave_y_nombre(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get(f"/api/asesorias/admin/asesores/{self.asesor.id}/")
+        self.assertEqual(
+            response.data["materias"][0],
+            {"id": self.materia_vigente.id, "clave": "1831", "nombre": "Cálculo III"},
+        )
+
+    def test_disponibilidades_incluyen_hora_fin_y_formato(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get(f"/api/asesorias/admin/asesores/{self.asesor.id}/")
+        self.assertEqual(
+            response.data["disponibilidades"][0],
+            {
+                "id": self.disp_vigente.id,
+                "dia_semana": 1,
+                "hora_inicio": "10:00:00",
+                "hora_fin": "10:30:00",
+                "formato": "presencial",
+                "ubicacion": "Salón 4",
+                "liga_virtual": "",
+                "activa": True,
+            },
+        )
+
+    def test_semestre_explicito_devuelve_ese_registro(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get(
+            f"/api/asesorias/admin/asesores/{self.asesor.id}/?semestre=20191"
+        )
+        self.assertEqual(response.data["semestre"], "20191")
+        self.assertEqual([m["clave"] for m in response.data["materias"]], ["1832"])
+        self.assertEqual(
+            [d["id"] for d in response.data["disponibilidades"]], [self.disp_vieja.id]
+        )
+
+    def test_semestre_sin_registro_devuelve_listas_vacias(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get(
+            f"/api/asesorias/admin/asesores/{self.asesor.id}/?semestre=19991"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["semestre"], "19991")
+        self.assertEqual(response.data["materias"], [])
+        self.assertEqual(response.data["disponibilidades"], [])
+
+    def test_perfil_inexistente_devuelve_404(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/999999/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_no_sae_recibe_403(self):
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get(f"/api/asesorias/admin/asesores/{self.asesor.id}/")
+        self.assertEqual(response.status_code, 403)

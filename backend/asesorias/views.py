@@ -19,9 +19,9 @@ from .permissions import (
     EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
-    MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
-    DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer, RegistroAsesorSerializer,
-    ResultadoBusquedaSerializer, SesionFuturaSerializer,
+    AsesorDetalleAdminSerializer, MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer,
+    DesactivarDisponibilidadSerializer, DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer,
+    RegistroAsesorSerializer, ResultadoBusquedaSerializer, SesionFuturaSerializer,
 )
 from .servicios import semestre_vigente, ventana_agendable
 
@@ -403,3 +403,40 @@ class AdminAsesoresView(APIView):
         # orden se resuelve aquí y no con order_by.
         data.sort(key=lambda fila: fila["nombre"])
         return Response(data)
+
+
+class AdminAsesorDetalleView(APIView):
+    """Materias y disponibilidad de un asesor en un semestre, solo lectura.
+
+    La disponibilidad es la ACTUAL del registro pedido: el modelo no versiona
+    el estado activa/inactiva en el tiempo (fuera de alcance, deuda 0005).
+    """
+
+    permission_classes = [EsMiembroSAE]
+
+    def get(self, request, perfil_id):
+        asesor = get_object_or_404(
+            PerfilAsesorAcademico.objects.select_related("user", "area"), pk=perfil_id
+        )
+        semestre = request.query_params.get("semestre") or semestre_vigente()
+        registro = (
+            RegistroAsesor.objects.filter(asesor=asesor, semestre=semestre)
+            .prefetch_related("materias", "disponibilidades")
+            .first()
+        )
+        materias = registro.materias.all().order_by("clave") if registro else []
+        disponibilidades = (
+            registro.disponibilidades.all().order_by("dia_semana", "hora_inicio")
+            if registro
+            else []
+        )
+        payload = {
+            "perfil_id": asesor.id,
+            "nombre": asesor.user.nombre_completo,
+            "area_nombre": asesor.area.nombre,
+            "activo": asesor.activo,
+            "semestre": semestre,
+            "materias": materias,
+            "disponibilidades": disponibilidades,
+        }
+        return Response(AsesorDetalleAdminSerializer(payload).data)
