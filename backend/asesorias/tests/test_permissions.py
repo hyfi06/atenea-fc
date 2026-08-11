@@ -163,3 +163,51 @@ class EsDuenoDeLaAsesoriaDobleRolTests(TestCase):
         request = SimpleNamespace(user=self.doble_user)
         self.assertFalse(EsDuenoDeLaAsesoria().has_object_permission(
             request, None, self.asesoria_ajena))
+
+
+class PermisosSAETests(TestCase):
+    def setUp(self):
+        self.area = Area.objects.create(nombre="Área SAE test")
+        self.carrera = Carrera.objects.create(clave=903, nombre="Carrera SAE Test", area=self.area)
+
+        self.sae_user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        from accounts.models import PerfilSAE
+        PerfilSAE.objects.create(user=self.sae_user)
+
+        self.alumno_user = User.objects.create_user(email="alumno-sae@ciencias.unam.mx", password="x")
+        PerfilAlumno.objects.create(
+            user=self.alumno_user, numero_cuenta="313000001", carrera=self.carrera, generacion=2023)
+
+        self.asesor_user = User.objects.create_user(email="asesor-sae@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="80001")
+        PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
+
+    def test_es_miembro_sae_true_para_usuario_con_perfil_sae(self):
+        from asesorias.permissions import EsMiembroSAE
+        request = SimpleNamespace(user=self.sae_user)
+        self.assertTrue(EsMiembroSAE().has_permission(request, None))
+
+    def test_es_miembro_sae_false_para_alumno(self):
+        from asesorias.permissions import EsMiembroSAE
+        request = SimpleNamespace(user=self.alumno_user)
+        self.assertFalse(EsMiembroSAE().has_permission(request, None))
+
+    def test_es_miembro_sae_false_para_asesor(self):
+        from asesorias.permissions import EsMiembroSAE
+        request = SimpleNamespace(user=self.asesor_user)
+        self.assertFalse(EsMiembroSAE().has_permission(request, None))
+
+    def test_es_alumno_o_miembro_sae_true_para_alumno(self):
+        from asesorias.permissions import EsAlumnoOMiembroSAE
+        request = SimpleNamespace(user=self.alumno_user)
+        self.assertTrue(EsAlumnoOMiembroSAE().has_permission(request, None))
+
+    def test_es_alumno_o_miembro_sae_true_para_sae(self):
+        from asesorias.permissions import EsAlumnoOMiembroSAE
+        request = SimpleNamespace(user=self.sae_user)
+        self.assertTrue(EsAlumnoOMiembroSAE().has_permission(request, None))
+
+    def test_es_alumno_o_miembro_sae_false_para_asesor(self):
+        from asesorias.permissions import EsAlumnoOMiembroSAE
+        request = SimpleNamespace(user=self.asesor_user)
+        self.assertFalse(EsAlumnoOMiembroSAE().has_permission(request, None))

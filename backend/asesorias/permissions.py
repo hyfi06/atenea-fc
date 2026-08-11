@@ -44,3 +44,17 @@ class EsDuenoDeLaAsesoria(BasePermission):
             and obj.disponibilidad.registro.asesor.user_id == user.id
         )
         return es_alumno_dueno or es_asesor_dueno
+
+
+class EsMiembroSAE(BasePermission):
+    message = "Se requiere un perfil de miembro de la SAE."
+
+    def has_permission(self, request, view):
+        return hasattr(request.user, "perfil_sae")
+
+
+class EsAlumnoOMiembroSAE(BasePermission):
+    message = "Se requiere un perfil de alumno o de miembro de la SAE."
+
+    def has_permission(self, request, view):
+        return hasattr(request.user, "perfil_alumno") or hasattr(request.user, "perfil_sae")
