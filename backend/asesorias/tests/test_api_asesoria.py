@@ -468,6 +468,33 @@ class NotasOcultasApiTests(APITestCase):
         self.assertIn("notas", response.data)
         self.assertEqual(response.data["notas"], "El alumno debe repasar límites.")
 
+    def test_miembro_sae_si_recibe_notas(self):
+        from accounts.models import PerfilSAE
+        from asesorias.serializers import AsesoriaSerializer
+        from rest_framework.test import APIRequestFactory
+
+        sae_user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=sae_user)
+        request = APIRequestFactory().get("/")
+        request.user = sae_user
+
+        data = AsesoriaSerializer(self.asesoria, context={"request": request}).data
+
+        self.assertIn("notas", data)
+        self.assertEqual(data["notas"], "El alumno debe repasar límites.")
+
+    def test_usuario_sin_rol_no_recibe_notas(self):
+        from asesorias.serializers import AsesoriaSerializer
+        from rest_framework.test import APIRequestFactory
+
+        externo = User.objects.create_user(email="externo@ciencias.unam.mx", password="x")
+        request = APIRequestFactory().get("/")
+        request.user = externo
+
+        data = AsesoriaSerializer(self.asesoria, context={"request": request}).data
+
+        self.assertNotIn("notas", data)
+
 
 class CarreraAlAgendarApiTests(APITestCase):
     def setUp(self):

@@ -177,7 +177,10 @@ class AsesoriaSerializer(serializers.ModelSerializer):
             user_id is not None
             and instance.disponibilidad.registro.asesor.user_id == user_id
         )
-        if not es_asesor_dueno:
+        # ADR 0023: el miembro SAE es casi-administrador del servicio y ve la
+        # sesión completa. El alumno sigue excluido (no se reabre ADR 0021).
+        es_miembro_sae = hasattr(user, "perfil_sae")
+        if not (es_asesor_dueno or es_miembro_sae):
             data.pop("notas", None)
         return data
 
