@@ -49,3 +49,18 @@ class PerfilAcademico(models.Model):
 
     def __str__(self):
         return f"{self.numero_trabajador}, {self.user.email}"
+
+
+class PerfilSAE(models.Model):
+    """Miembro de la Secretaría de Asuntos Estudiantiles.
+
+    Patrón PerfilX de ADR 0012: el rol se deriva de que el perfil exista
+    (`hasattr(user, "perfil_sae")`). Vive en `accounts` y no en `asesorias`
+    porque otros servicios de la SAE reutilizarán la misma identidad.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_sae")
+    activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"SAE — {self.user.email}"

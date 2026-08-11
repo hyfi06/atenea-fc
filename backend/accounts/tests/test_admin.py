@@ -13,3 +13,8 @@ class AdminRegistrationTests(TestCase):
 
     def test_user_registrado(self):
         self.assertIn(User, admin.site._registry)
+
+    def test_perfil_sae_registrado(self):
+        from accounts.models import PerfilSAE
+
+        self.assertIn(PerfilSAE, admin.site._registry)

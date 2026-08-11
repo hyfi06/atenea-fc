@@ -39,3 +39,27 @@ class PerfilAcademicoTests(TestCase):
         PerfilAcademico.objects.create(user=user1, numero_trabajador="12345")
         with self.assertRaises(IntegrityError), transaction.atomic():
             PerfilAcademico.objects.create(user=user2, numero_trabajador="12345")
+
+
+class PerfilSAETests(TestCase):
+    def test_un_user_no_puede_tener_dos_perfiles_sae(self):
+        from accounts.models import PerfilSAE
+
+        user = User.objects.create_user(email="sae@ciencias.unam.mx", password="x")
+        PerfilSAE.objects.create(user=user)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PerfilSAE.objects.create(user=user)
+
+    def test_nace_activo_y_es_accesible_por_related_name(self):
+        from accounts.models import PerfilSAE
+
+        user = User.objects.create_user(email="sae2@ciencias.unam.mx", password="x")
+        perfil = PerfilSAE.objects.create(user=user)
+        user.refresh_from_db()
+        self.assertTrue(perfil.activo)
+        self.assertTrue(hasattr(user, "perfil_sae"))
+        self.assertEqual(user.perfil_sae.id, perfil.id)
+
+    def test_usuario_sin_perfil_sae_no_tiene_el_atributo(self):
+        user = User.objects.create_user(email="nadie@ciencias.unam.mx", password="x")
+        self.assertFalse(hasattr(user, "perfil_sae"))
