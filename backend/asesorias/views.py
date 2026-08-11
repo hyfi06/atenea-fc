@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +16,7 @@ from materias.models import Materia
 
 from .models import Asesoria, Disponibilidad, RegistroAsesor
 from .permissions import (
-    EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
+    EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
     MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer, DesactivarDisponibilidadSerializer,
@@ -314,3 +315,47 @@ class AsesoriaViewSet(ModelViewSet):
             "disponibilidad__registro__semestre", flat=True
         )
         return Response(sorted(set(claves), reverse=True))
+
+
+class AdminAsesoriasView(APIView):
+    """Todas las sesiones del sistema para el miembro SAE (ADR 0023).
+
+    Deliberadamente separada de AsesoriaViewSet, cuyo queryset está acotado
+    al usuario autenticado: mezclar ambas lógicas en una sola clase haría
+    que un error de rama expusiera datos de más.
+    """
+
+    permission_classes = [EsMiembroSAE]
+
+    def get(self, request):
+        asesor_id = request.query_params.get("asesor")
+        alumno_id = request.query_params.get("alumno")
+        semestre = request.query_params.get("semestre")
+        estado = request.query_params.get("estado")
+
+        queryset = Asesoria.objects.select_related(
+            "alumno__user", "disponibilidad__registro__asesor__user", "materia"
+        )
+        # Filtros lenient: un id no numérico se ignora, igual que en
+        # BuscarDisponibilidadView. `asesor` es PerfilAsesorAcademico.id.
+        if asesor_id and asesor_id.isdigit():
+            queryset = queryset.filter(disponibilidad__registro__asesor_id=asesor_id)
+        if alumno_id and alumno_id.isdigit():
+            queryset = queryset.filter(alumno_id=alumno_id)
+        if semestre:
+            # Un semestre desconocido devuelve [], no 400 (deuda 0001).
+            queryset = queryset.filter(disponibilidad__registro__semestre=semestre)
+        if estado:
+            queryset = queryset.filter(estado=estado)
+
+        if not semestre:
+            # Sin ?semestre el listado es el de "próximas": de hoy en
+            # adelante, y agendadas salvo que se pida otro estado.
+            queryset = queryset.filter(fecha__gte=timezone.localdate())
+            if not estado:
+                queryset = queryset.filter(estado="agendada")
+
+        queryset = queryset.order_by("fecha", "hora_inicio")
+        return Response(
+            AsesoriaSerializer(queryset, many=True, context={"request": request}).data
+        )
