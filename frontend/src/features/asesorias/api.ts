@@ -2,14 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
 import type {
   RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas,
-  MateriaOferta, AsesorDisponible, SlotDisponibilidad,
+  MateriaOferta, AsesorDisponible, SlotDisponibilidad, EstadoAsesoria,
+  AsesoriaAdmin, AsesorDirectorio, AsesorDetalle, AlumnoBusqueda,
 } from '../../api/types'
 import { semestreActual } from './logica'
 
-export function useMisRegistros() {
+/**
+ * `habilitado` permite montar las pantallas del asesor en modo consulta
+ * (SAE) sin disparar GET /registros/, que para un no-asesor sería 403.
+ */
+export function useMisRegistros(habilitado: boolean = true) {
   return useQuery({
     queryKey: ['registros'],
     queryFn: () => apiGet<RegistroAsesor[]>('/api/asesorias/registros/'),
+    enabled: habilitado,
   })
 }
 
@@ -18,11 +24,13 @@ export function useMisRegistros() {
  * Las dos pantallas de disponibilidad ("Mis materias" y "Mi horario") lo
  * necesitan igual, así que la búsqueda vive aquí y no en cada una.
  */
-export function useRegistroDelSemestre(semestre: string = semestreActual()) {
-  const { data: registros, isPending } = useMisRegistros()
+export function useRegistroDelSemestre(semestre: string = semestreActual(), habilitado: boolean = true) {
+  const { data: registros, isPending } = useMisRegistros(habilitado)
   return {
     registro: registros?.find((r) => r.semestre === semestre) ?? null,
-    cargando: isPending,
+    // Con `enabled: false` TanStack Query reporta `isPending` para siempre;
+    // apagada, la query no está cargando nada.
+    cargando: habilitado && isPending,
   }
 }
 
@@ -62,10 +70,11 @@ export function useQuitarMateria(registroId: number) {
   })
 }
 
-export function useMisDisponibilidades() {
+export function useMisDisponibilidades(habilitado: boolean = true) {
   return useQuery({
     queryKey: ['disponibilidades'],
     queryFn: () => apiGet<Disponibilidad[]>('/api/asesorias/disponibilidades/'),
+    enabled: habilitado,
   })
 }
 
@@ -226,5 +235,73 @@ export function useAsesoriasDeSemestre(semestre: string | null) {
     queryKey: ['asesorias', { semestre }],
     queryFn: () => apiGet<Asesoria[]>(`/api/asesorias/asesorias/?semestre=${semestre}`),
     enabled: semestre !== null,
+  })
+}
+
+export interface FiltrosAdminAsesorias {
+  asesor?: number | null
+  alumno?: number | null
+  semestre?: string | null
+  estado?: EstadoAsesoria | null
+}
+
+/**
+ * URL del listado admin. Los filtros nulos se omiten; sin ninguno, el
+ * backend devuelve las próximas agendadas (ADR 0023).
+ */
+export function rutaAdminAsesorias(filtros: FiltrosAdminAsesorias = {}): string {
+  const params = new URLSearchParams()
+  if (filtros.asesor != null) params.set('asesor', String(filtros.asesor))
+  if (filtros.alumno != null) params.set('alumno', String(filtros.alumno))
+  if (filtros.semestre != null) params.set('semestre', filtros.semestre)
+  if (filtros.estado != null) params.set('estado', filtros.estado)
+  const query = params.toString()
+  return query ? `/api/asesorias/admin/asesorias/?${query}` : '/api/asesorias/admin/asesorias/'
+}
+
+export function useAdminAsesorias(filtros: FiltrosAdminAsesorias = {}) {
+  return useQuery({
+    queryKey: ['admin', 'asesorias', filtros],
+    queryFn: () => apiGet<AsesoriaAdmin[]>(rutaAdminAsesorias(filtros)),
+  })
+}
+
+/** Todos los semestres del sistema con asesorías (distinto de `useSemestres`,
+ *  que es por-usuario). Alimenta los subtabs del histórico admin. */
+export function useAdminSemestres() {
+  return useQuery({
+    queryKey: ['admin', 'semestres'],
+    queryFn: () => apiGet<string[]>('/api/asesorias/admin/semestres/'),
+  })
+}
+
+export function useAdminAsesores() {
+  return useQuery({
+    queryKey: ['admin', 'asesores'],
+    queryFn: () => apiGet<AsesorDirectorio[]>('/api/asesorias/admin/asesores/'),
+  })
+}
+
+/** Detalle read-only de un asesor. `semestre` nulo → el vigente (default del backend). */
+export function useAdminAsesor(perfilId: number | null, semestre: string | null = null) {
+  return useQuery({
+    queryKey: ['admin', 'asesor', perfilId, semestre],
+    queryFn: () =>
+      apiGet<AsesorDetalle>(
+        semestre === null
+          ? `/api/asesorias/admin/asesores/${perfilId}/`
+          : `/api/asesorias/admin/asesores/${perfilId}/?semestre=${semestre}`,
+      ),
+    enabled: perfilId !== null,
+  })
+}
+
+/** Autocompletar de alumno para el filtro de `AdminAsesorias`. */
+export function useBuscarAlumnos(buscar: string) {
+  return useQuery({
+    queryKey: ['admin', 'alumnos', buscar],
+    queryFn: () =>
+      apiGet<AlumnoBusqueda[]>(`/api/asesorias/admin/alumnos/?buscar=${encodeURIComponent(buscar)}`),
+    enabled: buscar.length >= 2,
   })
 }

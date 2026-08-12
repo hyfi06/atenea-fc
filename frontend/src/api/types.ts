@@ -74,7 +74,10 @@ export type EstadoAsesoria = 'agendada' | 'cancelada' | 'realizada'
 
 export interface Disponibilidad {
   id: number
-  registro: number
+  // Opcional: el detalle admin (GET /admin/asesores/{id}/) no expone el
+  // registro al que pertenece el bloque. Ninguna pantalla lee este campo;
+  // sólo `useCrearDisponibilidad` lo envía.
+  registro?: number
   dia_semana: number
   hora_inicio: string
   formato: FormatoAsesoria
@@ -146,4 +149,60 @@ export interface SlotDisponibilidad {
   formato: FormatoAsesoria
   ubicacion: string
   liga_virtual: string
+}
+
+/** Materia resuelta que devuelve el detalle admin de un asesor. */
+export interface MateriaResumen {
+  id: number
+  clave: string
+  nombre: string
+}
+
+/**
+ * GET /api/asesorias/admin/asesorias/ — vista admin de una sesión.
+ * A diferencia de `Asesoria`, expone ambos nombres y `notas` (el SAE sí las
+ * ve, ADR 0023), y omite `alumno`, `disponibilidad` y `creado_en`.
+ */
+export interface AsesoriaAdmin {
+  id: number
+  estado: EstadoAsesoria
+  fecha: string
+  hora_inicio: string
+  materia: number
+  carrera: number
+  formato: FormatoAsesoria
+  ubicacion: string
+  liga_virtual: string
+  alumno_nombre: string
+  asesor_nombre: string
+  asistio: boolean | null
+  notas: string
+}
+
+/** GET /api/asesorias/admin/asesores/ */
+export interface AsesorDirectorio {
+  perfil_id: number
+  nombre: string
+  area_nombre: string
+  activo: boolean
+  num_materias_semestre_vigente: number
+}
+
+/** GET /api/asesorias/admin/asesores/{perfil_id}/?semestre= */
+export interface AsesorDetalle {
+  perfil_id: number
+  nombre: string
+  area_nombre: string
+  activo: boolean
+  semestre: string
+  materias: MateriaResumen[]
+  // El endpoint manda además `hora_fin`, que el frontend no usa.
+  disponibilidades: Disponibilidad[]
+}
+
+/** GET /api/asesorias/admin/alumnos/?buscar= */
+export interface AlumnoBusqueda {
+  perfil_id: number
+  nombre: string
+  numero_cuenta: string
 }
