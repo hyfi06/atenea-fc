@@ -6,7 +6,10 @@ import { useEsAsesor } from '../../../auth/rol'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })
 
-/** Lo mínimo que la tarjeta necesita: lo cumplen `Asesoria` y `AsesoriaAdmin`. */
+/** Lo mínimo que la tarjeta necesita: lo cumplen `Asesoria` y `AsesoriaAdmin`.
+ *  `notas` se conserva en la forma aunque la tarjeta ya no lo renderice: en
+ *  modo admin la sesión completa viaja en el router state al detalle SAE, que
+ *  es quien muestra las notas. */
 export type AsesoriaEnTarjeta = Pick<
   Asesoria,
   'id' | 'estado' | 'fecha' | 'hora_inicio' | 'alumno_nombre' | 'asesor_nombre' | 'notas'
@@ -18,7 +21,7 @@ interface TarjetaAsesoriaProps {
   indice: number
   /** Resalta y enfoca la tarjeta recién agendada (post-agendado). */
   destacar?: boolean
-  /** Modo SAE: ambos nombres + `notas`, y nunca navega a detalle. */
+  /** Modo SAE: ambos nombres, sin notas, y navega al detalle read-only. */
   admin?: boolean
 }
 
@@ -40,11 +43,21 @@ export function TarjetaAsesoria({
   const secundaria = admin
     ? `${fecha} · ${hora} · ${asesoria.alumno_nombre} · ${asesoria.asesor_nombre}`
     : `${fecha} · ${hora} · ${contraparte}`
-  const notas = admin ? asesoria.notas.trim() : ''
 
-  // El detalle /asesorias/:id es asesor-only; en modo admin no hay ruta de
-  // detalle en esta fase (spec §Out of scope), así que la tarjeta es estática.
-  const interactiva = esAsesor && !admin
+  // El destino depende del MODO, no del rol: un miembro SAE que además sea
+  // asesor no debe caer en el detalle del asesor, que monta mutaciones.
+  const interactiva = admin || esAsesor
+
+  // El detalle SAE no tiene endpoint propio y el listado admin está cacheado
+  // por combinación de filtros: la sesión viaja en el router state para que el
+  // detalle no dependa de qué query la trajo (próximas vs. un semestre).
+  const irAlDetalle = () => {
+    if (admin) {
+      navigate(`/sae/asesorias/${asesoria.id}`, { state: { asesoria, nombreMateria } })
+    } else {
+      navigate(`/asesorias/${asesoria.id}`)
+    }
+  }
 
   useEffect(() => {
     if (destacar && ref.current) {
@@ -58,7 +71,6 @@ export function TarjetaAsesoria({
       <div className="flex min-w-0 flex-col gap-1">
         <span className="text-sm font-medium text-on-surface">{nombreMateria}</span>
         <span className="text-xs text-on-surface-variant">{secundaria}</span>
-        {notas !== '' && <span className="text-xs text-on-surface-variant">Notas: {notas}</span>}
       </div>
       <InsigniaEstado estado={asesoria.estado} />
     </div>
@@ -72,7 +84,7 @@ export function TarjetaAsesoria({
         <button
           ref={(el) => { ref.current = el }}
           type="button"
-          onClick={() => navigate(`/asesorias/${asesoria.id}`)}
+          onClick={irAlDetalle}
           className={`foco-visible ${clasesBase}`}
         >
           {contenido}
