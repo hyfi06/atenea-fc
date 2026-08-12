@@ -10,17 +10,21 @@ export function claveSlot(diaSemana: number, horaInicio: string): string {
   return `${diaSemana}-${horaInicio}`
 }
 
-function claveOrden(asesoria: Asesoria): string {
+/** Lo mínimo que hace falta para ordenar y clasificar una sesión: lo cumplen
+ *  tanto `Asesoria` (alumno/asesor) como `AsesoriaAdmin` (SAE). */
+type AsesoriaOrdenable = Pick<Asesoria, 'estado' | 'fecha' | 'hora_inicio'>
+
+function claveOrden(asesoria: AsesoriaOrdenable): string {
   return `${asesoria.fecha}T${asesoria.hora_inicio}`
 }
 
-export function proximas(asesorias: Asesoria[]): Asesoria[] {
+export function proximas<A extends AsesoriaOrdenable>(asesorias: A[]): A[] {
   return asesorias
     .filter((a) => a.estado === 'agendada')
     .sort((a, b) => claveOrden(a).localeCompare(claveOrden(b)))
 }
 
-export function historial(asesorias: Asesoria[]): Asesoria[] {
+export function historial<A extends AsesoriaOrdenable>(asesorias: A[]): A[] {
   return asesorias
     .filter((a) => a.estado !== 'agendada')
     .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)))

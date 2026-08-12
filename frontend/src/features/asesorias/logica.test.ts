@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { semestreActual, claveSlot, proximas, historial, sesionesPreviasConNotas, sesionYaOcurrio, puedeGuardarNotas, horasDelDia, slotsDelDia, diaSemanaHoy, agruparPorDia } from './logica'
-import type { Disponibilidad, Asesoria, SlotDisponibilidad } from '../../api/types'
+import type { Disponibilidad, Asesoria, SlotDisponibilidad, AsesoriaAdmin } from '../../api/types'
 
 describe('semestreActual', () => {
   it('devuelve año+1 para meses de enero a junio', () => {
@@ -180,5 +180,43 @@ describe('agruparPorDia', () => {
 
   it('devuelve lista vacía sin slots', () => {
     expect(agruparPorDia([])).toEqual([])
+  })
+})
+
+function crearAsesoriaAdmin(overrides: Partial<AsesoriaAdmin> = {}): AsesoriaAdmin {
+  return {
+    id: 1,
+    estado: 'agendada',
+    fecha: '2026-08-03',
+    hora_inicio: '10:00:00',
+    materia: 1,
+    carrera: 1,
+    formato: 'virtual',
+    ubicacion: '',
+    liga_virtual: '',
+    alumno_nombre: 'Beto Alumno',
+    asesor_nombre: 'Ana Asesora',
+    asistio: null,
+    notas: '',
+    ...overrides,
+  }
+}
+
+describe('proximas / historial sobre la forma admin', () => {
+  it('acepta AsesoriaAdmin y separa agendadas de no agendadas', () => {
+    const lista = [
+      crearAsesoriaAdmin({ id: 1, estado: 'realizada', fecha: '2026-07-01' }),
+      crearAsesoriaAdmin({ id: 2, estado: 'agendada', fecha: '2026-08-20' }),
+      crearAsesoriaAdmin({ id: 3, estado: 'cancelada', fecha: '2026-07-15' }),
+    ]
+
+    expect(proximas(lista).map((a) => a.id)).toEqual([2])
+    expect(historial(lista).map((a) => a.id)).toEqual([3, 1])
+  })
+
+  it('conserva los campos exclusivos de la forma admin', () => {
+    const [primera] = proximas([crearAsesoriaAdmin({ notas: 'llegó tarde' })])
+    expect(primera.notas).toBe('llegó tarde')
+    expect(primera.asesor_nombre).toBe('Ana Asesora')
   })
 })
