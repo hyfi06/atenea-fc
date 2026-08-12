@@ -7,6 +7,10 @@ from django.utils import timezone
 from materias.models import Materia
 from rest_framework.test import APITestCase
 
+# El directorio no lleva corte; la constante sólo se usa para dimensionar el
+# fixture del test que lo comprueba.
+LIMITE_AUTOCOMPLETAR_ASESORES_ESPERADO = 20
+
 
 class AdminAsesoriasApiTests(APITestCase):
     def setUp(self):
@@ -316,6 +320,80 @@ class AdminAsesoresApiTests(APITestCase):
         response = self.client.get("/api/asesorias/admin/asesores/")
         fila = next(a for a in response.data if a["perfil_id"] == self.asesor_inactivo.id)
         self.assertEqual(fila["num_materias_semestre_vigente"], 0)
+
+    def test_incluye_numero_trabajador(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        fila = next(a for a in response.data if a["perfil_id"] == self.asesor_activo.id)
+        self.assertEqual(fila["numero_trabajador"], "30001")
+
+    def test_asesor_sin_perfil_academico_reporta_numero_trabajador_vacio(self):
+        sin_perfil_user = User.objects.create_user(
+            email="sin-perfil@ciencias.unam.mx", password="x", first_name="Nadia",
+        )
+        sin_perfil = PerfilAsesorAcademico.objects.create(
+            user=sin_perfil_user, area=self.area, activo=True,
+        )
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        self.assertEqual(response.status_code, 200)
+        fila = next(a for a in response.data if a["perfil_id"] == sin_perfil.id)
+        self.assertEqual(fila["numero_trabajador"], "")
+
+    def test_sin_buscar_devuelve_todos(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.asesor_activo.id, self.asesor_inactivo.id})
+
+    def test_busca_por_nombre(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/?buscar=zo")
+        self.assertEqual(response.status_code, 200)
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.asesor_activo.id})
+
+    def test_busca_por_numero_de_trabajador(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/?buscar=30002")
+        ids = {a["perfil_id"] for a in response.data}
+        self.assertEqual(ids, {self.asesor_inactivo.id})
+
+    def test_busqueda_sin_coincidencias_devuelve_lista_vacia(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/?buscar=zzzzz")
+        self.assertEqual(response.data, [])
+
+    def test_la_busqueda_conserva_el_orden_por_nombre(self):
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/?buscar=3000")
+        nombres = [a["nombre"] for a in response.data]
+        self.assertEqual(nombres, sorted(nombres))
+
+    def test_la_busqueda_respeta_el_limite_de_resultados(self):
+        from asesorias.views import LIMITE_AUTOCOMPLETAR_ASESORES
+
+        for indice in range(LIMITE_AUTOCOMPLETAR_ASESORES + 5):
+            user = User.objects.create_user(
+                email=f"masivo{indice}@ciencias.unam.mx", password="x", first_name="Masivo",
+            )
+            PerfilAcademico.objects.create(user=user, numero_trabajador=f"9000{indice:02d}")
+            PerfilAsesorAcademico.objects.create(user=user, area=self.area, activo=True)
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/?buscar=masivo")
+        self.assertEqual(len(response.data), LIMITE_AUTOCOMPLETAR_ASESORES)
+
+    def test_el_directorio_sin_buscar_no_lleva_corte(self):
+        for indice in range(LIMITE_AUTOCOMPLETAR_ASESORES_ESPERADO + 5):
+            user = User.objects.create_user(
+                email=f"pleno{indice}@ciencias.unam.mx", password="x", first_name="Pleno",
+            )
+            PerfilAcademico.objects.create(user=user, numero_trabajador=f"8000{indice:02d}")
+            PerfilAsesorAcademico.objects.create(user=user, area=self.area, activo=True)
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesores/")
+        # Los 2 del setUp + los 25 recién creados: el directorio va completo.
+        self.assertEqual(len(response.data), 27)
 
     def test_no_sae_recibe_403(self):
         self.client.force_authenticate(user=self.activo_user)

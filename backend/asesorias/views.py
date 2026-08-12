@@ -376,24 +376,59 @@ class AdminSemestresView(APIView):
         return Response(sorted(claves, reverse=True))
 
 
+# Autocompletar, no listado: el filtro de asesor de `AdminAsesorias` usa el
+# mismo endpoint que el directorio, con `?buscar=`. El corte aplica sólo en ese
+# modo — sin `buscar`, el directorio va completo (deuda 0006).
+LIMITE_AUTOCOMPLETAR_ASESORES = 20
+
+
 class AdminAsesoresView(APIView):
-    """Directorio de asesores para el área SAE."""
+    """Directorio de asesores para el área SAE.
+
+    `?buscar=` (opcional) filtra por nombre o número de trabajador y corta a
+    `LIMITE_AUTOCOMPLETAR_ASESORES`; sin él devuelve el directorio completo,
+    que es lo que consume la pantalla de directorio.
+    """
 
     permission_classes = [EsMiembroSAE]
 
     def get(self, request):
         semestre = semestre_vigente()
-        asesores = PerfilAsesorAcademico.objects.select_related("user", "area").annotate(
+        asesores = PerfilAsesorAcademico.objects.select_related(
+            "user", "area", "user__perfil_academico"
+        ).annotate(
             num_materias_semestre_vigente=Count(
                 "registros__materias",
                 filter=Q(registros__semestre=semestre),
                 distinct=True,
             )
         )
+        buscar = request.query_params.get("buscar")
+        if buscar:
+            # `nombre_completo` es una propiedad de Python: se busca sobre las
+            # columnas que la componen, más el número de trabajador, que vive
+            # en `accounts.PerfilAcademico` y no en el perfil de asesor.
+            asesores = asesores.filter(
+                Q(user__first_name__icontains=buscar)
+                | Q(user__apellido1__icontains=buscar)
+                | Q(user__apellido2__icontains=buscar)
+                | Q(user__perfil_academico__numero_trabajador__icontains=buscar)
+            )
+            # El corte necesita un orden estable en SQL; el `data.sort` de
+            # abajo reordena la página ya recortada por `nombre_completo`.
+            asesores = asesores.order_by(
+                "user__first_name", "user__apellido1", "user__apellido2"
+            )[:LIMITE_AUTOCOMPLETAR_ASESORES]
         data = [
             {
                 "perfil_id": asesor.id,
                 "nombre": asesor.user.nombre_completo,
+                # Un asesor puede no tener PerfilAcademico: el acceso inverso a
+                # un OneToOne inexistente lanza RelatedObjectDoesNotExist, que
+                # hereda de AttributeError, así que `getattr` con default basta.
+                "numero_trabajador": getattr(
+                    getattr(asesor.user, "perfil_academico", None), "numero_trabajador", ""
+                ),
                 "area_nombre": asesor.area.nombre,
                 "activo": asesor.activo,
                 "num_materias_semestre_vigente": asesor.num_materias_semestre_vigente,
