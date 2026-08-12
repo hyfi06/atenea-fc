@@ -36,4 +36,38 @@ describe('TarjetaAsesoria', () => {
     render(<TarjetaAsesoria asesoria={crearAsesoria({ notas: 'texto privado' })} nombreMateria="Cálculo I" indice={0} />, { wrapper: MemoryRouter })
     expect(screen.queryByText(/texto privado/)).not.toBeInTheDocument()
   })
+
+  it('en modo admin muestra ambos nombres y las notas', () => {
+    vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
+    render(
+      <TarjetaAsesoria
+        asesoria={crearAsesoria({ notas: 'el alumno llegó tarde' })}
+        nombreMateria="Cálculo I"
+        indice={0}
+        admin
+      />,
+      { wrapper: MemoryRouter },
+    )
+    expect(screen.getByText(/Beto Alumno/)).toBeInTheDocument()
+    expect(screen.getByText(/Ana Asesora/)).toBeInTheDocument()
+    expect(screen.getByText(/el alumno llegó tarde/)).toBeInTheDocument()
+  })
+
+  it('en modo admin no navega aunque quien mire sea asesor', () => {
+    vi.spyOn(rol, 'useEsAsesor').mockReturnValue(true)
+    render(
+      <TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} admin />,
+      { wrapper: MemoryRouter },
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('en modo admin sin notas no imprime la etiqueta Notas', () => {
+    vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
+    render(
+      <TarjetaAsesoria asesoria={crearAsesoria({ notas: '   ' })} nombreMateria="Cálculo I" indice={0} admin />,
+      { wrapper: MemoryRouter },
+    )
+    expect(screen.queryByText(/^Notas:/)).not.toBeInTheDocument()
+  })
 })
