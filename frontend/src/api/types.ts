@@ -183,9 +183,21 @@ export interface AsesoriaAdmin {
 export interface AsesorDirectorio {
   perfil_id: number
   nombre: string
+  // Vive en `accounts.PerfilAcademico`, no en el perfil de asesor: el backend
+  // lo resuelve y manda "" cuando el asesor no tiene PerfilAcademico.
+  numero_trabajador: string
   area_nombre: string
   activo: boolean
   num_materias_semestre_vigente: number
+}
+
+/** Subconjunto de `AsesorDirectorio` que consume el autocompletar del filtro
+ *  de asesor. Espejo de `AlumnoBusqueda`: el endpoint es el mismo directorio
+ *  con `?buscar=`, la pantalla sólo lee estos tres campos. */
+export interface AsesorBusqueda {
+  perfil_id: number
+  nombre: string
+  numero_trabajador: string
 }
 
 /** GET /api/asesorias/admin/asesores/{perfil_id}/?semestre= */

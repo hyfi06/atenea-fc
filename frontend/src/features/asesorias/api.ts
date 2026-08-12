@@ -3,7 +3,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
 import type {
   RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas,
   MateriaOferta, AsesorDisponible, SlotDisponibilidad, EstadoAsesoria,
-  AsesoriaAdmin, AsesorDirectorio, AsesorDetalle, AlumnoBusqueda,
+  AsesoriaAdmin, AsesorDirectorio, AsesorDetalle, AlumnoBusqueda, AsesorBusqueda,
 } from '../../api/types'
 import { semestreActual } from './logica'
 
@@ -302,6 +302,24 @@ export function useBuscarAlumnos(buscar: string) {
     queryKey: ['admin', 'alumnos', buscar],
     queryFn: () =>
       apiGet<AlumnoBusqueda[]>(`/api/asesorias/admin/alumnos/?buscar=${encodeURIComponent(buscar)}`),
+    enabled: buscar.length >= 2,
+  })
+}
+
+/** URL del autocompletar de asesores. Es el mismo endpoint del directorio
+ *  (`useAdminAsesores`) con `?buscar=`; se extrae para poder testear la
+ *  construcción de la query sin montar TanStack Query. */
+export function rutaBuscarAsesores(buscar: string): string {
+  return `/api/asesorias/admin/asesores/?buscar=${encodeURIComponent(buscar)}`
+}
+
+/** Autocompletar de asesor para el filtro de `AdminAsesorias`. Espejo de
+ *  `useBuscarAlumnos`: busca por nombre o número de trabajador y sólo pega al
+ *  servidor a partir de 2 caracteres. */
+export function useBuscarAsesores(buscar: string) {
+  return useQuery({
+    queryKey: ['admin', 'asesores', 'buscar', buscar],
+    queryFn: () => apiGet<AsesorBusqueda[]>(rutaBuscarAsesores(buscar)),
     enabled: buscar.length >= 2,
   })
 }
