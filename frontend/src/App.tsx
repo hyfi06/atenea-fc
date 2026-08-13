@@ -3,13 +3,18 @@ import { Landing } from './screens/Landing'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
-import { RutaDeAsesor, RutaDeAsesorias } from './auth/RutaProtegida'
+import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './auth/RutaProtegida'
 import { Asesorias } from './features/asesorias/screens/Asesorias'
 import { OfertaAsesorias } from './features/asesorias/screens/OfertaAsesorias'
 import { AgendarAsesoria } from './features/asesorias/screens/AgendarAsesoria'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 import { MiHorario } from './features/asesorias/screens/MiHorario'
+import { AdminAsesorias } from './features/asesorias/screens/AdminAsesorias'
+import { AdminOfertaMateria } from './features/asesorias/screens/AdminOfertaMateria'
+import { AdminAsesores } from './features/asesorias/screens/AdminAsesores'
+import { AdminAsesorDetalle } from './features/asesorias/screens/AdminAsesorDetalle'
+import { AdminDetalleAsesoria } from './features/asesorias/screens/AdminDetalleAsesoria'
 
 function App() {
   return (
@@ -65,6 +70,59 @@ function App() {
             <RutaDeAsesor>
               <DetalleAsesoria />
             </RutaDeAsesor>
+          }
+        />
+        <Route
+          path="/sae/asesorias"
+          element={
+            <RutaDeSAE>
+              <AdminAsesorias />
+            </RutaDeSAE>
+          }
+        />
+        <Route
+          path="/sae/asesorias/oferta"
+          element={
+            <RutaDeSAE>
+              <OfertaAsesorias
+                titulo="Consulta de oferta"
+                rutaVolver="/sae/asesorias"
+                etiquetaVolver="← Volver a Asesorías SAE"
+                baseRutaMateria="/sae/asesorias/oferta"
+              />
+            </RutaDeSAE>
+          }
+        />
+        <Route
+          path="/sae/asesorias/oferta/:materiaId"
+          element={
+            <RutaDeSAE>
+              <AdminOfertaMateria />
+            </RutaDeSAE>
+          }
+        />
+        <Route
+          path="/sae/asesorias/:id"
+          element={
+            <RutaDeSAE>
+              <AdminDetalleAsesoria />
+            </RutaDeSAE>
+          }
+        />
+        <Route
+          path="/sae/asesores"
+          element={
+            <RutaDeSAE>
+              <AdminAsesores />
+            </RutaDeSAE>
+          }
+        />
+        <Route
+          path="/sae/asesores/:asesorId"
+          element={
+            <RutaDeSAE>
+              <AdminAsesorDetalle />
+            </RutaDeSAE>
           }
         />
       </Routes>
