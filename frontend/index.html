@@ -5,6 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Atenea</title>
+    <!-- Config de runtime: en prod el contenedor regenera /config.js al arrancar
+         con el client id del deploy (ver src/config.ts). Carga antes del bundle. -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>
