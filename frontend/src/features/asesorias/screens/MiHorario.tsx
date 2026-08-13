@@ -31,11 +31,15 @@ const INSTRUCCION =
 const INSTRUCCION_LECTURA =
   'Horario del asesor en modo consulta. Para cambiar de día, usa las pestañas.'
 
-function Leyenda() {
+function Leyenda({ mostrarEstado = true }: { mostrarEstado?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-      <span className="rounded-full bg-primary-container px-2 py-0.5 text-on-primary-container">Activo</span>
-      <span className="rounded-full bg-surface-variant px-2 py-0.5 text-on-surface-variant">Inactivo</span>
+      {mostrarEstado && (
+        <>
+          <span className="rounded-full bg-primary-container px-2 py-0.5 text-on-primary-container">Activo</span>
+          <span className="rounded-full bg-surface-variant px-2 py-0.5 text-on-surface-variant">Inactivo</span>
+        </>
+      )}
       <span className="flex items-center gap-1">
         <IconVirtual className="h-4 w-4" /> Virtual
       </span>
@@ -46,11 +50,14 @@ function Leyenda() {
   )
 }
 
-/** Contenido visual de una fila de horario, idéntico en modo edición y consulta. */
-function ContenidoSlot({ hora, activo, disponibilidad }: {
+/** Contenido visual de una fila de horario, idéntico en modo edición y consulta.
+ *  `mostrarEstado` controla el chip Activo/Inactivo: en consulta (SAE) sobra,
+ *  porque solo se listan bloques activos. */
+function ContenidoSlot({ hora, activo, disponibilidad, mostrarEstado = true }: {
   hora: string
   activo: boolean
   disponibilidad: Disponibilidad | null
+  mostrarEstado?: boolean
 }) {
   return (
     <>
@@ -69,13 +76,15 @@ function ContenidoSlot({ hora, activo, disponibilidad }: {
         </span>
       )}
 
-      <span
-        className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${
-          activo ? 'bg-primary-container text-on-primary-container' : 'bg-surface-variant text-on-surface-variant'
-        }`}
-      >
-        {activo ? 'Activo' : 'Inactivo'}
-      </span>
+      {mostrarEstado && (
+        <span
+          className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${
+            activo ? 'bg-primary-container text-on-primary-container' : 'bg-surface-variant text-on-surface-variant'
+          }`}
+        >
+          {activo ? 'Activo' : 'Inactivo'}
+        </span>
+      )}
     </>
   )
 }
@@ -196,38 +205,48 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
         ))}
       </TabsList>
 
-      {DIAS_CORTOS.map((_, indice) => (
-        <TabsContent key={indice} value={String(indice)}>
-          {cargandoBloques ? (
-            <ul className="flex flex-col gap-1">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-11" />
-              ))}
-            </ul>
-          ) : (
-            <ul className="flex flex-col">
-              {slotsDelDia(indice, bloques).map((slot) => (
-                <li key={slot.clave}>
-                  {soloLectura ? (
-                    <div className="flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface">
-                      <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => tocarSlot(indice, slot.hora, slot.disponibilidad)}
-                      aria-label={`Horario ${slot.hora.slice(0, 5)}, ${slot.activo ? 'activo' : 'inactivo'}`}
-                      className="foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface hover:bg-surface-container-high"
-                    >
-                      <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </TabsContent>
-      ))}
+      {DIAS_CORTOS.map((_, indice) => {
+        // En consulta solo se listan los bloques activos: se ocultan las horas
+        // sin registro y las disponibilidades inactivas.
+        const slots = soloLectura
+          ? slotsDelDia(indice, bloques).filter((slot) => slot.activo)
+          : slotsDelDia(indice, bloques)
+
+        return (
+          <TabsContent key={indice} value={String(indice)}>
+            {cargandoBloques ? (
+              <ul className="flex flex-col gap-1">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-11" />
+                ))}
+              </ul>
+            ) : soloLectura && slots.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">Sin disponibilidad este día</p>
+            ) : (
+              <ul className="flex flex-col">
+                {slots.map((slot) => (
+                  <li key={slot.clave}>
+                    {soloLectura ? (
+                      <div className="flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface">
+                        <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} mostrarEstado={false} />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => tocarSlot(indice, slot.hora, slot.disponibilidad)}
+                        aria-label={`Horario ${slot.hora.slice(0, 5)}, ${slot.activo ? 'activo' : 'inactivo'}`}
+                        className="foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface hover:bg-surface-container-high"
+                      >
+                        <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </TabsContent>
+        )
+      })}
     </Tabs>
   )
 
@@ -236,7 +255,7 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-semibold text-on-background">Horario</h2>
         <p className="text-xs text-on-surface-variant">{INSTRUCCION_LECTURA}</p>
-        <Leyenda />
+        <Leyenda mostrarEstado={false} />
         {rejilla}
       </section>
     )

@@ -180,4 +180,30 @@ describe('MiHorario', () => {
     expect(screen.queryAllByRole('button', { name: /^Horario/ })).toHaveLength(0)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('en solo lectura no muestra chips de estado Activo/Inactivo', () => {
+    montarSoloLectura([BLOQUE_LUNES])
+
+    expect(screen.queryByText('Inactivo')).not.toBeInTheDocument()
+    expect(screen.queryByText('Activo')).not.toBeInTheDocument()
+  })
+
+  it('en solo lectura un bloque presencial activo conserva su ubicación', () => {
+    montarSoloLectura([BLOQUE_LUNES])
+
+    expect(screen.getByText('Salón O-221')).toBeInTheDocument()
+  })
+
+  it('en solo lectura un día sin disponibilidad activa muestra el texto vacío', () => {
+    montarSoloLectura([])
+
+    expect(screen.getByText('Sin disponibilidad este día')).toBeInTheDocument()
+  })
+
+  it('en solo lectura oculta las disponibilidades inactivas', () => {
+    montarSoloLectura([{ ...BLOQUE_LUNES, activa: false }])
+
+    expect(screen.queryByText('Salón O-221')).not.toBeInTheDocument()
+    expect(screen.getByText('Sin disponibilidad este día')).toBeInTheDocument()
+  })
 })
