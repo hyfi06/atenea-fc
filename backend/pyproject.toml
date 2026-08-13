@@ -15,4 +15,5 @@ dependencies = [
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
     "requests>=2.34.2",
+    "whitenoise>=6.11.0",
 ]

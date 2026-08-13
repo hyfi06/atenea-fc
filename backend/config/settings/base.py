@@ -70,6 +70,10 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise sirve los estáticos (admin/DRF) desde el propio contenedor, justo
+    # debajo de SecurityMiddleware como exige su documentación. Evita depender del
+    # nginx central para servir /static/ y funciona igual en dev y prod.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -123,6 +127,21 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Backend de estáticos seleccionable por env. Default: WhiteNoise con manifest
+# comprimido (hashea nombres + gzip/brotli, ideal detrás del CDN de Cloudflare).
+# El valor "s3" queda como gancho documentado para servir media/estáticos desde
+# MinIO/S3 a futuro — requiere django-storages y está fuera de alcance por ahora.
+_STATIC_BACKENDS = {
+    "whitenoise": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    "django": "django.contrib.staticfiles.storage.StaticFilesStorage",
+}
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": _STATIC_BACKENDS[env("DJANGO_STATIC_BACKEND", default="whitenoise")],
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

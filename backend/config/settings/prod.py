@@ -9,6 +9,20 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# El TLS lo termina Cloudflare; el nginx central sirve HTTP y propaga el esquema
+# original en X-Forwarded-Proto (ver runbook de despliegue). Sin este header,
+# SECURE_SSL_REDIRECT ve "http" en cada request tras el proxy y entra en un loop
+# de redirección 301. Confiar en X-Forwarded-Proto es seguro únicamente porque el
+# backend nunca se expone directo a internet — solo lo alcanza el nginx interno.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Origins de confianza para CSRF (POST del admin/allauth con cookie de sesión).
+# Default al dominio de prod; override por env para otros entornos.
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", default=["https://atenea.unam.dev"]
+)
 
 # ADR 0018: en prod, dj-rest-auth entrega el JWT como cookie httpOnly en vez
 # de en el body — el frontend nunca lo lee ni lo guarda en JS.
