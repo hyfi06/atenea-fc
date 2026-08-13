@@ -4,7 +4,28 @@ import { useOferta } from '../api'
 import { useMapaCarreras } from '../../catalogo/api'
 import { Skeleton } from '../../../components/ui/Skeleton'
 
-export function OfertaAsesorias() {
+interface OfertaAsesoriasProps {
+  /** Encabezado de la pantalla. */
+  titulo?: string
+  /** Destino del botón de regreso. */
+  rutaVolver?: string
+  /** Texto del botón de regreso. */
+  etiquetaVolver?: string
+  /** Prefijo del destino al elegir materia: `${baseRutaMateria}/${materia_id}`. */
+  baseRutaMateria?: string
+}
+
+/**
+ * Listado de la oferta. El alumno lo usa como paso 1 del agendado; el SAE lo
+ * reusa en modo consulta cambiando título y destinos (ADR 0024) — la pantalla
+ * no agenda nada por sí misma.
+ */
+export function OfertaAsesorias({
+  titulo = 'Nueva asesoría',
+  rutaVolver = '/asesorias',
+  etiquetaVolver = '← Volver a Asesorías',
+  baseRutaMateria = '/asesorias/nueva',
+}: OfertaAsesoriasProps) {
   const navigate = useNavigate()
   const { data: oferta = [], isPending } = useOferta()
   const mapaCarreras = useMapaCarreras()
@@ -28,10 +49,10 @@ export function OfertaAsesorias() {
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
-      <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">
-        ← Volver a Asesorías
+      <button type="button" onClick={() => navigate(rutaVolver)} className="foco-visible w-fit min-h-11 text-sm text-primary">
+        {etiquetaVolver}
       </button>
-      <h1 className="text-lg font-semibold text-on-background">Nueva asesoría</h1>
+      <h1 className="text-lg font-semibold text-on-background">{titulo}</h1>
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
@@ -79,7 +100,7 @@ export function OfertaAsesorias() {
             <li key={m.materia_id}>
               <button
                 type="button"
-                onClick={() => navigate(`/asesorias/nueva/${m.materia_id}`)}
+                onClick={() => navigate(`${baseRutaMateria}/${m.materia_id}`)}
                 className="foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
               >
                 <span className="truncate text-sm font-medium text-on-surface" title={m.nombre}>{m.nombre}</span>
