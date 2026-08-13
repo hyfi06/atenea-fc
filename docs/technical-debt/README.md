@@ -22,6 +22,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0012 — Oferta/asesores/búsqueda no acotan por semestre vigente](0012-oferta-asesorias-sin-scope-de-semestre.md)
 - [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md)
 - [0014 — Alta de `PerfilSAE` solo por admin](0014-alta-perfil-sae-solo-admin.md)
+- [0015 — Estáticos por WhiteNoise; media en MinIO/S3 pendiente](0015-estaticos-whitenoise-media-pendiente.md)
 
 ### Resuelta
 

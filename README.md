@@ -2,6 +2,18 @@
 
 System of SAE Facultad de Ciencias UNAM
 
+## Desarrollo
+
+Guía de entorno local en [`docs/development/getting-started.md`](docs/development/getting-started.md).
+
+## Despliegue
+
+Producción se despliega en el ecosistema externo `services/`; las imágenes se publican en
+GHCR al hacer merge a `main`. Pasos operativos en
+[`docs/development/despliegue-produccion.md`](docs/development/despliegue-produccion.md)
+y la decisión de fondo en [ADR 0025](docs/decisions/0025-despliegue-produccion-ghcr.md).
+El `docker-compose.prod.yml` de este repo es solo referencia de dev aislado.
+
 ## License
 
 Atenea System of SAE Facultad de Ciencias UNAM
