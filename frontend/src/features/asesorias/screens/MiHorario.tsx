@@ -28,6 +28,9 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', '
 const INSTRUCCION =
   'Cada celda es un horario disponible: toca para activarlo o editarlo. Para cambiar de día, usa las pestañas. Los cambios se autoguardan.'
 
+const INSTRUCCION_LECTURA =
+  'Horario del asesor en modo consulta. Para cambiar de día, usa las pestañas.'
+
 function Leyenda() {
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
@@ -43,12 +46,54 @@ function Leyenda() {
   )
 }
 
-export function MiHorario() {
+/** Contenido visual de una fila de horario, idéntico en modo edición y consulta. */
+function ContenidoSlot({ hora, activo, disponibilidad }: {
+  hora: string
+  activo: boolean
+  disponibilidad: Disponibilidad | null
+}) {
+  return (
+    <>
+      <span className="w-12 shrink-0 text-on-surface-variant">{hora.slice(0, 5)}</span>
+
+      {activo && disponibilidad !== null && (
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {disponibilidad.formato === 'virtual' ? (
+            <IconVirtual className="h-4 w-4 shrink-0" />
+          ) : (
+            <IconPresencial className="h-4 w-4 shrink-0" />
+          )}
+          {disponibilidad.formato === 'presencial' && (
+            <span className="truncate">{disponibilidad.ubicacion}</span>
+          )}
+        </span>
+      )}
+
+      <span
+        className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${
+          activo ? 'bg-primary-container text-on-primary-container' : 'bg-surface-variant text-on-surface-variant'
+        }`}
+      >
+        {activo ? 'Activo' : 'Inactivo'}
+      </span>
+    </>
+  )
+}
+
+interface MiHorarioProps {
+  /** Modo consulta (SAE): celdas no interactivas, sin diálogos ni `<main>` propio. */
+  soloLectura?: boolean
+  /** Bloques a mostrar. `null` → los propios del asesor autenticado. */
+  disponibilidades?: Disponibilidad[] | null
+}
+
+export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHorarioProps) {
   const navigate = useNavigate()
   const { mensaje, mostrar } = useRetroalimentacion()
 
-  const { registro, cargando: cargandoRegistro } = useRegistroDelSemestre()
-  const { data: disponibilidades = [], isPending: cargandoDisponibilidades } = useMisDisponibilidades()
+  // En modo consulta quien mira es SAE: sus GET propios darían 403.
+  const { registro, cargando: cargandoRegistro } = useRegistroDelSemestre(undefined, !soloLectura)
+  const { data: propias = [], isPending: cargandoPropias } = useMisDisponibilidades(!soloLectura)
 
   const crearDisponibilidad = useCrearDisponibilidad()
   const actualizarDisponibilidad = useActualizarDisponibilidad()
@@ -63,11 +108,14 @@ export function MiHorario() {
 
   const sesionesFuturas = useSesionesFuturas(bloqueSeleccionado?.id ?? null)
 
-  if (cargandoRegistro) {
+  const bloques = soloLectura ? (disponibilidades ?? []) : propias
+  const cargandoBloques = soloLectura ? false : cargandoPropias
+
+  if (!soloLectura && cargandoRegistro) {
     return <p className="p-6 text-sm text-on-surface-variant">Cargando…</p>
   }
 
-  if (!registro) {
+  if (!soloLectura && !registro) {
     return <SinRegistroAsesor titulo="Mi horario" />
   }
 
@@ -138,6 +186,62 @@ export function MiHorario() {
     )
   }
 
+  const rejilla = (
+    <Tabs defaultValue={String(diaSemanaHoy())}>
+      <TabsList className="gap-2 overflow-x-auto">
+        {DIAS_CORTOS.map((dia, indice) => (
+          <TabsTrigger key={dia} value={String(indice)}>
+            {dia}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {DIAS_CORTOS.map((_, indice) => (
+        <TabsContent key={indice} value={String(indice)}>
+          {cargandoBloques ? (
+            <ul className="flex flex-col gap-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-11" />
+              ))}
+            </ul>
+          ) : (
+            <ul className="flex flex-col">
+              {slotsDelDia(indice, bloques).map((slot) => (
+                <li key={slot.clave}>
+                  {soloLectura ? (
+                    <div className="flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface">
+                      <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => tocarSlot(indice, slot.hora, slot.disponibilidad)}
+                      aria-label={`Horario ${slot.hora.slice(0, 5)}, ${slot.activo ? 'activo' : 'inactivo'}`}
+                      className="foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface hover:bg-surface-container-high"
+                    >
+                      <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+      ))}
+    </Tabs>
+  )
+
+  if (soloLectura) {
+    return (
+      <section className="flex flex-col gap-2">
+        <h2 className="text-base font-semibold text-on-background">Horario</h2>
+        <p className="text-xs text-on-surface-variant">{INSTRUCCION_LECTURA}</p>
+        <Leyenda />
+        {rejilla}
+      </section>
+    )
+  }
+
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
       <button
@@ -152,65 +256,7 @@ export function MiHorario() {
       <p className="text-xs text-on-surface-variant">{INSTRUCCION}</p>
       <Leyenda />
 
-      <Tabs defaultValue={String(diaSemanaHoy())}>
-        <TabsList className="gap-2 overflow-x-auto">
-          {DIAS_CORTOS.map((dia, indice) => (
-            <TabsTrigger key={dia} value={String(indice)}>
-              {dia}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {DIAS_CORTOS.map((_, indice) => (
-          <TabsContent key={indice} value={String(indice)}>
-            {cargandoDisponibilidades ? (
-              <ul className="flex flex-col gap-1">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-11" />
-                ))}
-              </ul>
-            ) : (
-              <ul className="flex flex-col">
-                {slotsDelDia(indice, disponibilidades).map((slot) => (
-                  <li key={slot.clave}>
-                    <button
-                      type="button"
-                      onClick={() => tocarSlot(indice, slot.hora, slot.disponibilidad)}
-                      aria-label={`Horario ${slot.hora.slice(0, 5)}, ${slot.activo ? 'activo' : 'inactivo'}`}
-                      className="foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface hover:bg-surface-container-high"
-                    >
-                      <span className="w-12 shrink-0 text-on-surface-variant">{slot.hora.slice(0, 5)}</span>
-
-                      {slot.activo && slot.disponibilidad !== null && (
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          {slot.disponibilidad.formato === 'virtual' ? (
-                            <IconVirtual className="h-4 w-4 shrink-0" />
-                          ) : (
-                            <IconPresencial className="h-4 w-4 shrink-0" />
-                          )}
-                          {slot.disponibilidad.formato === 'presencial' && (
-                            <span className="truncate">{slot.disponibilidad.ubicacion}</span>
-                          )}
-                        </span>
-                      )}
-
-                      <span
-                        className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                          slot.activo
-                            ? 'bg-primary-container text-on-primary-container'
-                            : 'bg-surface-variant text-on-surface-variant'
-                        }`}
-                      >
-                        {slot.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+      {rejilla}
 
       <DialogoBloqueActivo
         abierto={bloqueSeleccionado !== null && !advertenciaAbierta}

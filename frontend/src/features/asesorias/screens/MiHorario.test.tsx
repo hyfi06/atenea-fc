@@ -138,4 +138,46 @@ describe('MiHorario', () => {
 
     expect(screen.getByRole('dialog', { name: /Nuevo bloque — Lunes 09:00/ })).toBeInTheDocument()
   })
+
+  function montarSoloLectura(disponibilidades: Disponibilidad[]) {
+    vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
+    vi.spyOn(api, 'useMisDisponibilidades').mockReturnValue({
+      data: [], isPending: false,
+    } as ReturnType<typeof api.useMisDisponibilidades>)
+    vi.spyOn(api, 'useSesionesFuturas').mockReturnValue({
+      data: { total: 0, sesiones: [] }, isPending: false,
+    } as ReturnType<typeof api.useSesionesFuturas>)
+    vi.spyOn(api, 'useDesactivarDisponibilidad').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useDesactivarDisponibilidad>)
+    vi.spyOn(api, 'useActualizarDisponibilidad').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useActualizarDisponibilidad>)
+    vi.spyOn(api, 'useCrearDisponibilidad').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useCrearDisponibilidad>)
+    vi.spyOn(api, 'useEliminarDisponibilidad').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useEliminarDisponibilidad>)
+
+    render(
+      <MemoryRouter>
+        <MiHorario soloLectura disponibilidades={disponibilidades} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('en solo lectura pinta los bloques recibidos y conserva los 7 días', () => {
+    montarSoloLectura([BLOQUE_LUNES])
+
+    expect(screen.getAllByRole('tab')).toHaveLength(7)
+    expect(screen.getByText('Salón O-221')).toBeInTheDocument()
+  })
+
+  it('en solo lectura las celdas no son interactivas ni abren diálogos', () => {
+    montarSoloLectura([BLOQUE_LUNES])
+
+    expect(screen.queryAllByRole('button', { name: /^Horario/ })).toHaveLength(0)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })

@@ -102,4 +102,54 @@ describe('MisMaterias', () => {
 
     expect(screen.getByText('Todavía no impartes ninguna materia este semestre.')).toBeInTheDocument()
   })
+
+  it('en solo lectura muestra las materias recibidas y el semestre pedido', () => {
+    vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
+    vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[2, materia(2, 'Física')]]))
+    vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useQuitarMateria>)
+    vi.spyOn(api, 'useAgregarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useAgregarMateria>)
+
+    render(<MisMaterias soloLectura materias={[2]} semestre="20261" />, { wrapper: envolver })
+
+    expect(screen.getByRole('button', { name: 'Física' })).toBeInTheDocument()
+    expect(screen.getByText('Semestre 20261')).toBeInTheDocument()
+  })
+
+  it('en solo lectura no ofrece agregar ni quitar', () => {
+    vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
+    vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[2, materia(2, 'Física')]]))
+    vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useQuitarMateria>)
+    vi.spyOn(api, 'useAgregarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useAgregarMateria>)
+
+    render(<MisMaterias soloLectura materias={[2]} semestre="20261" />, { wrapper: envolver })
+
+    expect(screen.queryByRole('button', { name: '+ Agregar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Quitar Física' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('en solo lectura sin materias muestra el vacío del asesor consultado', () => {
+    vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
+    vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map())
+    vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useQuitarMateria>)
+    vi.spyOn(api, 'useAgregarMateria').mockReturnValue({
+      mutate: vi.fn(), isPending: false,
+    } as unknown as ReturnType<typeof api.useAgregarMateria>)
+
+    render(<MisMaterias soloLectura materias={[]} semestre="20261" />, { wrapper: envolver })
+
+    expect(
+      screen.getByText('Este asesor no imparte materias en el semestre seleccionado.'),
+    ).toBeInTheDocument()
+  })
 })

@@ -10,10 +10,21 @@ import { DialogoAgregarMateria } from '../components/DialogoAgregarMateria'
 import { DialogoQuitarMateria } from '../components/DialogoQuitarMateria'
 import { SinRegistroAsesor } from '../components/SinRegistroAsesor'
 
-export function MisMaterias() {
+interface MisMateriasProps {
+  /** Modo consulta (SAE): sin agregar/quitar, sin diálogos y sin `<main>` propio. */
+  soloLectura?: boolean
+  /** Ids de materias a mostrar. `null` → las del registro propio del asesor. */
+  materias?: number[] | null
+  /** Semestre a etiquetar cuando `materias` viene de fuera. */
+  semestre?: string | null
+}
+
+export function MisMaterias({ soloLectura = false, materias = null, semestre = null }: MisMateriasProps) {
   const navigate = useNavigate()
   const { mensaje, mostrar } = useRetroalimentacion()
-  const { registro, cargando } = useRegistroDelSemestre()
+  // En modo consulta quien mira es SAE: GET /registros/ le daría 403, así que
+  // la query se apaga y los datos llegan por props.
+  const { registro, cargando } = useRegistroDelSemestre(undefined, !soloLectura)
   const mapaMaterias = useMapaMaterias()
 
   const agregarMateria = useAgregarMateria(registro?.id ?? 0)
@@ -25,15 +36,68 @@ export function MisMaterias() {
   const [errorQuitar, setErrorQuitar] = useState<string | null>(null)
   const [expandida, setExpandida] = useState<number | null>(null)
 
-  if (cargando) {
+  const nombreDe = (id: number) => mapaMaterias.get(id)?.nombre ?? `Materia #${id}`
+  const ids = soloLectura ? (materias ?? []) : (registro?.materias ?? [])
+  const etiquetaSemestre = soloLectura ? semestre : (registro?.semestre ?? null)
+
+  if (!soloLectura && cargando) {
     return <p className="p-6 text-sm text-on-surface-variant">Cargando…</p>
   }
 
-  if (!registro) {
+  if (!soloLectura && !registro) {
     return <SinRegistroAsesor titulo="Mis materias" />
   }
 
-  const nombreDe = (id: number) => mapaMaterias.get(id)?.nombre ?? `Materia #${id}`
+  const lista =
+    ids.length === 0 ? (
+      <p className="text-sm text-on-surface-variant">
+        {soloLectura
+          ? 'Este asesor no imparte materias en el semestre seleccionado.'
+          : 'Todavía no impartes ninguna materia este semestre.'}
+      </p>
+    ) : (
+      <ul className="flex flex-col">
+        {ids.map((id) => (
+          <li key={id} className="flex items-center gap-2 border-b border-outline-variant">
+            <button
+              type="button"
+              title={nombreDe(id)}
+              onClick={() => setExpandida((previa) => (previa === id ? null : id))}
+              className={`foco-visible min-h-11 min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm text-on-surface ${
+                expandida === id ? '' : 'truncate'
+              }`}
+            >
+              {nombreDe(id)}
+            </button>
+            {!soloLectura && (
+              <button
+                type="button"
+                aria-label={`Quitar ${nombreDe(id)}`}
+                onClick={() => {
+                  setErrorQuitar(null)
+                  setMateriaAQuitar(id)
+                }}
+                className="foco-visible flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+              >
+                <IconBasura className="h-5 w-5" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    )
+
+  if (soloLectura) {
+    return (
+      <section className="flex flex-col gap-2">
+        <h2 className="text-base font-semibold text-on-background">Materias</h2>
+        {etiquetaSemestre !== null && (
+          <p className="text-xs text-on-surface-variant">Semestre {etiquetaSemestre}</p>
+        )}
+        {lista}
+      </section>
+    )
+  }
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
@@ -59,41 +123,9 @@ export function MisMaterias() {
         </button>
       </div>
 
-      <p className="text-xs text-on-surface-variant">Semestre {registro.semestre}</p>
+      <p className="text-xs text-on-surface-variant">Semestre {etiquetaSemestre}</p>
 
-      {registro.materias.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">
-          Todavía no impartes ninguna materia este semestre.
-        </p>
-      ) : (
-        <ul className="flex flex-col">
-          {registro.materias.map((id) => (
-            <li key={id} className="flex items-center gap-2 border-b border-outline-variant">
-              <button
-                type="button"
-                title={nombreDe(id)}
-                onClick={() => setExpandida((previa) => (previa === id ? null : id))}
-                className={`foco-visible min-h-11 min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm text-on-surface ${
-                  expandida === id ? '' : 'truncate'
-                }`}
-              >
-                {nombreDe(id)}
-              </button>
-              <button
-                type="button"
-                aria-label={`Quitar ${nombreDe(id)}`}
-                onClick={() => {
-                  setErrorQuitar(null)
-                  setMateriaAQuitar(id)
-                }}
-                className="foco-visible flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
-              >
-                <IconBasura className="h-5 w-5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {lista}
 
       <DialogoAgregarMateria
         abierto={dialogoAgregarAbierto}
