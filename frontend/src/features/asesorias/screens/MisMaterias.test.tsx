@@ -113,7 +113,10 @@ describe('MisMaterias', () => {
       mutate: vi.fn(), isPending: false,
     } as unknown as ReturnType<typeof api.useAgregarMateria>)
 
-    render(<MisMaterias soloLectura materias={[2]} semestre="20261" />, { wrapper: envolver })
+    render(
+      <MisMaterias soloLectura materias={[{ id: 2, clave: '0002', nombre: 'Física' }]} semestre="20261" />,
+      { wrapper: envolver },
+    )
 
     expect(screen.getByRole('button', { name: 'Física' })).toBeInTheDocument()
     expect(screen.getByText('Semestre 20261')).toBeInTheDocument()
@@ -129,7 +132,10 @@ describe('MisMaterias', () => {
       mutate: vi.fn(), isPending: false,
     } as unknown as ReturnType<typeof api.useAgregarMateria>)
 
-    render(<MisMaterias soloLectura materias={[2]} semestre="20261" />, { wrapper: envolver })
+    render(
+      <MisMaterias soloLectura materias={[{ id: 2, clave: '0002', nombre: 'Física' }]} semestre="20261" />,
+      { wrapper: envolver },
+    )
 
     expect(screen.queryByRole('button', { name: '+ Agregar' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Quitar Física' })).not.toBeInTheDocument()

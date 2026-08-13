@@ -114,6 +114,26 @@ describe('AdminAsesorDetalle', () => {
     expect(adminAsesor).toHaveBeenCalledWith(7, '20261')
   })
 
+  it('mantiene el selector de semestre montado mientras recarga', () => {
+    // Al cambiar de semestre la queryKey cambia y `isPending` vuelve a true;
+    // el `<select>` no debe desmontarse o perdería el foco (M2).
+    vi.spyOn(api, 'useAdminAsesor').mockReturnValue({
+      data: undefined, isPending: true,
+    } as ReturnType<typeof api.useAdminAsesor>)
+    vi.spyOn(api, 'useAdminSemestres').mockReturnValue({
+      data: ['20262', '20261'], isPending: false,
+    } as ReturnType<typeof api.useAdminSemestres>)
+    render(
+      <MemoryRouter initialEntries={['/sae/asesores/7']}>
+        <Routes>
+          <Route path="/sae/asesores/:asesorId" element={<AdminAsesorDetalle />} />
+          <Route path="/sae/asesores" element={<p>directorio</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByLabelText('Semestre')).toBeInTheDocument()
+  })
+
   it('vuelve al directorio', () => {
     montar()
     fireEvent.click(screen.getByRole('button', { name: '← Volver al directorio' }))

@@ -9,12 +9,16 @@ import { useAgregarMateria, useQuitarMateria, useRegistroDelSemestre } from '../
 import { DialogoAgregarMateria } from '../components/DialogoAgregarMateria'
 import { DialogoQuitarMateria } from '../components/DialogoQuitarMateria'
 import { SinRegistroAsesor } from '../components/SinRegistroAsesor'
+import type { MateriaResumen } from '../../../api/types'
 
 interface MisMateriasProps {
   /** Modo consulta (SAE): sin agregar/quitar, sin diálogos y sin `<main>` propio. */
   soloLectura?: boolean
-  /** Ids de materias a mostrar. `null` → las del registro propio del asesor. */
-  materias?: number[] | null
+  /**
+   * Materias a mostrar en modo consulta, ya resueltas por el detalle admin.
+   * Sólo se usa con `soloLectura`; `null` → el asesor no imparte materias.
+   */
+  materias?: MateriaResumen[] | null
   /** Semestre a etiquetar cuando `materias` viene de fuera. */
   semestre?: string | null
 }
@@ -37,7 +41,11 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
   const [expandida, setExpandida] = useState<number | null>(null)
 
   const nombreDe = (id: number) => mapaMaterias.get(id)?.nombre ?? `Materia #${id}`
-  const ids = soloLectura ? (materias ?? []) : (registro?.materias ?? [])
+  // En consulta el nombre viene del detalle admin; en modo normal se resuelve
+  // por catálogo desde los ids del registro propio.
+  const materiasAMostrar = soloLectura
+    ? (materias ?? []).map((m) => ({ id: m.id, nombre: m.nombre }))
+    : (registro?.materias ?? []).map((id) => ({ id, nombre: nombreDe(id) }))
   const etiquetaSemestre = soloLectura ? semestre : (registro?.semestre ?? null)
 
   if (!soloLectura && cargando) {
@@ -49,7 +57,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
   }
 
   const lista =
-    ids.length === 0 ? (
+    materiasAMostrar.length === 0 ? (
       <p className="text-sm text-on-surface-variant">
         {soloLectura
           ? 'Este asesor no imparte materias en el semestre seleccionado.'
@@ -57,22 +65,22 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
       </p>
     ) : (
       <ul className="flex flex-col">
-        {ids.map((id) => (
+        {materiasAMostrar.map(({ id, nombre }) => (
           <li key={id} className="flex items-center gap-2 border-b border-outline-variant">
             <button
               type="button"
-              title={nombreDe(id)}
+              title={nombre}
               onClick={() => setExpandida((previa) => (previa === id ? null : id))}
               className={`foco-visible min-h-11 min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm text-on-surface ${
                 expandida === id ? '' : 'truncate'
               }`}
             >
-              {nombreDe(id)}
+              {nombre}
             </button>
             {!soloLectura && (
               <button
                 type="button"
-                aria-label={`Quitar ${nombreDe(id)}`}
+                aria-label={`Quitar ${nombre}`}
                 onClick={() => {
                   setErrorQuitar(null)
                   setMateriaAQuitar(id)

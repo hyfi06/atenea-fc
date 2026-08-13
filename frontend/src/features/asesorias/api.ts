@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/client'
 import type {
   RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas,
@@ -293,6 +293,8 @@ export function useAdminAsesor(perfilId: number | null, semestre: string | null 
           : `/api/asesorias/admin/asesores/${perfilId}/?semestre=${semestre}`,
       ),
     enabled: perfilId !== null,
+    // Entre semestres conserva el detalle previo para que no parpadee (M2).
+    placeholderData: keepPreviousData,
   })
 }
 
