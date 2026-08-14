@@ -111,7 +111,7 @@ function FiltroAsesor({
                 <button
                   type="button"
                   onClick={() => onCambiar(a)}
-                  className="foco-visible flex min-h-11 w-full items-center justify-between rounded-md bg-surface-container px-3 text-left text-sm text-on-surface"
+                  className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-md bg-surface-container px-3 text-left text-sm text-on-surface"
                 >
                   <span className="truncate" title={a.nombre}>{a.nombre}</span>
                   <span className="ml-3 shrink-0 text-xs text-on-surface-variant">{a.numero_trabajador}</span>
@@ -165,7 +165,7 @@ function FiltroAlumno({
                 <button
                   type="button"
                   onClick={() => onCambiar(a)}
-                  className="foco-visible flex min-h-11 w-full items-center justify-between rounded-md bg-surface-container px-3 text-left text-sm text-on-surface"
+                  className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-md bg-surface-container px-3 text-left text-sm text-on-surface"
                 >
                   <span className="truncate" title={a.nombre}>{a.nombre}</span>
                   <span className="ml-3 shrink-0 text-xs text-on-surface-variant">{a.numero_cuenta}</span>

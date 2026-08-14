@@ -71,7 +71,7 @@ export function DialogoAgregarMateria({
                 className={`foco-visible min-h-11 w-full rounded-md px-2 py-2 text-left text-sm ${
                   seleccionada === materia.id
                     ? 'bg-primary-container text-on-primary-container'
-                    : 'text-on-surface hover:bg-surface-container-high'
+                    : 'fila-interactiva text-on-surface'
                 }`}
               >
                 {materia.nombre}

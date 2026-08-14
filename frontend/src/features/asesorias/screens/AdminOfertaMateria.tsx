@@ -128,7 +128,9 @@ function BotonAsesor({
       aria-pressed={seleccionado}
       onClick={onClick}
       className={`foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg px-4 py-3 text-left ${
-        seleccionado ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container'
+        seleccionado
+          ? 'bg-primary-container text-on-primary-container'
+          : 'fila-interactiva bg-surface-container'
       }`}
     >
       <span className="text-sm font-medium">{asesor.asesor_nombre}</span>
