@@ -87,8 +87,8 @@ export function DetalleAsesoria() {
           <p className="text-sm text-on-surface-variant">No hay notas de sesiones anteriores.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {previas.map((previa) => (
-              <li key={previa.id} className="rounded-lg bg-surface-container-low p-3 text-sm">
+            {previas.map((previa, indice) => (
+              <li key={previa.id} className="entrada-lista rounded-lg bg-surface-container-low p-3 text-sm" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
                 <p className="mb-1 text-xs text-on-surface-variant">
                   {FORMATEADOR_FECHA.format(new Date(`${previa.fecha}T00:00:00`))}
                 </p>

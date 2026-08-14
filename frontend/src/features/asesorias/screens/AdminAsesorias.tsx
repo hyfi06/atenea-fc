@@ -106,8 +106,8 @@ function FiltroAsesor({
       ) : (
         busqueda.length >= 2 && resultados.length > 0 && (
           <ul className="flex flex-col gap-1" aria-label="Resultados de asesores">
-            {resultados.map((a) => (
-              <li key={a.perfil_id}>
+            {resultados.map((a, indice) => (
+              <li key={a.perfil_id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
                 <button
                   type="button"
                   onClick={() => onCambiar(a)}
@@ -160,8 +160,8 @@ function FiltroAlumno({
       ) : (
         busqueda.length >= 2 && resultados.length > 0 && (
           <ul className="flex flex-col gap-1" aria-label="Resultados de alumnos">
-            {resultados.map((a) => (
-              <li key={a.perfil_id}>
+            {resultados.map((a, indice) => (
+              <li key={a.perfil_id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
                 <button
                   type="button"
                   onClick={() => onCambiar(a)}

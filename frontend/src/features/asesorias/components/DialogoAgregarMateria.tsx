@@ -62,8 +62,8 @@ export function DialogoAgregarMateria({
         </div>
 
         <ul className="max-h-48 overflow-y-auto">
-          {filtradas.map((materia) => (
-            <li key={materia.id}>
+          {filtradas.map((materia, indice) => (
+            <li key={materia.id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
               <button
                 type="button"
                 onClick={() => setSeleccionada(materia.id)}

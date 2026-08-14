@@ -224,8 +224,8 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
               <p className="text-sm text-on-surface-variant">Sin disponibilidad este día</p>
             ) : (
               <ul className="flex flex-col">
-                {slots.map((slot) => (
-                  <li key={slot.clave}>
+                {slots.map((slot, indiceSlot) => (
+                  <li key={slot.clave} className="entrada-lista" style={{ animationDelay: `${Math.min(indiceSlot, 10) * 30}ms` }}>
                     {soloLectura ? (
                       <div className="flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface">
                         <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} mostrarEstado={false} />
