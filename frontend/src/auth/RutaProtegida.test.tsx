@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
-import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './RutaProtegida'
+import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE, RutaConSesion } from './RutaProtegida'
 import * as client from '../api/client'
 import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 
@@ -166,5 +166,56 @@ describe('RutaDeSAE', () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarSAE()
     expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+  })
+})
+
+function montarConSesion() {
+  render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/home']}>
+        <Routes>
+          <Route
+            path="/home"
+            element={
+              <RutaConSesion>
+                <p>pantalla home</p>
+              </RutaConSesion>
+            }
+          />
+          <Route path="/login" element={<p>pantalla login</p>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>,
+  )
+}
+
+describe('RutaConSesion', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('deja pasar a cualquier usuario con sesión', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
+    montarConSesion()
+    expect(await screen.findByText('pantalla home')).toBeInTheDocument()
+  })
+
+  it('deja pasar a un usuario con sesión aunque no tenga roles', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: [] }))
+    montarConSesion()
+    expect(await screen.findByText('pantalla home')).toBeInTheDocument()
+    expect(screen.queryByText('pantalla login')).not.toBeInTheDocument()
+  })
+
+  it('manda a Login a quien no tiene sesión', async () => {
+    vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
+    montarConSesion()
+    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+    expect(screen.queryByText('pantalla home')).not.toBeInTheDocument()
+  })
+
+  it('muestra el spinner mientras se resuelve la sesión', () => {
+    vi.spyOn(client, 'apiGet').mockReturnValue(new Promise(() => {}))
+    montarConSesion()
+    expect(screen.getByLabelText('Cargando')).toBeInTheDocument()
+    expect(screen.queryByText('pantalla home')).not.toBeInTheDocument()
   })
 })

@@ -4,7 +4,7 @@ import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
 import { NoEncontrado } from './screens/NoEncontrado'
-import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './auth/RutaProtegida'
+import { RutaConSesion, RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './auth/RutaProtegida'
 import { Asesorias } from './features/asesorias/screens/Asesorias'
 import { OfertaAsesorias } from './features/asesorias/screens/OfertaAsesorias'
 import { AgendarAsesoria } from './features/asesorias/screens/AgendarAsesoria'
@@ -23,7 +23,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/home" element={<Home />} />
+        <Route
+          path="/home"
+          element={
+            <RutaConSesion>
+              <Home />
+            </RutaConSesion>
+          }
+        />
         <Route path="/health" element={<HealthCheck />} />
         <Route
           path="/asesorias"

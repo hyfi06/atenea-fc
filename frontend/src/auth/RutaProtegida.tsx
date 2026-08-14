@@ -4,6 +4,21 @@ import { useAuth } from './AuthContext'
 import { useEsAsesor, useEsAlumno, useEsMiembroSAE } from './rol'
 import { PantallaCargando } from '../components/PantallaCargando'
 
+export function RutaConSesion({ children }: { children: ReactNode }) {
+  const { status } = useAuth()
+  const location = useLocation()
+
+  // Solo exige sesión, sin rol. `/home` es la página de aterrizaje de cualquier
+  // usuario autenticado (los guards por rol redirigen aquí al fallar el rol), así
+  // que no puede usar esos guards sin provocar un loop de redirección.
+  if (status === 'loading') return <PantallaCargando />
+  if (status === 'unauthenticated') {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return <>{children}</>
+}
+
 export function RutaDeAsesor({ children }: { children: ReactNode }) {
   const { status } = useAuth()
   const esAsesor = useEsAsesor()
