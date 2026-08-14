@@ -5,16 +5,23 @@ import { Login } from './Login'
 import * as auth from '../auth/AuthContext'
 import { ApiError } from '../api/client'
 
+type Estado = 'loading' | 'authenticated' | 'unauthenticated'
+
 interface Dobles {
   loginWithPassword?: (email: string, password: string) => Promise<void>
   loginWithGoogle?: () => Promise<void>
+  status?: Estado
 }
 
-function montar({ loginWithPassword = vi.fn(), loginWithGoogle = vi.fn() }: Dobles = {}) {
+function montar({
+  loginWithPassword = vi.fn(),
+  loginWithGoogle = vi.fn(),
+  status = 'unauthenticated',
+}: Dobles = {}) {
   vi.spyOn(auth, 'useAuth').mockReturnValue({
     user: null,
     roles: [],
-    status: 'unauthenticated',
+    status,
     loginWithPassword,
     loginWithGoogle,
     logout: vi.fn(),
@@ -89,5 +96,19 @@ describe('Login', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo iniciar sesión con Google.')
     expect(screen.queryByText('pantalla home')).not.toBeInTheDocument()
+  })
+
+  it('mientras la sesión se resuelve muestra el spinner y no el formulario', () => {
+    montar({ status: 'loading' })
+
+    expect(screen.getByLabelText('Cargando')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Correo')).not.toBeInTheDocument()
+  })
+
+  it('con sesión ya iniciada redirige a Home', () => {
+    montar({ status: 'authenticated' })
+
+    expect(screen.getByText('pantalla home')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Correo')).not.toBeInTheDocument()
   })
 })

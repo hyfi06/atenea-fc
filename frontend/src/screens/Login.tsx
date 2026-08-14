@@ -1,8 +1,9 @@
 import { useId, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError } from '../api/client'
 import { Boton } from '../components/ui/Boton'
+import { PantallaCargando } from '../components/PantallaCargando'
 
 const FOCO_VISIBLE = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
@@ -39,12 +40,16 @@ function TextField({ label, type, value, autoComplete, onChange }: TextFieldProp
 
 export function Login() {
   const navigate = useNavigate()
-  const { loginWithPassword, loginWithGoogle } = useAuth()
+  const { loginWithPassword, loginWithGoogle, status } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [conectandoGoogle, setConectandoGoogle] = useState(false)
+
+  // Mismo guard que Landing: son dos entradas a la misma acción.
+  if (status === 'loading') return <PantallaCargando />
+  if (status === 'authenticated') return <Navigate to="/home" replace />
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

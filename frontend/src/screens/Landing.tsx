@@ -1,14 +1,20 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { Boton } from '../components/ui/Boton'
+import { PantallaCargando } from '../components/PantallaCargando'
 import { useAuth } from '../auth/AuthContext'
 
 export function Landing() {
   const navigate = useNavigate()
-  const { loginWithGoogle } = useAuth()
+  const { loginWithGoogle, status } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [conectandoGoogle, setConectandoGoogle] = useState(false)
+
+  // Todos los hooks quedan arriba: las salidas tempranas van después, para no
+  // romper el orden de hooks entre renders.
+  if (status === 'loading') return <PantallaCargando />
+  if (status === 'authenticated') return <Navigate to="/home" replace />
 
   // Mismo flujo, mismo manejo de carga/error y mismo copy de error que
   // Login.tsx: son dos entradas a la misma acción, no dos comportamientos.
