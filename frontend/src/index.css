@@ -63,6 +63,17 @@
   --color-ring: var(--color-primary);
 }
 
+/* Tokens de motion — ADR 0026. Se declaran en `:root` y no dentro de `@theme`
+   para garantizar que se emitan siempre: todo su consumo en este archivo es
+   vía `var()`, no vía utilidades de Tailwind. Al ir después de los bloques
+   `@theme`, este bloque también redefine los `--ease-out`/`--ease-in-out` que
+   Tailwind trae de fábrica: un solo lugar fija el "feel" de la app. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-on-background);
@@ -96,6 +107,36 @@ body {
 @keyframes entrada-velo {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes salida-toast {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes entrada-menu {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes salida-menu {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes salida-dialogo {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+}
+
+@keyframes salida-velo {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes entrada-deleite {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .skeleton {
@@ -137,6 +178,66 @@ body {
   animation: entrada-velo 180ms ease-out;
 }
 
+/* Salidas simétricas. Cada una es más rápida que su entrada: el sistema debe
+   sentirse responsivo al descartar aunque haya sido deliberado al abrir.
+   `forwards` mantiene el estado final durante los milisegundos que quedan
+   entre el fin de la animación y el desmontaje. */
+.salida-toast {
+  animation: salida-toast 200ms var(--ease-out) forwards;
+}
+
+/* `transform-origin: top right` porque el panel está anclado al disparador
+   (`absolute right-0 top-12`), no centrado en viewport como `.entrada-dialogo`. */
+.entrada-menu {
+  transform-origin: top right;
+  animation: entrada-menu 180ms var(--ease-drawer);
+}
+
+.salida-menu {
+  transform-origin: top right;
+  animation: salida-menu 140ms var(--ease-out) forwards;
+}
+
+.salida-dialogo {
+  animation: salida-dialogo 150ms var(--ease-out) forwards;
+}
+
+.salida-velo {
+  animation: salida-velo 150ms var(--ease-out) forwards;
+}
+
+.entrada-deleite {
+  animation: entrada-deleite 400ms var(--ease-out) backwards;
+}
+
+/* Press feedback compartido. Mismo criterio que `.foco-visible` de abajo: el
+   comportamiento lo comparten 15+ sitios, así que se declara una vez aquí en
+   vez de repetir utilidades `active:` en cada componente.
+   `.presionable` — botones y tiles independientes.
+   `.fila-interactiva` — filas y tarjetas de ancho completo: scale más sutil
+   para que el borde no "salte", más el hover que antes vivía inline. */
+.presionable {
+  transition: transform 160ms var(--ease-out);
+}
+
+.presionable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.fila-interactiva {
+  transition: transform 160ms var(--ease-out), background-color 150ms ease;
+}
+
+.fila-interactiva:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fila-interactiva:hover {
+    background-color: var(--color-surface-container-high);
+  }
+}
+
 /* Checklist de accesibilidad del paso 7: todo elemento interactivo nuevo
    necesita un foco perceptible, no solo la ausencia del outline del
    navegador. Se declara una vez aquí, como .skeleton/.spinner, en vez de
@@ -153,8 +254,21 @@ body {
   .pulso-exito,
   .spinner,
   .entrada-dialogo,
-  .entrada-velo {
+  .entrada-velo,
+  .salida-toast,
+  .entrada-menu,
+  .salida-menu,
+  .salida-dialogo,
+  .salida-velo,
+  .entrada-deleite {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  /* `.presionable` y `.fila-interactiva` usan `transition`, no `animation`:
+     necesitan su propia regla en el mismo checklist. */
+  .presionable,
+  .fila-interactiva {
+    transition-duration: 0.01ms !important;
   }
 }
