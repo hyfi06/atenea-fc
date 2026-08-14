@@ -25,7 +25,7 @@ export function Home() {
           <button
             type="button"
             onClick={() => navigate('/sae/asesorias')}
-            className="foco-visible flex min-h-11 flex-col items-center gap-2 rounded-2xl bg-secondary-container p-3 text-center text-on-secondary-container"
+            className="presionable foco-visible flex min-h-11 flex-col items-center gap-2 rounded-2xl bg-secondary-container p-3 text-center text-on-secondary-container"
           >
             <IconTutorias className="h-6 w-6" />
             <span className="text-xs font-semibold leading-tight">Asesorías · SAE</span>
