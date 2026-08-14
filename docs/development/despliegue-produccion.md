@@ -167,6 +167,15 @@ server {
 > `nginx/conf.d/outline.conf`. Si `nginx` lista `depends_on`, agregar `atenea-frontend` y
 > `atenea-backend`.
 
+> **Gotcha — 502 en `/api/` y `/admin/` tras un deploy.** El `proxy_pass` de arriba usa
+> hostnames (`atenea-backend`, `atenea-frontend`) sin `resolver`, así que nginx los resuelve
+> **una sola vez al arrancar** y cachea la IP. Cuando `make deploy` corre `docker compose up -d`
+> y recrea esos contenedores con imagen nueva, obtienen **IPs nuevas** pero nginx no se recrea:
+> sigue apuntando a la IP vieja y devuelve **502** en las rutas del backend (el login se rompe;
+> `/api` y `/admin` *sin* barra final caen al SPA y muestran el 404). Por eso el target `deploy`
+> del `Makefile` de `services/` reinicia nginx (`$(COMPOSE) restart nginx`) tras el `up -d`. Si
+> pasa igualmente, el fix inmediato es `docker compose restart nginx` en `~/services`.
+
 ---
 
 ## 4. Cloudflare Tunnel
@@ -194,7 +203,7 @@ En el proyecto de Google Cloud del client usado por Atenea:
 
 ```bash
 cd ~/services
-make deploy            # git pull + docker compose pull + up -d + prune
+make deploy            # git pull + docker compose pull + up -d + restart nginx + prune
 make logs svc=atenea-backend   # debe verse "migrate" OK y gunicorn arrancando
 make logs svc=atenea-worker    # debe decir "ready."
 ```
