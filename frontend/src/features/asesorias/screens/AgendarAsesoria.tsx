@@ -103,7 +103,7 @@ export function AgendarAsesoria() {
         {mapaMaterias.get(idMateria)?.nombre ?? `Materia #${idMateria}`}
       </h1>
 
-      {error && <p role="alert" className="text-xs text-error">{error}</p>}
+      {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
 
       {paso === 'asesor' && (
         <section className="flex flex-col gap-2">

@@ -48,7 +48,7 @@ export function Landing() {
 
       <div className="flex w-full max-w-xs flex-col gap-3">
         {error && (
-          <p role="alert" className="text-center text-sm text-error">
+          <p role="alert" className="entrada-lista text-center text-sm text-error">
             {error}
           </p>
         )}

@@ -100,7 +100,7 @@ export function Login() {
         <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
         {error && (
-          <p role="alert" className="text-sm text-error">
+          <p role="alert" className="entrada-lista text-sm text-error">
             {error}
           </p>
         )}

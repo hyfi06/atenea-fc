@@ -156,7 +156,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
             >
               Guardar notas
             </Boton>
-            {error && <p role="alert" className="text-xs text-error">{error}</p>}
+            {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
           </>
         ) : null}
         <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
@@ -212,7 +212,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
               No asistió
             </Boton>
           </div>
-          {error && <p role="alert" className="text-xs text-error">{error}</p>}
+          {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
         </div>
       ) : (
         <p className="text-xs text-on-surface-variant">
