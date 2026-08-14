@@ -3,6 +3,7 @@ import { Landing } from './screens/Landing'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
+import { NoEncontrado } from './screens/NoEncontrado'
 import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './auth/RutaProtegida'
 import { Asesorias } from './features/asesorias/screens/Asesorias'
 import { OfertaAsesorias } from './features/asesorias/screens/OfertaAsesorias'
@@ -125,6 +126,7 @@ function App() {
             </RutaDeSAE>
           }
         />
+        <Route path="*" element={<NoEncontrado />} />
       </Routes>
     </BrowserRouter>
   )
