@@ -3,9 +3,22 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Home } from './Home'
 import * as rol from '../auth/rol'
+import * as auth from '../auth/AuthContext'
+import { usuarioDePrueba } from '../test/factories'
 
 function montar(esMiembroSAE: boolean) {
   vi.spyOn(rol, 'useEsMiembroSAE').mockReturnValue(esMiembroSAE)
+  // Home monta MenuUsuario, que llama a useAuth: sin este doble el hook
+  // lanza por falta de AuthProvider.
+  vi.spyOn(auth, 'useAuth').mockReturnValue({
+    user: usuarioDePrueba(),
+    roles: [],
+    status: 'authenticated',
+    loginWithPassword: vi.fn(),
+    loginWithGoogle: vi.fn(),
+    logout: vi.fn(),
+  } as ReturnType<typeof auth.useAuth>)
+
   render(
     <MemoryRouter initialEntries={['/home']}>
       <Routes>
@@ -38,5 +51,12 @@ describe('Home', () => {
   it('sigue mostrando el resto de servicios', () => {
     montar(false)
     expect(screen.getByText('Becas')).toBeInTheDocument()
+  })
+
+  it('la hamburguesa del header abre el menú de la sesión', () => {
+    montar(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Menú' }))
+    expect(screen.getByText('usuaria@ciencias.unam.mx')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 })
