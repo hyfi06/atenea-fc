@@ -71,7 +71,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
               type="button"
               title={nombre}
               onClick={() => setExpandida((previa) => (previa === id ? null : id))}
-              className={`foco-visible min-h-11 min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm text-on-surface ${
+              className={`fila-interactiva foco-visible min-h-11 min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm text-on-surface ${
                 expandida === id ? '' : 'truncate'
               }`}
             >
@@ -85,7 +85,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
                   setErrorQuitar(null)
                   setMateriaAQuitar(id)
                 }}
-                className="foco-visible flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+                className="fila-interactiva foco-visible flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant"
               >
                 <IconBasura className="h-5 w-5" />
               </button>

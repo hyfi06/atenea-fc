@@ -138,7 +138,7 @@ export function AgendarAsesoria() {
                   <button
                     type="button"
                     onClick={() => setFecha(d.fecha)}
-                    className="foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
+                    className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
                   >
                     <span className="text-sm text-on-surface">
                       {FORMATEADOR_DIA.format(new Date(`${d.fecha}T00:00:00`))}
@@ -163,7 +163,7 @@ export function AgendarAsesoria() {
                 <button
                   type="button"
                   onClick={() => setSlot(s)}
-                  className="foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
+                  className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
                 >
                   <span className="text-sm text-on-surface">
                     {s.hora_inicio.slice(0, 5)}–{s.hora_fin.slice(0, 5)}
@@ -233,7 +233,7 @@ function BotonAsesor({ asesor, onClick }: { asesor: AsesorDisponible; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg bg-surface-container px-4 py-3 text-left"
+      className="fila-interactiva foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg bg-surface-container px-4 py-3 text-left"
     >
       <span className="text-sm font-medium text-on-surface">{asesor.asesor_nombre}</span>
       <span className="text-xs text-on-surface-variant">

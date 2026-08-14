@@ -101,7 +101,7 @@ export function OfertaAsesorias({
               <button
                 type="button"
                 onClick={() => navigate(`${baseRutaMateria}/${m.materia_id}`)}
-                className="foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
+                className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
               >
                 <span className="truncate text-sm font-medium text-on-surface" title={m.nombre}>{m.nombre}</span>
                 <span className="ml-3 shrink-0 text-xs text-on-surface-variant">

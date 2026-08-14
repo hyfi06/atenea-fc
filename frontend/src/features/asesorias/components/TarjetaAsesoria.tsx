@@ -85,7 +85,7 @@ export function TarjetaAsesoria({
           ref={(el) => { ref.current = el }}
           type="button"
           onClick={irAlDetalle}
-          className={`foco-visible ${clasesBase}`}
+          className={`fila-interactiva foco-visible ${clasesBase}`}
         >
           {contenido}
         </button>

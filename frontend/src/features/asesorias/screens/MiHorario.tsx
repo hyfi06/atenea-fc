@@ -235,7 +235,7 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
                         type="button"
                         onClick={() => tocarSlot(indice, slot.hora, slot.disponibilidad)}
                         aria-label={`Horario ${slot.hora.slice(0, 5)}, ${slot.activo ? 'activo' : 'inactivo'}`}
-                        className="foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface hover:bg-surface-container-high"
+                        className="fila-interactiva foco-visible flex min-h-11 w-full items-center gap-2 border-b border-outline-variant px-2 text-sm text-on-surface"
                       >
                         <ContenidoSlot hora={slot.hora} activo={slot.activo} disponibilidad={slot.disponibilidad} />
                       </button>
