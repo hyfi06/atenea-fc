@@ -36,17 +36,17 @@ export function Landing() {
       <div />
 
       <div className="flex flex-col items-center gap-4 text-center">
-        <Logo className="h-20 w-20 text-primary" />
-        <h1 className="text-2xl font-semibold">Atenea</h1>
-        <p className="max-w-[26ch] text-sm text-on-surface-variant">
+        <Logo className="entrada-deleite h-20 w-20 text-primary" />
+        <h1 className="entrada-deleite text-2xl font-semibold" style={{ animationDelay: '70ms' }}>Atenea</h1>
+        <p className="entrada-deleite max-w-[26ch] text-sm text-on-surface-variant" style={{ animationDelay: '140ms' }}>
           Secretaría de Asuntos Estudiantiles
         </p>
-        <p className="max-w-[26ch] text-sm text-on-surface-variant">
+        <p className="entrada-deleite max-w-[26ch] text-sm text-on-surface-variant" style={{ animationDelay: '210ms' }}>
           Facultad de Ciencias, UNAM
         </p>
       </div>
 
-      <div className="flex w-full max-w-xs flex-col gap-3">
+      <div className="entrada-deleite flex w-full max-w-xs flex-col gap-3" style={{ animationDelay: '280ms' }}>
         {error && (
           <p role="alert" className="entrada-lista text-center text-sm text-error">
             {error}
