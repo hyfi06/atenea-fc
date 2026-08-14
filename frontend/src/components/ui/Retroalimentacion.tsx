@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 type TipoMensaje = 'exito' | 'error'
 interface Mensaje {
@@ -14,18 +14,26 @@ const VISIBLE_MS = 2700
 export function useRetroalimentacion() {
   const [mensaje, setMensaje] = useState<Mensaje | null>(null)
   const [saliendo, setSaliendo] = useState(false)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const mostrar = useCallback((texto: string, tipo: TipoMensaje = 'exito') => {
+    // Si ya había un toast en curso, sus timers pendientes no deben seguir
+    // corriendo: afectarían la salida/desmontaje de este nuevo toast.
+    timersRef.current.forEach(clearTimeout)
+    timersRef.current = []
+
     // Cierre en dos tiempos: primero se marca la salida (que aplica
     // `.salida-toast`), y sólo cuando esa animación terminó se desmonta. Antes
     // el toast desaparecía de golpe al limpiar `mensaje`.
     setSaliendo(false)
     setMensaje({ texto, tipo })
-    setTimeout(() => setSaliendo(true), VISIBLE_MS)
-    setTimeout(() => {
-      setMensaje(null)
-      setSaliendo(false)
-    }, VISIBLE_MS + SALIDA_MS)
+    timersRef.current.push(setTimeout(() => setSaliendo(true), VISIBLE_MS))
+    timersRef.current.push(
+      setTimeout(() => {
+        setMensaje(null)
+        setSaliendo(false)
+      }, VISIBLE_MS + SALIDA_MS),
+    )
   }, [])
 
   return { mensaje, saliendo, mostrar }

@@ -42,6 +42,23 @@ describe('dialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('un segundo Escape durante la salida no duplica el onOpenChange(false)', () => {
+    vi.useFakeTimers()
+    const onOpenChange = abrirDialogo()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    // Segundo Escape mientras `open` de Radix sigue en `true` (la salida
+    // diferida aún no corrió): no debe agendar un segundo timer.
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    act(() => {
+      vi.advanceTimersByTime(150)
+    })
+
+    expect(onOpenChange).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
   it('no renderiza nada cuando está cerrado', () => {
     render(
       <Dialog open={false}>

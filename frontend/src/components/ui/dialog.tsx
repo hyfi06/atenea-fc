@@ -35,14 +35,22 @@ const ContextoCerrando = React.createContext(false)
 
 function Dialog({ onOpenChange, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   const [cerrando, setCerrando] = React.useState(false)
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  React.useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current)
+    }
+  }, [])
 
   function alCambiarApertura(abierto: boolean) {
     if (abierto) {
       onOpenChange?.(true)
       return
     }
+    if (cerrando) return
     setCerrando(true)
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setCerrando(false)
       onOpenChange?.(false)
     }, SALIDA_DIALOGO_MS)
