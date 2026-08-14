@@ -98,7 +98,7 @@ interface MiHorarioProps {
 
 export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHorarioProps) {
   const navigate = useNavigate()
-  const { mensaje, mostrar } = useRetroalimentacion()
+  const { mensaje, saliendo, mostrar } = useRetroalimentacion()
 
   // En modo consulta quien mira es SAE: sus GET propios darían 403.
   const { registro, cargando: cargandoRegistro } = useRegistroDelSemestre(undefined, !soloLectura)
@@ -307,7 +307,7 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
         onCerrar={() => setCeldaVacia(null)}
       />
 
-      <Retroalimentacion mensaje={mensaje} />
+      <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
     </main>
   )
 }

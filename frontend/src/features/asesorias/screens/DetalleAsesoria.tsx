@@ -103,7 +103,7 @@ export function DetalleAsesoria() {
 }
 
 function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
-  const { mensaje, mostrar } = useRetroalimentacion()
+  const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   const cancelar = useCancelarAsesoria()
   const marcarAsistencia = useMarcarAsistencia()
   const guardarNotas = useGuardarNotas()
@@ -159,7 +159,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
             {error && <p role="alert" className="text-xs text-error">{error}</p>}
           </>
         ) : null}
-        <Retroalimentacion mensaje={mensaje} />
+        <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
       </section>
     )
   }
@@ -243,7 +243,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
         }
         onCerrar={() => setDialogoCancelarAbierto(false)}
       />
-      <Retroalimentacion mensaje={mensaje} />
+      <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
     </section>
   )
 }

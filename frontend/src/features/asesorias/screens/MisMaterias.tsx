@@ -25,7 +25,7 @@ interface MisMateriasProps {
 
 export function MisMaterias({ soloLectura = false, materias = null, semestre = null }: MisMateriasProps) {
   const navigate = useNavigate()
-  const { mensaje, mostrar } = useRetroalimentacion()
+  const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   // En modo consulta quien mira es SAE: GET /registros/ le daría 403, así que
   // la query se apaga y los datos llegan por props.
   const { registro, cargando } = useRegistroDelSemestre(undefined, !soloLectura)
@@ -169,7 +169,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
         onCerrar={() => setMateriaAQuitar(null)}
       />
 
-      <Retroalimentacion mensaje={mensaje} />
+      <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
     </main>
   )
 }

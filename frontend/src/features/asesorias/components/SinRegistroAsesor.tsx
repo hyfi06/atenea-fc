@@ -14,7 +14,7 @@ import { semestreActual } from '../logica'
 export function SinRegistroAsesor({ titulo }: { titulo: string }) {
   const navigate = useNavigate()
   const crearRegistro = useCrearRegistro()
-  const { mensaje, mostrar } = useRetroalimentacion()
+  const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   const [semestre, setSemestre] = useState(semestreActual())
 
   return (
@@ -53,7 +53,7 @@ export function SinRegistroAsesor({ titulo }: { titulo: string }) {
         Registrar semestre {semestre}
       </Boton>
 
-      <Retroalimentacion mensaje={mensaje} />
+      <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
     </main>
   )
 }
