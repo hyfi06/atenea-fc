@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MenuUsuario } from './MenuUsuario'
 import * as auth from '../auth/AuthContext'
@@ -42,7 +42,17 @@ function abrir() {
 }
 
 describe('MenuUsuario', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  /** El panel se desmunta cuando termina `.salida-menu` (140 ms). */
+  function terminarSalida() {
+    act(() => {
+      vi.advanceTimersByTime(140)
+    })
+  }
 
   it('arranca cerrado', () => {
     montar()
@@ -60,17 +70,40 @@ describe('MenuUsuario', () => {
   })
 
   it('Escape lo cierra y devuelve el foco al disparador', () => {
+    vi.useFakeTimers()
     montar()
     abrir()
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument()
+
+    // El foco vuelve de inmediato; el panel espera a que corra su salida.
     expect(disparador()).toHaveFocus()
+    terminarSalida()
+
+    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument()
+  })
+
+  it('el panel sigue montado mientras corre la animación de salida', () => {
+    vi.useFakeTimers()
+    montar()
+    abrir()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    const panel = screen.getByRole('button', { name: 'Cerrar sesión' }).parentElement
+    expect(panel).toHaveClass('salida-menu')
+    expect(panel).not.toHaveClass('entrada-menu')
+
+    terminarSalida()
+
+    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument()
   })
 
   it('un click fuera lo cierra', () => {
+    vi.useFakeTimers()
     montar()
     abrir()
     fireEvent.mouseDown(document.body)
+    terminarSalida()
+
     expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument()
   })
 

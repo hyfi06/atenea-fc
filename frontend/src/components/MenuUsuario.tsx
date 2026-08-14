@@ -2,6 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
+/** Debe coincidir con la duración de `.salida-menu` en `index.css`. */
+const SALIDA_MENU_MS = 140
+
 /**
  * Menú de la hamburguesa del header de Home: identidad de la sesión arriba,
  * "Cerrar sesión" abajo.
@@ -15,17 +18,30 @@ export function MenuUsuario() {
   const navigate = useNavigate()
   const { user, status, logout } = useAuth()
   const [abierto, setAbierto] = useState(false)
+  // `cerrando` es el guard de doble disparo del logout; `cerrandoMenu` es otra
+  // cosa: la fase de salida del panel, que lo mantiene montado 140 ms para que
+  // corra `.salida-menu` antes de desmontarlo.
   const [cerrando, setCerrando] = useState(false)
+  const [cerrandoMenu, setCerrandoMenu] = useState(false)
   const contenedorRef = useRef<HTMLDivElement | null>(null)
   const disparadorRef = useRef<HTMLButtonElement | null>(null)
   const idPanel = useId()
+
+  function cerrarMenu() {
+    if (cerrandoMenu) return
+    setCerrandoMenu(true)
+    setTimeout(() => {
+      setCerrandoMenu(false)
+      setAbierto(false)
+    }, SALIDA_MENU_MS)
+  }
 
   useEffect(() => {
     if (!abierto) return
 
     function alPresionarTecla(evento: KeyboardEvent) {
       if (evento.key !== 'Escape') return
-      setAbierto(false)
+      cerrarMenu()
       // Escape devuelve el foco al disparador; un click fuera no, porque el
       // foco ya se fue a donde el usuario apuntó.
       disparadorRef.current?.focus()
@@ -35,7 +51,7 @@ export function MenuUsuario() {
     // forma confiable, y el evento de compatibilidad cubre igual el táctil.
     function alApuntarFuera(evento: MouseEvent) {
       if (contenedorRef.current?.contains(evento.target as Node) === true) return
-      setAbierto(false)
+      cerrarMenu()
     }
 
     document.addEventListener('keydown', alPresionarTecla)
@@ -44,7 +60,7 @@ export function MenuUsuario() {
       document.removeEventListener('keydown', alPresionarTecla)
       document.removeEventListener('mousedown', alApuntarFuera)
     }
-  }, [abierto])
+  }, [abierto, cerrandoMenu])
 
   async function cerrarSesion() {
     // `logout()` traga el error del POST y limpia el lado del cliente pase lo
@@ -68,7 +84,7 @@ export function MenuUsuario() {
         aria-haspopup="true"
         aria-expanded={abierto}
         aria-controls={idPanel}
-        onClick={() => setAbierto((previo) => !previo)}
+        onClick={() => (abierto ? cerrarMenu() : setAbierto(true))}
         className="foco-visible flex h-11 w-11 items-center justify-center rounded-full text-on-background"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5" aria-hidden>
@@ -81,7 +97,7 @@ export function MenuUsuario() {
       {abierto && (
         <div
           id={idPanel}
-          className="entrada-dialogo absolute right-0 top-12 z-10 flex w-60 flex-col gap-1 rounded-2xl bg-surface-container p-3 text-left shadow-lg"
+          className={`${cerrandoMenu ? 'salida-menu' : 'entrada-menu'} absolute right-0 top-12 z-10 flex w-60 flex-col gap-1 rounded-2xl bg-surface-container p-3 text-left shadow-lg`}
         >
           <span className="truncate text-sm font-medium text-on-surface" title={user.nombre_completo}>
             {user.nombre_completo}
