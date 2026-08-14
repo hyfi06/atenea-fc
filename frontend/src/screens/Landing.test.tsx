@@ -4,11 +4,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Landing } from './Landing'
 import * as auth from '../auth/AuthContext'
 
-function montar(loginWithGoogle: () => Promise<void>) {
+type Estado = 'loading' | 'authenticated' | 'unauthenticated'
+
+function montar(loginWithGoogle: () => Promise<void>, status: Estado = 'unauthenticated') {
   vi.spyOn(auth, 'useAuth').mockReturnValue({
     user: null,
     roles: [],
-    status: 'unauthenticated',
+    status,
     loginWithPassword: vi.fn(),
     loginWithGoogle,
     logout: vi.fn(),
@@ -67,5 +69,19 @@ describe('Landing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Entrar con correo y contraseña' }))
 
     expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+  })
+
+  it('mientras la sesión se resuelve muestra el spinner y no la landing', () => {
+    montar(vi.fn(), 'loading')
+
+    expect(screen.getByLabelText('Cargando')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Continuar con Correo Ciencias' })).not.toBeInTheDocument()
+  })
+
+  it('con sesión ya iniciada redirige a Home', () => {
+    montar(vi.fn(), 'authenticated')
+
+    expect(screen.getByText('pantalla home')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Continuar con Correo Ciencias' })).not.toBeInTheDocument()
   })
 })

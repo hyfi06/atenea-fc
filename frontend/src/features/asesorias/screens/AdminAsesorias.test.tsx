@@ -64,6 +64,7 @@ function montar() {
       <Routes>
         <Route path="/sae/asesorias" element={<AdminAsesorias />} />
         <Route path="/sae/asesorias/oferta" element={<p>oferta SAE</p>} />
+        <Route path="/home" element={<p>pantalla home</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -121,5 +122,11 @@ describe('AdminAsesorias', () => {
     montar()
     fireEvent.click(screen.getByRole('button', { name: 'Consultar oferta' }))
     expect(screen.getByText('oferta SAE')).toBeInTheDocument()
+  })
+
+  it('ofrece volver a Inicio', () => {
+    montar()
+    fireEvent.click(screen.getByRole('button', { name: '← Inicio' }))
+    expect(screen.getByText('pantalla home')).toBeInTheDocument()
   })
 })

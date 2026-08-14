@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import { MenuUsuario } from '../components/MenuUsuario'
 import { IconTutorias } from '../components/icons/ServiceIcons'
 import { services } from '../data/services'
 import { useEsMiembroSAE } from '../auth/rol'
@@ -14,13 +15,7 @@ export function Home() {
         <Logo className="h-7 w-7 text-primary" />
         <span className="text-base font-semibold">Atenea</span>
         <span className="flex-1" />
-        <button type="button" aria-label="Menú" className="flex h-9 w-9 items-center justify-center text-on-background">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
-            <line x1="4" y1="7" x2="20" y2="7" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="17" x2="20" y2="17" />
-          </svg>
-        </button>
+        <MenuUsuario />
       </header>
 
       <p className="pb-4 text-sm text-on-surface-variant">Hola</p>

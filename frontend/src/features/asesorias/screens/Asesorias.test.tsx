@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Asesorias } from './Asesorias'
 import * as api from '../api'
@@ -21,7 +21,12 @@ function envolver({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={['/asesorias']}>
+        <Routes>
+          <Route path="/asesorias" element={children} />
+          <Route path="/home" element={<p>pantalla home</p>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -64,5 +69,11 @@ describe('Asesorias (vista unificada)', () => {
     montar({ esAsesor: false, esAlumno: true })
     expect(screen.getByRole('tab', { name: 'Próximas' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Historial' })).toBeInTheDocument()
+  })
+
+  it('ofrece volver a Inicio', () => {
+    montar({ esAsesor: false, esAlumno: true })
+    fireEvent.click(screen.getByRole('button', { name: '← Inicio' }))
+    expect(screen.getByText('pantalla home')).toBeInTheDocument()
   })
 })

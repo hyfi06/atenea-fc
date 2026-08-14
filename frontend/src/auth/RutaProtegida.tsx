@@ -2,14 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import { useEsAsesor, useEsAlumno, useEsMiembroSAE } from './rol'
-
-function PantallaCargando() {
-  return (
-    <div className="flex min-h-svh items-center justify-center">
-      <div className="spinner h-6 w-6 text-primary" aria-label="Cargando" />
-    </div>
-  )
-}
+import { PantallaCargando } from '../components/PantallaCargando'
 
 export function RutaDeAsesor({ children }: { children: ReactNode }) {
   const { status } = useAuth()
