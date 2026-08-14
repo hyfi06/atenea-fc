@@ -47,7 +47,7 @@ export function AdminAsesorDetalle() {
       {isPending || !detalle ? (
         <Skeleton className="h-12" />
       ) : (
-        <div className="flex items-start justify-between gap-3">
+        <div className="entrada-lista flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h1 className="truncate text-lg font-semibold text-on-background" title={detalle.nombre}>
               {detalle.nombre}
@@ -87,7 +87,7 @@ export function AdminAsesorDetalle() {
       {isPending || !detalle ? (
         <Skeleton className="h-16" />
       ) : (
-        <>
+        <div className="entrada-lista flex flex-col gap-4">
           <MisMaterias
             soloLectura
             materias={detalle.materias}
@@ -95,7 +95,7 @@ export function AdminAsesorDetalle() {
           />
 
           <MiHorario soloLectura disponibilidades={detalle.disponibilidades} />
-        </>
+        </div>
       )}
     </main>
   )
