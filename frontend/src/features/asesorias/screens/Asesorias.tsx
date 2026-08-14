@@ -33,6 +33,9 @@ export function Asesorias() {
 
   return (
     <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+      <button type="button" onClick={() => navigate('/home')} className="foco-visible w-fit min-h-11 text-sm text-primary">
+        ← Inicio
+      </button>
       <h1 className="text-lg font-semibold text-on-background">Asesorías</h1>
 
       <div className="flex gap-2">
