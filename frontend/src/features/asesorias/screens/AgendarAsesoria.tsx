@@ -114,8 +114,8 @@ export function AgendarAsesoria() {
             <p className="text-sm text-on-surface-variant">Esta materia no tiene asesores disponibles.</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {asesores.map((a) => (
-                <li key={a.registro_id}>
+              {asesores.map((a, indice) => (
+                <li key={a.registro_id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
                   <BotonAsesor asesor={a} onClick={() => setRegistroId(a.registro_id)} />
                 </li>
               ))}
@@ -133,8 +133,8 @@ export function AgendarAsesoria() {
             <p className="text-sm text-on-surface-variant">Este asesor no tiene horarios en las próximas dos semanas.</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {dias.map((d) => (
-                <li key={d.fecha}>
+              {dias.map((d, indice) => (
+                <li key={d.fecha} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
                   <button
                     type="button"
                     onClick={() => setFecha(d.fecha)}

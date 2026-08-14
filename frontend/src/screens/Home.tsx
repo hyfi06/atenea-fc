@@ -31,10 +31,11 @@ export function Home() {
             <span className="text-xs font-semibold leading-tight">Asesorías · SAE</span>
           </button>
         )}
-        {services.map(({ id, label, Icon, containerClassName, onContainerClassName }) => (
+        {services.map(({ id, label, Icon, containerClassName, onContainerClassName }, indice) => (
           <div
             key={id}
-            className={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center ${containerClassName} ${onContainerClassName}`}
+            style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}
+            className={`entrada-lista flex flex-col items-center gap-2 rounded-2xl p-3 text-center ${containerClassName} ${onContainerClassName}`}
           >
             <Icon className="h-6 w-6" />
             <span className="text-xs font-semibold leading-tight">{label}</span>

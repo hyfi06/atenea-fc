@@ -96,8 +96,8 @@ export function OfertaAsesorias({
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {filtradas.map((m) => (
-            <li key={m.materia_id}>
+          {filtradas.map((m, indice) => (
+            <li key={m.materia_id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
               <button
                 type="button"
                 onClick={() => navigate(`${baseRutaMateria}/${m.materia_id}`)}

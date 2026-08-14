@@ -65,8 +65,8 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
       </p>
     ) : (
       <ul className="flex flex-col">
-        {materiasAMostrar.map(({ id, nombre }) => (
-          <li key={id} className="flex items-center gap-2 border-b border-outline-variant">
+        {materiasAMostrar.map(({ id, nombre }, indice) => (
+          <li key={id} className="entrada-lista flex items-center gap-2 border-b border-outline-variant" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
             <button
               type="button"
               title={nombre}
