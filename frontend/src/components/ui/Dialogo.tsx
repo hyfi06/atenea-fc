@@ -36,7 +36,7 @@ interface DialogoProps {
 // texto y el par se desborda. Por eso también `min-h-11` en vez de una
 // altura fija: el botón tiene que poder crecer a dos líneas.
 const BASE_BOTON =
-  'foco-visible flex min-h-11 min-w-0 items-center justify-center gap-2 whitespace-normal rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-60'
+  'presionable foco-visible flex min-h-11 min-w-0 items-center justify-center gap-2 whitespace-normal rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-60'
 
 const RELLENO: Record<TonoAccion, string> = {
   primario: 'bg-primary text-on-primary',

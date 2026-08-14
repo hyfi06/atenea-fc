@@ -15,7 +15,7 @@ export function Boton({ cargando = false, variante = 'primario', disabled, child
   return (
     <button
       disabled={disabled || cargando}
-      className={`flex h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 ${VARIANTES[variante]} ${className}`}
+      className={`presionable flex h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 ${VARIANTES[variante]} ${className}`}
       {...props}
     >
       {cargando && <span className="spinner h-4 w-4" aria-hidden />}

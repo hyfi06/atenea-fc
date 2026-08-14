@@ -12,6 +12,12 @@ describe('Boton', () => {
     expect(boton).toHaveClass('focus-visible:outline-primary')
   })
 
+  it('lleva la clase de press feedback compartida', () => {
+    render(<Boton>Entrar</Boton>)
+
+    expect(screen.getByRole('button', { name: 'Entrar' })).toHaveClass('presionable')
+  })
+
   it('muestra el spinner y queda deshabilitado mientras carga', () => {
     const { container } = render(<Boton cargando>Entrar</Boton>)
 
