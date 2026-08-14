@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { Dialogo } from './Dialogo'
 
 function etiquetasDeBotones() {
@@ -86,14 +86,32 @@ describe('Dialogo — convención de orden de botones (paso 3)', () => {
 })
 
 describe('Dialogo — comportamiento', () => {
-  it('cerrar con Escape o con el botón de salir llama a onCerrar', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('el botón de salir llama a onCerrar de inmediato', () => {
     const onCerrar = vi.fn()
     render(<Dialogo abierto titulo="Salir" onCerrar={onCerrar} acciones={[]} etiquetaSalir="Cerrar" />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
-    fireEvent.keyDown(document, { key: 'Escape' })
 
-    expect(onCerrar).toHaveBeenCalledTimes(2)
+    // El botón invoca `onCerrar` directo, sin pasar por Radix: no hay salida
+    // que esperar. Escape sí pasa por Radix, y ese camino se prueba abajo.
+    expect(onCerrar).toHaveBeenCalledTimes(1)
+  })
+
+  it('Escape llama a onCerrar cuando termina la animación de salida', () => {
+    vi.useFakeTimers()
+    const onCerrar = vi.fn()
+    render(<Dialogo abierto titulo="Salir" onCerrar={onCerrar} acciones={[]} etiquetaSalir="Cerrar" />)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onCerrar).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(150)
+    })
+
+    expect(onCerrar).toHaveBeenCalledTimes(1)
   })
 
   it('una acción deshabilitada no dispara su onClick', () => {

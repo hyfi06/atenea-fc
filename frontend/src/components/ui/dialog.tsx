@@ -11,8 +11,9 @@ import { cn } from '@/lib/utils'
  *   sería redundante — `Dialogo.tsx` siempre renderiza una acción de salir
  *   explícita, según la convención de botones del paso 3.
  * - Sin `tw-animate-css`: la animación de entrada usa las clases
- *   `.entrada-dialogo`/`.entrada-velo` de `index.css`, que sí están
- *   registradas en el bloque de `prefers-reduced-motion` (paso 7).
+ *   `.entrada-dialogo`/`.entrada-velo` de `index.css`, y la de salida
+ *   `.salida-dialogo`/`.salida-velo`; las cuatro están registradas en el
+ *   bloque de `prefers-reduced-motion`.
  * - Los colores usan el vocabulario de shadcn (`bg-popover`, `border`,
  *   `text-muted-foreground`), que el bloque de alias de `index.css` mapea a
  *   los roles M3 de ADR 0014.
@@ -20,8 +21,38 @@ import { cn } from '@/lib/utils'
  * Las features no importan este archivo: componen `Dialogo.tsx`.
  */
 
-function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+/** Debe coincidir con la duración de `.salida-dialogo`/`.salida-velo` en `index.css`. */
+const SALIDA_DIALOGO_MS = 150
+
+/**
+ * Fase de cierre, de `Dialog` a `Content`/`Overlay`. Radix desmonta ambos en
+ * cuanto `open` pasa a false, así que la salida se anima interceptando
+ * `onOpenChange(false)`: se marca `cerrando`, corren las clases de salida
+ * durante SALIDA_DIALOGO_MS, y sólo entonces se invoca el `onOpenChange(false)`
+ * real que el consumidor pasó por props.
+ */
+const ContextoCerrando = React.createContext(false)
+
+function Dialog({ onOpenChange, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  const [cerrando, setCerrando] = React.useState(false)
+
+  function alCambiarApertura(abierto: boolean) {
+    if (abierto) {
+      onOpenChange?.(true)
+      return
+    }
+    setCerrando(true)
+    setTimeout(() => {
+      setCerrando(false)
+      onOpenChange?.(false)
+    }, SALIDA_DIALOGO_MS)
+  }
+
+  return (
+    <ContextoCerrando.Provider value={cerrando}>
+      <DialogPrimitive.Root data-slot="dialog" onOpenChange={alCambiarApertura} {...props} />
+    </ContextoCerrando.Provider>
+  )
 }
 
 function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
@@ -33,23 +64,26 @@ function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.C
 }
 
 function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  const cerrando = React.useContext(ContextoCerrando)
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
-      className={cn('entrada-velo fixed inset-0 z-50 bg-scrim/50', className)}
+      className={cn(cerrando ? 'salida-velo' : 'entrada-velo', 'fixed inset-0 z-50 bg-scrim/50', className)}
       {...props}
     />
   )
 }
 
 function DialogContent({ className, children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  const cerrando = React.useContext(ContextoCerrando)
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'entrada-dialogo fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] max-w-sm',
+          cerrando ? 'salida-dialogo' : 'entrada-dialogo',
+          'fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] max-w-sm',
           '-translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border border-border',
           'bg-popover p-5 text-popover-foreground shadow-lg',
           className,
