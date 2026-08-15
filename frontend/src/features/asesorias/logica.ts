@@ -1,66 +1,85 @@
-import type { Disponibilidad, Asesoria, SlotDisponibilidad } from '../../api/types'
+import type {
+  Disponibilidad,
+  Asesoria,
+  SlotDisponibilidad,
+} from "../../api/types";
 
 export function semestreActual(hoy: Date = new Date()): string {
-  const anio = hoy.getFullYear()
-  const numero = hoy.getMonth() < 6 ? '1' : '2'
-  return `${anio}${numero}`
+  const anio = hoy.getFullYear();
+  const numero = hoy.getMonth() < 6 ? 2 : 1;
+  return `${numero === 1 ? anio + 1 : anio}${numero}`;
 }
 
 export function claveSlot(diaSemana: number, horaInicio: string): string {
-  return `${diaSemana}-${horaInicio}`
+  return `${diaSemana}-${horaInicio}`;
 }
 
 /** Lo mínimo que hace falta para ordenar y clasificar una sesión: lo cumplen
  *  tanto `Asesoria` (alumno/asesor) como `AsesoriaAdmin` (SAE). */
-type AsesoriaOrdenable = Pick<Asesoria, 'estado' | 'fecha' | 'hora_inicio'>
+type AsesoriaOrdenable = Pick<Asesoria, "estado" | "fecha" | "hora_inicio">;
 
 function claveOrden(asesoria: AsesoriaOrdenable): string {
-  return `${asesoria.fecha}T${asesoria.hora_inicio}`
+  return `${asesoria.fecha}T${asesoria.hora_inicio}`;
 }
 
 export function proximas<A extends AsesoriaOrdenable>(asesorias: A[]): A[] {
   return asesorias
-    .filter((a) => a.estado === 'agendada')
-    .sort((a, b) => claveOrden(a).localeCompare(claveOrden(b)))
+    .filter((a) => a.estado === "agendada")
+    .sort((a, b) => claveOrden(a).localeCompare(claveOrden(b)));
 }
 
 export function historial<A extends AsesoriaOrdenable>(asesorias: A[]): A[] {
   return asesorias
-    .filter((a) => a.estado !== 'agendada')
-    .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)))
+    .filter((a) => a.estado !== "agendada")
+    .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)));
 }
 
-export function sesionesPreviasConNotas(asesorias: Asesoria[], alumnoId: number, excluirId: number): Asesoria[] {
+export function sesionesPreviasConNotas(
+  asesorias: Asesoria[],
+  alumnoId: number,
+  excluirId: number,
+): Asesoria[] {
   return asesorias
-    .filter((a) => a.alumno === alumnoId && a.id !== excluirId && a.estado === 'realizada' && a.notas.trim() !== '')
-    .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)))
+    .filter(
+      (a) =>
+        a.alumno === alumnoId &&
+        a.id !== excluirId &&
+        a.estado === "realizada" &&
+        a.notas.trim() !== "",
+    )
+    .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)));
 }
 
-export function sesionYaOcurrio(asesoria: Pick<Asesoria, 'fecha' | 'hora_inicio'>, ahora: Date): boolean {
-  const inicio = new Date(`${asesoria.fecha}T${asesoria.hora_inicio}`)
-  return ahora >= inicio
+export function sesionYaOcurrio(
+  asesoria: Pick<Asesoria, "fecha" | "hora_inicio">,
+  ahora: Date,
+): boolean {
+  const inicio = new Date(`${asesoria.fecha}T${asesoria.hora_inicio}`);
+  return ahora >= inicio;
 }
 
-export function puedeGuardarNotas(asesoria: Pick<Asesoria, 'estado' | 'asistio'>): boolean {
-  return asesoria.estado === 'realizada' && asesoria.asistio === true
+export function puedeGuardarNotas(
+  asesoria: Pick<Asesoria, "estado" | "asistio">,
+): boolean {
+  return asesoria.estado === "realizada" && asesoria.asistio === true;
 }
 
 /** Los 28 slots de 30 minutos que cubre un día de asesorías: 07:00–20:30. */
 export function horasDelDia(): string[] {
-  const horas: string[] = []
+  const horas: string[] = [];
   for (let h = 7; h <= 20; h++) {
-    horas.push(`${String(h).padStart(2, '0')}:00:00`)
-    horas.push(`${String(h).padStart(2, '0')}:30:00`)
+    horas.push(`${String(h).padStart(2, "0")}:00:00`);
+    horas.push(`${String(h).padStart(2, "0")}:30:00`);
   }
-  return horas
+  return horas;
 }
 
 export interface SlotHorario {
-  hora: string
-  clave: string
+  hora: string;
+  clave: string;
   /** La disponibilidad registrada en ese slot, activa o no. */
-  disponibilidad: Disponibilidad | null
-  activo: boolean
+  disponibilidad: Disponibilidad | null;
+  activo: boolean;
 }
 
 /**
@@ -72,49 +91,54 @@ export interface SlotHorario {
  * dato la pantalla no podría reactivar un bloque y trataría de crear uno
  * nuevo sobre un horario ya ocupado.
  */
-export function slotsDelDia(diaSemana: number, disponibilidades: Disponibilidad[]): SlotHorario[] {
-  const delDia = new Map<string, Disponibilidad>()
+export function slotsDelDia(
+  diaSemana: number,
+  disponibilidades: Disponibilidad[],
+): SlotHorario[] {
+  const delDia = new Map<string, Disponibilidad>();
   for (const disponibilidad of disponibilidades) {
     if (disponibilidad.dia_semana === diaSemana) {
-      delDia.set(disponibilidad.hora_inicio, disponibilidad)
+      delDia.set(disponibilidad.hora_inicio, disponibilidad);
     }
   }
 
   return horasDelDia().map((hora) => {
-    const disponibilidad = delDia.get(hora) ?? null
+    const disponibilidad = delDia.get(hora) ?? null;
     return {
       hora,
       clave: claveSlot(diaSemana, hora),
       disponibilidad,
       activo: disponibilidad?.activa === true,
-    }
-  })
+    };
+  });
 }
 
 /** Día de la semana de hoy en la convención del backend: 0 = lunes. */
 export function diaSemanaHoy(hoy: Date = new Date()): number {
-  return (hoy.getDay() + 6) % 7
+  return (hoy.getDay() + 6) % 7;
 }
 
 export interface DiaDisponible {
-  fecha: string
-  slots: SlotDisponibilidad[]
+  fecha: string;
+  slots: SlotDisponibilidad[];
 }
 
 /** Agrupa los slots planos de la búsqueda en días (dos semanas), listos para
  *  dibujar el paso "día" → "bloque" del wizard. Días por fecha asc; bloques
  *  de cada día por hora asc. */
 export function agruparPorDia(slots: SlotDisponibilidad[]): DiaDisponible[] {
-  const porFecha = new Map<string, SlotDisponibilidad[]>()
+  const porFecha = new Map<string, SlotDisponibilidad[]>();
   for (const slot of slots) {
-    const lista = porFecha.get(slot.fecha) ?? []
-    lista.push(slot)
-    porFecha.set(slot.fecha, lista)
+    const lista = porFecha.get(slot.fecha) ?? [];
+    lista.push(slot);
+    porFecha.set(slot.fecha, lista);
   }
   return [...porFecha.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([fecha, delDia]) => ({
       fecha,
-      slots: [...delDia].sort((x, y) => x.hora_inicio.localeCompare(y.hora_inicio)),
-    }))
+      slots: [...delDia].sort((x, y) =>
+        x.hora_inicio.localeCompare(y.hora_inicio),
+      ),
+    }));
 }
