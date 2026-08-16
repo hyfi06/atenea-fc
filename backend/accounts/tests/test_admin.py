@@ -18,3 +18,8 @@ class AdminRegistrationTests(TestCase):
         from accounts.models import PerfilSAE
 
         self.assertIn(PerfilSAE, admin.site._registry)
+
+    def test_historia_academica_registrada(self):
+        from accounts.models import HistoriaAcademica
+
+        self.assertIn(HistoriaAcademica, admin.site._registry)

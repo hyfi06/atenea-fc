@@ -63,3 +63,43 @@ class PerfilSAETests(TestCase):
     def test_usuario_sin_perfil_sae_no_tiene_el_atributo(self):
         user = User.objects.create_user(email="nadie@ciencias.unam.mx", password="x")
         self.assertFalse(hasattr(user, "perfil_sae"))
+
+
+class HistoriaAcademicaTests(TestCase):
+    def setUp(self):
+        self.area = Area.objects.create(nombre="Area historia")
+        self.carrera_a = Carrera.objects.create(clave=971, nombre="Carrera A Test", area=self.area)
+        self.carrera_b = Carrera.objects.create(clave=972, nombre="Carrera B Test", area=self.area)
+        self.user = User.objects.create_user(email="historia@ciencias.unam.mx", password="x")
+        self.perfil = PerfilAlumno.objects.create(user=self.user, numero_cuenta="312000001")
+
+    def test_un_alumno_puede_tener_dos_carreras_simultaneas(self):
+        from accounts.models import HistoriaAcademica
+
+        HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_a, generacion=2023
+        )
+        HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_b, generacion=2025
+        )
+        self.assertEqual(self.perfil.historial.count(), 2)
+
+    def test_no_se_repite_la_misma_carrera_para_el_mismo_alumno(self):
+        from accounts.models import HistoriaAcademica
+
+        HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_a, generacion=2023
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            HistoriaAcademica.objects.create(
+                perfil_alumno=self.perfil, carrera=self.carrera_a, generacion=2024
+            )
+
+    def test_borrar_el_perfil_borra_su_historial(self):
+        from accounts.models import HistoriaAcademica
+
+        HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_a, generacion=2023
+        )
+        self.perfil.delete()
+        self.assertEqual(HistoriaAcademica.objects.count(), 0)

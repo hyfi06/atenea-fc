@@ -36,11 +36,45 @@ class User(AbstractBaseUser, PermissionsMixin):
 class PerfilAlumno(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_alumno")
     numero_cuenta = models.CharField(max_length=10, unique=True)
-    carrera = models.ForeignKey("carreras.Carrera", on_delete=models.PROTECT, related_name="alumnos")
-    generacion = models.PositiveSmallIntegerField()
+    # Transitorios: los reemplaza HistoriaAcademica y se borran en la migración
+    # 0007, una vez que ningún lector los usa (ADR 0027 decisión 1).
+    carrera = models.ForeignKey(
+        "carreras.Carrera", on_delete=models.PROTECT, related_name="alumnos",
+        null=True, blank=True,
+    )
+    generacion = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.numero_cuenta}, {self.user.email}"
+
+
+class HistoriaAcademica(models.Model):
+    """Una inscripción del alumno a una carrera.
+
+    Sin `unique_together` sobre `perfil_alumno` solo: un mismo número de
+    cuenta puede cursar dos carreras a la vez o iniciar una segunda
+    (ADR 0027 decisión 1). Lo que sí es único es el par: la misma carrera
+    no se registra dos veces para el mismo alumno.
+    """
+
+    perfil_alumno = models.ForeignKey(
+        PerfilAlumno, on_delete=models.CASCADE, related_name="historial"
+    )
+    carrera = models.ForeignKey(
+        "carreras.Carrera", on_delete=models.PROTECT, related_name="historial_alumnos"
+    )
+    generacion = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["generacion", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["perfil_alumno", "carrera"], name="unique_historia_alumno_carrera"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.perfil_alumno.numero_cuenta} — {self.carrera} ({self.generacion})"
 
 
 class PerfilAcademico(models.Model):
