@@ -2,6 +2,7 @@
 
 **Status:** Approved
 **Date:** 2026-08-15
+**ADR:** [0027](../../decisions/0027-usuarios-reales-academico-autoservicio.md)
 
 ### Context
 
