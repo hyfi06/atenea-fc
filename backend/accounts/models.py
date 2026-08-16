@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -36,6 +37,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 class PerfilAlumno(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_alumno")
     numero_cuenta = models.CharField(max_length=10, unique=True)
+    # Correos que la SAE conoce además del de login. NO participa en la
+    # autenticación ni en la resolución de cuentas (ADR 0027 decisión 3):
+    # `User.email` sigue siendo la única llave (ADR 0003 / 0019).
+    correos_alternos = ArrayField(
+        models.EmailField(), default=list, blank=True,
+    )
 
     def __str__(self):
         return f"{self.numero_cuenta}, {self.user.email}"

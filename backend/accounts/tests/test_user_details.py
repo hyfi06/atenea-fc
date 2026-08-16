@@ -183,3 +183,24 @@ class PerfilAlumnoDosCarrerasTests(APITestCase):
             [fila["carrera_nombre"] for fila in historial],
             ["Carrera Uno Test", "Carrera Dos Test"],
         )
+
+
+class CorreosAlternosNoSeExponenAlAlumnoTests(APITestCase):
+    def test_el_perfil_del_alumno_no_incluye_correos_alternos(self):
+        from accounts.tests.factories import crear_alumno
+
+        area = Area.objects.create(nombre="Area test")
+        carrera = Carrera.objects.create(clave=802, nombre="Carrera Test", area=area)
+        user = User.objects.create_user(email="priv@ciencias.unam.mx", password="x")
+        perfil = crear_alumno(user, "312000012", carrera=carrera, generacion=2023)
+        perfil.correos_alternos = ["privado@gmail.com"]
+        perfil.save()
+
+        self.client.force_authenticate(user=user)
+        response = self.client.get("/api/auth/user/")
+
+        self.assertEqual(response.status_code, 200)
+        perfil_alumno = response.json()["perfil_alumno"]
+        self.assertIsNotNone(perfil_alumno)
+        self.assertNotIn("correos_alternos", perfil_alumno)
+        self.assertNotIn("privado@gmail.com", response.content.decode())

@@ -507,6 +507,9 @@ class AdminAlumnosView(APIView):
                 "perfil_id": alumno.id,
                 "nombre": alumno.user.nombre_completo,
                 "numero_cuenta": alumno.numero_cuenta,
+                # Visible solo aquí y en el admin: este endpoint es EsMiembroSAE
+                # (ADR 0027 decisión 3).
+                "correos_alternos": alumno.correos_alternos,
             }
             for alumno in alumnos[:LIMITE_AUTOCOMPLETAR_ALUMNOS]
         ]

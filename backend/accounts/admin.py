@@ -58,7 +58,8 @@ class HistoriaAcademicaInline(admin.TabularInline):
 
 @admin.register(PerfilAlumno)
 class PerfilAlumnoAdmin(admin.ModelAdmin):
-    list_display = ("numero_cuenta", "user")
+    fields = ("user", "numero_cuenta", "correos_alternos")
+    list_display = ("numero_cuenta", "user", "correos_alternos")
     search_fields = ("numero_cuenta", "user__email")
     inlines = [HistoriaAcademicaInline]
 

@@ -96,3 +96,20 @@ class HistoriaAcademicaTests(TestCase):
         )
         self.perfil.delete()
         self.assertEqual(HistoriaAcademica.objects.count(), 0)
+
+
+class CorreosAlternosTests(TestCase):
+    def test_nace_como_lista_vacia(self):
+        user = User.objects.create_user(email="ca@ciencias.unam.mx", password="x")
+        perfil = PerfilAlumno.objects.create(user=user, numero_cuenta="312000010")
+        perfil.refresh_from_db()
+        self.assertEqual(perfil.correos_alternos, [])
+
+    def test_guarda_varios_correos(self):
+        user = User.objects.create_user(email="cb@ciencias.unam.mx", password="x")
+        perfil = PerfilAlumno.objects.create(
+            user=user, numero_cuenta="312000011",
+            correos_alternos=["viejo@gmail.com", "otro@ciencias.unam.mx"],
+        )
+        perfil.refresh_from_db()
+        self.assertEqual(len(perfil.correos_alternos), 2)

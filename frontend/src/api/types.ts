@@ -225,4 +225,6 @@ export interface AlumnoBusqueda {
   perfil_id: number
   nombre: string
   numero_cuenta: string
+  /** Correos que la SAE conoce además del de login. Solo llega a endpoints SAE. */
+  correos_alternos: string[]
 }

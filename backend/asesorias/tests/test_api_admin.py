@@ -547,7 +547,7 @@ class AdminAlumnosApiTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data,
-            [{"perfil_id": self.juan.id, "nombre": "Juan Pérez", "numero_cuenta": "312345678"}],
+            [{"perfil_id": self.juan.id, "nombre": "Juan Pérez", "numero_cuenta": "312345678", "correos_alternos": []}],
         )
 
     def test_busca_por_apellido(self):
@@ -586,3 +586,11 @@ class AdminAlumnosApiTests(APITestCase):
         self.client.force_authenticate(user=self.juan_user)
         response = self.client.get("/api/asesorias/admin/alumnos/?buscar=jua")
         self.assertEqual(response.status_code, 403)
+
+    def test_el_sae_ve_los_correos_alternos_del_alumno(self):
+        self.juan.correos_alternos = ["juan.viejo@gmail.com"]
+        self.juan.save()
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/alumnos/?buscar=Juan")
+        fila = next(f for f in response.data if f["perfil_id"] == self.juan.id)
+        self.assertEqual(fila["correos_alternos"], ["juan.viejo@gmail.com"])
