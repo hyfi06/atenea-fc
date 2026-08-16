@@ -3,7 +3,7 @@ import datetime
 from accounts.models import PerfilAcademico, PerfilAlumno, User
 from accounts.tests.factories import crear_alumno
 from asesorias.models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
-from asesorias.servicios import ventana_agendable
+from asesorias.servicios import ventana_agendable, semestre_vigente
 from carreras.models import Area, Carrera
 from django.utils import timezone
 from materias.models import Materia, OfertaMateria
@@ -18,12 +18,12 @@ class BuscarDisponibilidadApiTests(APITestCase):
             clave="1801", defaults={"nombre": "Álgebra", "carrera": self.carrera, "nivel": 1, "plan": 2006,
             "habilitada_asesorias": True}
         )
-        OfertaMateria.objects.get_or_create(materia=self.materia, semestre="20271", defaults={"se_imparte": True})
+        OfertaMateria.objects.get_or_create(materia=self.materia, semestre=semestre_vigente(), defaults={"se_imparte": True})
 
         self.asesor_user = User.objects.create_user(email="asesor@ciencias.unam.mx", password="x")
         PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
         self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
-        self.registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        self.registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=semestre_vigente())
         self.registro.agregar_materia(self.materia)
         self.disponibilidad = Disponibilidad.objects.create(
             registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
@@ -109,7 +109,7 @@ class BuscarDisponibilidadApiTests(APITestCase):
         otro_user = User.objects.create_user(email="asesor2@ciencias.unam.mx", password="x")
         PerfilAcademico.objects.create(user=otro_user, numero_trabajador="99999")
         otro_asesor = PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
-        otro_registro = RegistroAsesor.objects.create(asesor=otro_asesor, semestre="20271")
+        otro_registro = RegistroAsesor.objects.create(asesor=otro_asesor, semestre=semestre_vigente())
         otro_registro.agregar_materia(self.materia)
         Disponibilidad.objects.create(
             registro=otro_registro, dia_semana=0, hora_inicio=datetime.time(12, 0),

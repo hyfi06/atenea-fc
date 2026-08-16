@@ -107,9 +107,14 @@ class BuscarDisponibilidadView(APIView):
         formato = request.query_params.get("formato")
         asesor_registro_id = request.query_params.get("asesor")
 
-        disponibilidades = Disponibilidad.objects.filter(activa=True).select_related(
-            "registro__asesor__user"
-        )
+        # Scope de semestre vigente + asesor activo (ADR 0027 decisión 6,
+        # cierra la deuda 0012). Antes bastaba con `activa=True`, lo que dejaba
+        # agendable un registro de un semestre cerrado.
+        disponibilidades = Disponibilidad.objects.filter(
+            activa=True,
+            registro__semestre=semestre_vigente(),
+            registro__asesor__activo=True,
+        ).select_related("registro__asesor__user")
         if materia_id:
             disponibilidades = disponibilidades.filter(registro__materias__id=materia_id)
         # Filtro lenient: un ?carrera no numérico se ignora en vez de romper con 500.
@@ -161,9 +166,14 @@ class OfertaView(APIView):
         carrera_id = request.query_params.get("carrera")
         buscar = request.query_params.get("buscar")
 
+        vigentes = Q(
+            registros_asesor__semestre=semestre_vigente(),
+            registros_asesor__asesor__activo=True,
+            registros_asesor__disponibilidades__activa=True,
+        )
         materias = (
-            Materia.objects.filter(registros_asesor__disponibilidades__activa=True)
-            .annotate(num_asesores=Count("registros_asesor", distinct=True))
+            Materia.objects.filter(vigentes)
+            .annotate(num_asesores=Count("registros_asesor", filter=vigentes, distinct=True))
             .distinct()
             .order_by("nombre")
         )
@@ -191,7 +201,12 @@ class AsesoresDeMateriaView(APIView):
     def get(self, request, materia_id):
         materia = get_object_or_404(Materia, pk=materia_id)
         registros = (
-            RegistroAsesor.objects.filter(materias=materia, disponibilidades__activa=True)
+            RegistroAsesor.objects.filter(
+                materias=materia,
+                semestre=semestre_vigente(),
+                asesor__activo=True,
+                disponibilidades__activa=True,
+            )
             .select_related("asesor__user", "asesor__area")
             .distinct()
             .order_by("id")
