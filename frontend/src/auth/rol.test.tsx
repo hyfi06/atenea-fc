@@ -44,9 +44,7 @@ describe('hooks de rol', () => {
         perfil_alumno: {
           id: 4,
           numero_cuenta: '312345678',
-          carrera: 5,
-          carrera_nombre: 'Actuaría',
-          generacion: 2023,
+          historial: [{ carrera: 5, carrera_nombre: 'Actuaría', generacion: 2023 }],
         },
       }),
     )

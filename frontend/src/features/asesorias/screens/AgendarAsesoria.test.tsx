@@ -7,7 +7,7 @@ import * as api from '../api'
 import * as auth from '../../../auth/AuthContext'
 import * as catalogo from '../../catalogo/api'
 import { ApiError } from '../../../api/client'
-import type { AsesorDisponible, SlotDisponibilidad } from '../../../api/types'
+import type { AsesorDisponible, SlotDisponibilidad, InscripcionAlumno } from '../../../api/types'
 
 const ASESORES: AsesorDisponible[] = [
   { registro_id: 7, asesor_nombre: 'Ana López', area_nombre: 'Matemáticas', formatos: ['virtual'] },
@@ -19,7 +19,14 @@ const SLOTS: SlotDisponibilidad[] = [
   },
 ]
 
-function mockComun(mutateImpl: ReturnType<typeof vi.fn>) {
+const HISTORIAL_UNA: InscripcionAlumno[] = [
+  { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+]
+
+function mockComun(
+  mutateImpl: ReturnType<typeof vi.fn>,
+  historial: InscripcionAlumno[] = HISTORIAL_UNA,
+) {
   vi.spyOn(api, 'useAsesoresDeMateria').mockReturnValue({
     data: ASESORES, isPending: false,
   } as ReturnType<typeof api.useAsesoresDeMateria>)
@@ -30,10 +37,15 @@ function mockComun(mutateImpl: ReturnType<typeof vi.fn>) {
     mutate: mutateImpl, isPending: false,
   } as unknown as ReturnType<typeof api.useAgendarAsesoria>)
   vi.spyOn(auth, 'useAuth').mockReturnValue({
-    user: { perfil_alumno: { id: 1, carrera: 3, carrera_nombre: 'Actuaría' } },
+    user: { perfil_alumno: { id: 1, numero_cuenta: '312345678', historial } },
     status: 'authenticated',
   } as unknown as ReturnType<typeof auth.useAuth>)
-  vi.spyOn(catalogo, 'useMapaCarreras').mockReturnValue(new Map([[3, { id: 3, nombre: 'Actuaría' } as never]]))
+  vi.spyOn(catalogo, 'useMapaCarreras').mockReturnValue(
+    new Map([
+      [3, { id: 3, nombre: 'Actuaría' } as never],
+      [6, { id: 6, nombre: 'Matemáticas' } as never],
+    ]),
+  )
   vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[12, { id: 12, nombre: 'Álgebra' } as never]]))
 }
 
@@ -111,5 +123,53 @@ describe('AgendarAsesoria', () => {
     montar()
     expect(screen.getByText(/sólo los alumnos pueden agendar/i)).toBeInTheDocument()
     expect(screen.queryByText('Ana López')).not.toBeInTheDocument()
+  })
+})
+
+describe('AgendarAsesoria — selección de carrera', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  function avanzarHastaCarrera() {
+    fireEvent.click(screen.getByText('Ana López'))
+    fireEvent.click(screen.getByText(/10 de agosto/i))
+    fireEvent.click(screen.getByText('10:00–10:30'))
+  }
+
+  it('con una sola inscripción deja la carrera preseleccionada', () => {
+    mockComun(vi.fn())
+    montar()
+    avanzarHastaCarrera()
+    expect((screen.getByLabelText('Carrera') as HTMLSelectElement).value).toBe('3')
+  })
+
+  it('con dos inscripciones ofrece ambas y no preselecciona ninguna', () => {
+    mockComun(vi.fn(), [
+      { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+      { carrera: 6, carrera_nombre: 'Matemáticas', generacion: 2025 },
+    ])
+    montar()
+    avanzarHastaCarrera()
+    const select = screen.getByLabelText('Carrera') as HTMLSelectElement
+    expect(select.value).toBe('')
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      'Elige una carrera', 'Actuaría', 'Matemáticas',
+    ])
+  })
+
+  it('con dos inscripciones el POST manda la que se eligió', () => {
+    const mutate = vi.fn()
+    mockComun(mutate, [
+      { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+      { carrera: 6, carrera_nombre: 'Matemáticas', generacion: 2025 },
+    ])
+    montar()
+    avanzarHastaCarrera()
+    fireEvent.change(screen.getByLabelText('Carrera'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ carrera: 6 }),
+      expect.anything(),
+    )
   })
 })

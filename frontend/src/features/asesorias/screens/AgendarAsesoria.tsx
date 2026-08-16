@@ -32,8 +32,12 @@ export function AgendarAsesoria() {
 
   const [fecha, setFecha] = useState<string | null>(null)
   const [slot, setSlot] = useState<SlotDisponibilidad | null>(null)
-  const carreraAlumno = user?.perfil_alumno?.carrera ?? null
-  const [carrera, setCarrera] = useState<number | null>(carreraAlumno)
+  const historial = user?.perfil_alumno?.historial ?? []
+  // Con una sola inscripción no hay nada que preguntar: se preselecciona.
+  // Con dos o más, `carrera` arranca en null y el backend exige el campo.
+  const [carrera, setCarrera] = useState<number | null>(
+    historial.length === 1 ? historial[0].carrera : null,
+  )
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const agendar = useAgendarAsesoria()
@@ -87,7 +91,7 @@ export function AgendarAsesoria() {
     )
   }
 
-  if (carreraAlumno === null) {
+  if (historial.length === 0) {
     return (
       <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
         <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">← Volver a Asesorías</button>
@@ -198,11 +202,12 @@ export function AgendarAsesoria() {
               onChange={(e) => setCarrera(e.target.value === '' ? null : Number(e.target.value))}
               className="foco-visible min-h-11 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
             >
-              {carreraAlumno !== null && (
-                <option value={carreraAlumno}>
-                  {mapaCarreras.get(carreraAlumno)?.nombre ?? `Carrera #${carreraAlumno}`}
+              {historial.length > 1 && <option value="">Elige una carrera</option>}
+              {historial.map((inscripcion) => (
+                <option key={inscripcion.carrera} value={inscripcion.carrera}>
+                  {mapaCarreras.get(inscripcion.carrera)?.nombre ?? inscripcion.carrera_nombre}
                 </option>
-              )}
+              ))}
             </select>
           </div>
 

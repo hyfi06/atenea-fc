@@ -3,12 +3,20 @@
 // POST /api/auth/login/ y POST /api/auth/google/.
 export type RolUsuario = 'alumno' | 'academico' | 'asesor_academico'  | 'sae'
 
-export interface PerfilAlumno {
-  id: number
-  numero_cuenta: string
+/** Una inscripción del alumno a una carrera. Espejo de `accounts.HistoriaAcademica`. */
+export interface InscripcionAlumno {
   carrera: number
   carrera_nombre: string
   generacion: number
+}
+
+export interface PerfilAlumno {
+  id: number
+  numero_cuenta: string
+  // Puede traer más de una fila: carrera simultánea o segunda carrera bajo el
+  // mismo número de cuenta (ADR 0027 decisión 1). `correos_alternos` no viaja
+  // aquí a propósito: es visible solo para la SAE.
+  historial: InscripcionAlumno[]
 }
 
 export interface PerfilAcademico {

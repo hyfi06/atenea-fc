@@ -27,3 +27,16 @@ export function usuarioDePrueba(overrides: Partial<AuthUser> = {}): AuthUser {
 export function usuarioSAE(overrides: Partial<AuthUser> = {}): AuthUser {
   return usuarioDePrueba({ roles: ['sae'], ...overrides })
 }
+
+/** Usuario alumno con una sola inscripción, el caso más común. */
+export function usuarioAlumno(overrides: Partial<AuthUser> = {}): AuthUser {
+  return usuarioDePrueba({
+    roles: ['alumno'],
+    perfil_alumno: {
+      id: 4,
+      numero_cuenta: '312345678',
+      historial: [{ carrera: 5, carrera_nombre: 'Actuaría', generacion: 2023 }],
+    },
+    ...overrides,
+  })
+}
