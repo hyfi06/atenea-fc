@@ -136,10 +136,17 @@ class AsesoriaSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]
         alumno = self.context["request"].user.perfil_alumno
-        carrera = attrs.get("carrera") or alumno.carrera
-        # Hoy el alumno tiene exactamente una carrera (deuda 0008). Cuando el
-        # conjunto crezca, esta comprobación ya acepta cualquier carrera suya.
-        carreras_del_alumno = {alumno.carrera_id}
+        # ADR 0027 decisión 2: el backend no elige por el alumno. Con una sola
+        # inscripción la infiere por conveniencia (contrato previo intacto);
+        # con dos o más exige que el payload lo diga.
+        carreras_del_alumno = set(alumno.historial.values_list("carrera_id", flat=True))
+        carrera = attrs.get("carrera")
+        if carrera is None:
+            if len(carreras_del_alumno) != 1:
+                raise serializers.ValidationError(
+                    {"carrera": "Indica con qué carrera agendas esta asesoría."}
+                )
+            carrera = Carrera.objects.get(pk=next(iter(carreras_del_alumno)))
         if carrera.id not in carreras_del_alumno:
             raise serializers.ValidationError({"carrera": "La carrera no pertenece al alumno."})
         instance = Asesoria(

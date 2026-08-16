@@ -1,6 +1,7 @@
 import datetime
 
 from accounts.models import PerfilAcademico, PerfilAlumno, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area, Carrera
 from django.utils import timezone
@@ -28,13 +29,13 @@ class AsesoriaApiTestsBase(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
-            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        self.alumno = crear_alumno(
+            self.alumno_user, "312345678", carrera=self.carrera, generacion=2023,
         )
 
         self.otro_alumno_user = User.objects.create_user(email="otro_alumno@ciencias.unam.mx", password="x")
-        self.otro_alumno = PerfilAlumno.objects.create(
-            user=self.otro_alumno_user, numero_cuenta="312345679", carrera=self.carrera, generacion=2023,
+        self.otro_alumno = crear_alumno(
+            self.otro_alumno_user, "312345679", carrera=self.carrera, generacion=2023,
         )
 
         self.proximo_lunes = self._proximo_dia_semana(0)
@@ -57,7 +58,7 @@ class AgendarAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["formato"], "virtual")
         self.assertEqual(response.data["estado"], "agendada")
-        self.assertEqual(response.data["carrera"], self.alumno.carrera_id)
+        self.assertEqual(response.data["carrera"], self.carrera.id)
 
     def test_asesor_no_puede_agendar(self):
         self.client.force_authenticate(user=self.asesor_user)
@@ -518,8 +519,8 @@ class CarreraAlAgendarApiTests(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
-            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        self.alumno = crear_alumno(
+            self.alumno_user, "312345678", carrera=self.carrera, generacion=2023,
         )
         self.proximo_lunes = self._proximo_dia_semana(0)
 
@@ -563,8 +564,92 @@ class CarreraAlAgendarApiTests(APITestCase):
         self.client.force_authenticate(user=self.alumno_user)
         response = self.client.post("/api/asesorias/asesorias/", self._payload())
         self.assertEqual(response.status_code, 201, response.data)
-        self.alumno.carrera = self.carrera_ajena
-        self.alumno.save()
+        self.alumno.historial.update(carrera=self.carrera_ajena)
         from asesorias.models import Asesoria
         asesoria = Asesoria.objects.get(pk=response.data["id"])
         self.assertEqual(asesoria.carrera_id, self.carrera.id)
+
+
+class AgendarConHistorialTests(APITestCase):
+    """La carrera del payload se valida contra HistoriaAcademica, no contra
+    un campo denormalizado del perfil (ADR 0027 decisión 2)."""
+
+    def setUp(self):
+        from accounts.models import HistoriaAcademica, PerfilAcademico, User
+        from accounts.tests.factories import crear_alumno
+        from asesorias.models import Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
+        from carreras.models import Area, Carrera
+        from materias.models import Materia, OfertaMateria
+        from asesorias.servicios import semestre_vigente
+        import datetime
+
+        self.area = Area.objects.create(nombre="Area historial agendar")
+        self.carrera_a = Carrera.objects.create(clave=951, nombre="Carrera HA Test", area=self.area)
+        self.carrera_b = Carrera.objects.create(clave=952, nombre="Carrera HB Test", area=self.area)
+        self.carrera_ajena = Carrera.objects.create(
+            clave=953, nombre="Carrera HC Ajena Test", area=self.area
+        )
+        self.materia = Materia.objects.create(
+            clave="1951", nombre="Álgebra HA", carrera=self.carrera_a, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        OfertaMateria.objects.create(
+            materia=self.materia, semestre=semestre_vigente(), se_imparte=True
+        )
+
+        asesor_user = User.objects.create_user(email="asesor.ha@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=asesor_user, numero_trabajador="91234")
+        asesor = PerfilAsesorAcademico.objects.create(user=asesor_user, area=self.area)
+        registro = RegistroAsesor.objects.create(asesor=asesor, semestre=semestre_vigente())
+        registro.materias.add(self.materia)
+        hoy = datetime.date.today()
+        self.disponibilidad = Disponibilidad.objects.create(
+            registro=registro, dia_semana=hoy.weekday(), hora_inicio=datetime.time(9, 0),
+            formato="virtual", liga_virtual="https://zoom.us/j/1",
+        )
+        self.fecha = hoy
+
+        self.user = User.objects.create_user(email="alumno.ha@ciencias.unam.mx", password="x")
+        self.perfil = crear_alumno(self.user, "312000055", carrera=self.carrera_a, generacion=2023)
+        self.HistoriaAcademica = HistoriaAcademica
+        self.client.force_authenticate(user=self.user)
+
+    def _payload(self, carrera_id=None):
+        cuerpo = {
+            "disponibilidad": self.disponibilidad.id,
+            "fecha": self.fecha.isoformat(),
+            "materia": self.materia.id,
+        }
+        if carrera_id is not None:
+            cuerpo["carrera"] = carrera_id
+        return cuerpo
+
+    def test_con_una_sola_carrera_el_payload_puede_omitirla(self):
+        response = self.client.post("/api/asesorias/asesorias/", self._payload())
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["carrera"], self.carrera_a.id)
+
+    def test_con_dos_carreras_la_carrera_es_obligatoria(self):
+        self.HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_b, generacion=2025
+        )
+        response = self.client.post("/api/asesorias/asesorias/", self._payload())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("carrera", response.data)
+
+    def test_con_dos_carreras_acepta_cualquiera_de_las_suyas(self):
+        self.HistoriaAcademica.objects.create(
+            perfil_alumno=self.perfil, carrera=self.carrera_b, generacion=2025
+        )
+        response = self.client.post(
+            "/api/asesorias/asesorias/", self._payload(carrera_id=self.carrera_b.id)
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["carrera"], self.carrera_b.id)
+
+    def test_rechaza_una_carrera_que_no_es_del_alumno(self):
+        response = self.client.post(
+            "/api/asesorias/asesorias/", self._payload(carrera_id=self.carrera_ajena.id)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("carrera", response.data)

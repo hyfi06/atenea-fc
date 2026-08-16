@@ -1,4 +1,5 @@
 from accounts.models import PerfilAcademico, PerfilAlumno, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import PerfilAsesorAcademico
 from carreras.models import Area, Carrera
 from rest_framework.test import APITestCase
@@ -28,9 +29,7 @@ class UserDetailsApiTests(APITestCase):
         user.apellido1 = "López"
         user.apellido2 = "Ruiz"
         user.save()
-        perfil = PerfilAlumno.objects.create(
-            user=user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
-        )
+        perfil = crear_alumno(user, "312345678", carrera=self.carrera, generacion=2023)
         self.client.force_authenticate(user=user)
 
         response = self.client.get("/api/auth/user/")
@@ -44,9 +43,13 @@ class UserDetailsApiTests(APITestCase):
             {
                 "id": perfil.id,
                 "numero_cuenta": "312345678",
-                "carrera": self.carrera.id,
-                "carrera_nombre": "Carrera Test",
-                "generacion": 2023,
+                "historial": [
+                    {
+                        "carrera": self.carrera.id,
+                        "carrera_nombre": "Carrera Test",
+                        "generacion": 2023,
+                    }
+                ],
             },
         )
 
@@ -112,9 +115,7 @@ class UserDetailsApiTests(APITestCase):
         """El mismo serializer alimenta la clave 'user' de /api/auth/login/,
         así que el SPA obtiene el rol sin una segunda llamada."""
         user = User.objects.create_user(email="login@ciencias.unam.mx", password="ClaveSegura123!")
-        PerfilAlumno.objects.create(
-            user=user, numero_cuenta="312345679", carrera=self.carrera, generacion=2024,
-        )
+        crear_alumno(user, "312345679", carrera=self.carrera, generacion=2024)
 
         response = self.client.post(
             "/api/auth/login/",
@@ -139,9 +140,7 @@ class UserDetailsApiTests(APITestCase):
 
     def test_usuario_sin_perfil_sae_no_reporta_el_rol(self):
         user = User.objects.create_user(email="no-sae@ciencias.unam.mx", password="x")
-        PerfilAlumno.objects.create(
-            user=user, numero_cuenta="312999999", carrera=self.carrera, generacion=2023,
-        )
+        crear_alumno(user, "312999999", carrera=self.carrera, generacion=2023)
         self.client.force_authenticate(user=user)
 
         response = self.client.get("/api/auth/user/")
@@ -160,3 +159,27 @@ class UserDetailsApiTests(APITestCase):
         response = self.client.get("/api/auth/user/")
 
         self.assertIn("sae", response.data["roles"])
+
+
+class PerfilAlumnoDosCarrerasTests(APITestCase):
+    def test_el_historial_lista_las_dos_carreras(self):
+        from accounts.models import HistoriaAcademica
+        from accounts.tests.factories import crear_alumno
+
+        area = Area.objects.create(nombre="Area dos carreras")
+        carrera_a = Carrera.objects.create(clave=961, nombre="Carrera Uno Test", area=area)
+        carrera_b = Carrera.objects.create(clave=962, nombre="Carrera Dos Test", area=area)
+        user = User.objects.create_user(email="doble@ciencias.unam.mx", password="x")
+        perfil = crear_alumno(user, "312000077", carrera=carrera_a, generacion=2022)
+        HistoriaAcademica.objects.create(
+            perfil_alumno=perfil, carrera=carrera_b, generacion=2025
+        )
+
+        self.client.force_authenticate(user=user)
+        response = self.client.get("/api/auth/user/")
+
+        historial = response.json()["perfil_alumno"]["historial"]
+        self.assertEqual(
+            [fila["carrera_nombre"] for fila in historial],
+            ["Carrera Uno Test", "Carrera Dos Test"],
+        )

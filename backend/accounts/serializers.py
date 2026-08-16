@@ -127,12 +127,19 @@ class UserDetailsSerializer(BaseUserDetailsSerializer):
         perfil = getattr(obj, "perfil_alumno", None)
         if perfil is None:
             return None
+        # `correos_alternos` NO viaja aquí: es visible solo para la SAE
+        # (ADR 0027 decisión 3). El alumno nunca ve su propia lista.
         return {
             "id": perfil.id,
             "numero_cuenta": perfil.numero_cuenta,
-            "carrera": perfil.carrera_id,
-            "carrera_nombre": perfil.carrera.nombre,
-            "generacion": perfil.generacion,
+            "historial": [
+                {
+                    "carrera": historia.carrera_id,
+                    "carrera_nombre": historia.carrera.nombre,
+                    "generacion": historia.generacion,
+                }
+                for historia in perfil.historial.select_related("carrera")
+            ],
         }
 
     def get_perfil_academico(self, obj):
