@@ -19,3 +19,24 @@ def semestre_vigente(hoy: datetime.date | None = None) -> str:
     if hoy.month <= 6:
         return f"{hoy.year}2"
     return f"{hoy.year + 1}1"
+
+
+def periodo_vigente(hoy: datetime.date | None = None):
+    """El `PeriodoAcademico` cuya clave coincide con la heurística, o `None`.
+
+    `None` significa "la SAE todavía no dio de alta este semestre", no "no
+    hay semestre": la clave siempre existe (ver `semestre_vigente`).
+    """
+    from academico.models import PeriodoAcademico
+
+    return PeriodoAcademico.objects.filter(semestre=semestre_vigente(hoy)).first()
+
+
+def registro_asesores_abierto(hoy: datetime.date | None = None) -> bool:
+    """Si hoy cae dentro de la ventana de registro del semestre vigente.
+
+    Sin `PeriodoAcademico` dado de alta responde `False`: sin fechas no hay
+    forma de afirmar que la ventana está abierta.
+    """
+    periodo = periodo_vigente(hoy)
+    return periodo is not None and periodo.esta_abierto_el_registro(hoy)
