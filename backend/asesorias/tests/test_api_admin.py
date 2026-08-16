@@ -1,6 +1,7 @@
 import datetime
 
 from accounts.models import PerfilAcademico, PerfilAlumno, PerfilSAE, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area, Carrera
 from django.utils import timezone
@@ -53,13 +54,13 @@ class AdminAsesoriasApiTests(APITestCase):
         self.alumno1_user = User.objects.create_user(
             email="alumno1@ciencias.unam.mx", password="x", first_name="Juan",
         )
-        self.alumno1 = PerfilAlumno.objects.create(
+        self.alumno1 = crear_alumno(
             user=self.alumno1_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
         self.alumno2_user = User.objects.create_user(
             email="alumno2@ciencias.unam.mx", password="x", first_name="Rosa",
         )
-        self.alumno2 = PerfilAlumno.objects.create(
+        self.alumno2 = crear_alumno(
             user=self.alumno2_user, numero_cuenta="312345679", carrera=self.carrera, generacion=2024,
         )
 
@@ -192,7 +193,7 @@ class AdminSemestresApiTests(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno-sem@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
+        self.alumno = crear_alumno(
             user=self.alumno_user, numero_cuenta="313111111", carrera=self.carrera, generacion=2023,
         )
 
@@ -524,7 +525,7 @@ class AdminAlumnosApiTests(APITestCase):
         )
         self.juan_user.apellido1 = "Pérez"
         self.juan_user.save()
-        self.juan = PerfilAlumno.objects.create(
+        self.juan = crear_alumno(
             user=self.juan_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
 
@@ -533,7 +534,7 @@ class AdminAlumnosApiTests(APITestCase):
         )
         self.rosa_user.apellido1 = "Gómez"
         self.rosa_user.save()
-        self.rosa = PerfilAlumno.objects.create(
+        self.rosa = crear_alumno(
             user=self.rosa_user, numero_cuenta="420000001", carrera=self.carrera, generacion=2024,
         )
 
@@ -573,7 +574,7 @@ class AdminAlumnosApiTests(APITestCase):
             user = User.objects.create_user(
                 email=f"masivo{indice}@ciencias.unam.mx", password="x", first_name="Masivo",
             )
-            PerfilAlumno.objects.create(
+            crear_alumno(
                 user=user, numero_cuenta=f"5000000{indice:02d}", carrera=self.carrera,
                 generacion=2025,
             )

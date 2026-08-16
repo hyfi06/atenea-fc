@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from django.test import TestCase
 
 from accounts.models import PerfilAcademico, PerfilAlumno, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from asesorias.permissions import EsAlumno, EsAsesorAcademico, EsDuenoDelRegistro, EsDuenoDeLaAsesoria
 from carreras.models import Area, Carrera
@@ -37,7 +38,7 @@ class PermissionsTests(TestCase):
 
         self.alumno_user = User.objects.create_user(
             email="alumno@ciencias.unam.mx", password="x")
-        PerfilAlumno.objects.create(
+        crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023)
 
     def tearDown(self):
@@ -107,7 +108,7 @@ class EsDuenoDeLaAsesoriaDobleRolTests(TestCase):
         self.doble_user = User.objects.create_user(email="doble@ciencias.unam.mx", password="x")
         PerfilAcademico.objects.create(user=self.doble_user, numero_trabajador="70001")
         self.doble_asesor = PerfilAsesorAcademico.objects.create(user=self.doble_user, area=self.area)
-        self.doble_alumno = PerfilAlumno.objects.create(
+        self.doble_alumno = crear_alumno(
             user=self.doble_user, numero_cuenta="311111111", carrera=self.carrera, generacion=2023)
         self.registro_doble = RegistroAsesor.objects.create(asesor=self.doble_asesor, semestre="20271")
         self.disponibilidad_doble = Disponibilidad.objects.create(
@@ -125,7 +126,7 @@ class EsDuenoDeLaAsesoriaDobleRolTests(TestCase):
             formato="virtual", liga_virtual="https://meet.example.com/o",
         )
         self.otro_alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.otro_alumno = PerfilAlumno.objects.create(
+        self.otro_alumno = crear_alumno(
             user=self.otro_alumno_user, numero_cuenta="322222222", carrera=self.carrera, generacion=2023)
 
         fecha = datetime.date(2027, 8, 9)
@@ -175,7 +176,7 @@ class PermisosSAETests(TestCase):
         PerfilSAE.objects.create(user=self.sae_user)
 
         self.alumno_user = User.objects.create_user(email="alumno-sae@ciencias.unam.mx", password="x")
-        PerfilAlumno.objects.create(
+        crear_alumno(
             user=self.alumno_user, numero_cuenta="313000001", carrera=self.carrera, generacion=2023)
 
         self.asesor_user = User.objects.create_user(email="asesor-sae@ciencias.unam.mx", password="x")

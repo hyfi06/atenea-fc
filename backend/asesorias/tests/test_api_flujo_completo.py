@@ -1,6 +1,7 @@
 import datetime
 
 from accounts.models import PerfilAcademico, PerfilAlumno, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Asesoria
 from carreras.models import Area, Carrera
 from django.utils import timezone
@@ -22,7 +23,7 @@ class FlujoCompletoAsesoriaApiTests(APITestCase):
         PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        PerfilAlumno.objects.create(
+        crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
 

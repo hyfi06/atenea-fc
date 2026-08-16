@@ -1,6 +1,7 @@
 import datetime
 
 from accounts.models import PerfilAcademico, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area
 from rest_framework.test import APITestCase
@@ -145,7 +146,7 @@ class SesionesFuturasApiTests(APITestCase):
         )
         self.alumno_user.apellido1 = "López"
         self.alumno_user.save()
-        self.alumno = PerfilAlumno.objects.create(
+        self.alumno = crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
         self.Asesoria = Asesoria

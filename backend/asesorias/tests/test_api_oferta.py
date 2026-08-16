@@ -1,6 +1,7 @@
 import datetime
 
 from accounts.models import PerfilAcademico, PerfilAlumno, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area, Carrera
 from materias.models import Materia, OfertaMateria
@@ -36,7 +37,7 @@ class OfertaApiTests(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
+        self.alumno = crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
 
@@ -147,7 +148,7 @@ class AsesoresDeMateriaApiTests(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
+        self.alumno = crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
 

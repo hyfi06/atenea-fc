@@ -126,7 +126,7 @@ class DobleRolListadoApiTests(AsesoriaApiTestsBase):
     def setUp(self):
         super().setUp()
         # Promover al asesor a también-alumno.
-        self.asesor_como_alumno = PerfilAlumno.objects.create(
+        self.asesor_como_alumno = crear_alumno(
             user=self.asesor_user, numero_cuenta="312345680", carrera=self.carrera, generacion=2023,
         )
         # Sesión donde es ASESOR (sobre su propia disponibilidad, semestre 20271).
@@ -440,8 +440,8 @@ class NotasOcultasApiTests(APITestCase):
         )
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        self.alumno = PerfilAlumno.objects.create(
-            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
+        self.alumno = crear_alumno(
+            user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023
         )
 
         from asesorias.models import Asesoria

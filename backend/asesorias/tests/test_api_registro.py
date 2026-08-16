@@ -1,4 +1,5 @@
 from accounts.models import PerfilAcademico, User
+from accounts.tests.factories import crear_alumno
 from asesorias.models import PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area, Carrera
 from materias.models import Materia, OfertaMateria
@@ -24,8 +25,7 @@ class RegistroAsesorApiTests(APITestCase):
         self.registro_ajeno = RegistroAsesor.objects.create(asesor=self.otro_asesor, semestre="20271")
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
-        from accounts.models import PerfilAlumno
-        self.alumno = PerfilAlumno.objects.create(
+        self.alumno = crear_alumno(
             user=self.alumno_user, numero_cuenta="312345678", carrera=self.carrera, generacion=2023,
         )
         

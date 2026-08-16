@@ -36,13 +36,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 class PerfilAlumno(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil_alumno")
     numero_cuenta = models.CharField(max_length=10, unique=True)
-    # Transitorios: los reemplaza HistoriaAcademica y se borran en la migración
-    # 0007, una vez que ningún lector los usa (ADR 0027 decisión 1).
-    carrera = models.ForeignKey(
-        "carreras.Carrera", on_delete=models.PROTECT, related_name="alumnos",
-        null=True, blank=True,
-    )
-    generacion = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.numero_cuenta}, {self.user.email}"
