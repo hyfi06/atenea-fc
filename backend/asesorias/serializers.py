@@ -1,10 +1,10 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from carreras.models import Carrera
+from carreras.models import Carrera, Area
 from materias.models import Materia
 
-from .models import Asesoria, Disponibilidad, RegistroAsesor
+from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 
 
 class RegistroAsesorSerializer(serializers.ModelSerializer):
@@ -239,3 +239,19 @@ class AsesorDetalleAdminSerializer(serializers.Serializer):
     semestre = serializers.CharField()
     materias = MateriaAdminSerializer(many=True)
     disponibilidades = DisponibilidadAdminSerializer(many=True)
+
+
+class SolicitudAsesorSerializer(serializers.ModelSerializer):
+    """Body de POST /asesorias/asesores/solicitud/.
+
+    El único campo que el usuario elige es `area`: `user` sale de la sesión y
+    `activo` de la validación externa, nunca del payload.
+    """
+
+    area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all())
+    area_nombre = serializers.CharField(source="area.nombre", read_only=True)
+
+    class Meta:
+        model = PerfilAsesorAcademico
+        fields = ["id", "area", "area_nombre", "activo"]
+        read_only_fields = ["id", "activo"]

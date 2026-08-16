@@ -5,8 +5,8 @@ from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAse
 
 @admin.register(PerfilAsesorAcademico)
 class PerfilAsesorAcademicoAdmin(admin.ModelAdmin):
-    list_display = ("user", "area", "activo")
-    list_filter = ("area", "activo")
+    list_display = ("user", "area", "activo", "solicitado_por_el_usuario")
+    list_filter = ("activo", "solicitado_por_el_usuario", "area")
     search_fields = ("user__email",)
 
 

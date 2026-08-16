@@ -1,6 +1,13 @@
 from rest_framework.permissions import BasePermission
 
 
+class EsAcademico(BasePermission):
+    message = "Se requiere un perfil de académico."
+
+    def has_permission(self, request, view):
+        return hasattr(request.user, "perfil_academico")
+
+
 class EsAlumno(BasePermission):
     message = "Se requiere un perfil de alumno."
 

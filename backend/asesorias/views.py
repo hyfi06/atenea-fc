@@ -17,13 +17,14 @@ from accounts.models import PerfilAlumno
 
 from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from .permissions import (
-    EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
+    EsAcademico, EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
     AsesorDetalleAdminSerializer, MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer,
     DesactivarDisponibilidadSerializer, DisponibilidadSerializer, MarcarAsistenciaSerializer, NotasSerializer,
-    RegistroAsesorSerializer, ResultadoBusquedaSerializer, SesionFuturaSerializer,
+    RegistroAsesorSerializer, ResultadoBusquedaSerializer, SesionFuturaSerializer, SolicitudAsesorSerializer,
 )
+from .validacion_externa import validar_academico_activo
 from .servicios import semestre_vigente, ventana_agendable
 
 
@@ -529,3 +530,36 @@ class AdminAlumnosView(APIView):
             for alumno in alumnos[:LIMITE_AUTOCOMPLETAR_ALUMNOS]
         ]
         return Response(data)
+
+
+class SolicitudAsesorView(APIView):
+    """Autoservicio de alta como asesor académico (ADR 0027 decisión 7).
+
+    Cierra la deuda 0002: la SAE deja de crear el perfil a mano; solo lo
+    activa cuando la validación automática no basta. La vigencia del
+    académico la responde `validar_academico_activo` contra el directorio
+    público de la Facultad (Task 13 Step 2): concede automático solo con un
+    único resultado exacto por nombre, y deja el resto pendiente de revisión
+    manual -no es un stub, es una integración real con un criterio
+    deliberadamente estrecho.
+    """
+
+    permission_classes = [EsAcademico]
+
+    def post(self, request):
+        if hasattr(request.user, "perfil_asesor_academico"):
+            return Response(
+                {"detail": "Ya tienes un perfil de asesor académico."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        serializer = SolicitudAsesorSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        activo = validar_academico_activo(
+            request.user.perfil_academico.numero_trabajador, request.user.nombre_completo
+        )
+        perfil = serializer.save(
+            user=request.user, activo=activo, solicitado_por_el_usuario=True
+        )
+        return Response(
+            SolicitudAsesorSerializer(perfil).data, status=status.HTTP_201_CREATED
+        )

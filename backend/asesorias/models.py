@@ -21,6 +21,10 @@ class PerfilAsesorAcademico(models.Model):
         "carreras.Area", on_delete=models.PROTECT, related_name="asesores_academicos"
     )
     activo = models.BooleanField(default=True)
+    # Distingue el alta manual de la SAE (False) de una solicitud del propio
+    # académico pendiente de validación externa (True). Sin esto, la SAE no
+    # puede filtrar en el admin qué perfiles inactivos esperan su revisión.
+    solicitado_por_el_usuario = models.BooleanField(default=False)
 
     def clean(self):
         if not hasattr(self.user, "perfil_academico"):

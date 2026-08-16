@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AdminAlumnosView, AdminAsesorDetalleView, AdminAsesoresView, AdminAsesoriasView,
     AdminSemestresView, AsesoresDeMateriaView, AsesoriaViewSet, BuscarDisponibilidadView,
-    DisponibilidadViewSet, OfertaView, RegistroAsesorViewSet,
+    DisponibilidadViewSet, OfertaView, RegistroAsesorViewSet, SolicitudAsesorView,
 )
 
 router = DefaultRouter()
@@ -16,6 +16,7 @@ urlpatterns = [
     path("disponibilidad/buscar/", BuscarDisponibilidadView.as_view(), name="disponibilidad-buscar"),
     path("oferta/", OfertaView.as_view(), name="oferta"),
     path("oferta/<int:materia_id>/asesores/", AsesoresDeMateriaView.as_view(), name="oferta-asesores"),
+    path("asesores/solicitud/", SolicitudAsesorView.as_view(), name="asesor-solicitud"),
     path("admin/asesorias/", AdminAsesoriasView.as_view(), name="admin-asesorias"),
     path("admin/semestres/", AdminSemestresView.as_view(), name="admin-semestres"),
     path("admin/asesores/", AdminAsesoresView.as_view(), name="admin-asesores"),

@@ -183,6 +183,14 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@atenea.ciencias
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 
 CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
+
+# Directorio público de la Facultad de Ciencias, usado por
+# asesorias.validacion_externa para confirmar la vigencia de un académico
+# (ADR 0027 decisión 7, Task 13). No es un servicio con contrato propio ni
+# credenciales, pero la URL no se hardcodea ni se versiona: sin este valor
+# configurado, validar_academico_activo() no intenta la validación y deja el
+# perfil pendiente de revisión de la SAE (nunca bloquea la solicitud).
+DIRECTORIO_FC_URL_BASE = env("DIRECTORIO_FC_URL_BASE", default="")
 # CORS_ALLOWED_ORIGINS ya restringe a un único origin exacto (sin wildcard),
 # así que habilitar credenciales es seguro también en dev — y necesario:
 # frontend/src/api/client.ts manda `credentials: 'include'` de forma uniforme
