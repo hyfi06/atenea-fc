@@ -3,12 +3,16 @@ import { semestreActual, claveSlot, proximas, historial, sesionesPreviasConNotas
 import type { Disponibilidad, Asesoria, SlotDisponibilidad, AsesoriaAdmin } from '../../api/types'
 
 describe('semestreActual', () => {
-  it('devuelve año+1 para meses de enero a junio', () => {
-    expect(semestreActual(new Date('2026-03-15'))).toBe('20261')
+  // Convención UNAM: el semestre AAAA-1 arranca en agosto del año anterior.
+  // Agosto 2026 ya es el semestre 2027-1; marzo 2027 es el 2027-2.
+  it('julio a diciembre pertenece al semestre 1 del año siguiente', () => {
+    expect(semestreActual(new Date('2026-08-01T12:00:00'))).toBe('20271')
+    expect(semestreActual(new Date('2026-12-31T12:00:00'))).toBe('20271')
   })
 
-  it('devuelve año+2 para meses de julio a diciembre', () => {
-    expect(semestreActual(new Date('2026-08-01'))).toBe('20262')
+  it('enero a junio pertenece al semestre 2 del año en curso', () => {
+    expect(semestreActual(new Date('2027-01-15T12:00:00'))).toBe('20272')
+    expect(semestreActual(new Date('2027-06-30T12:00:00'))).toBe('20272')
   })
 })
 
