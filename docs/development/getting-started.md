@@ -57,6 +57,8 @@ En este flujo, `backend/.env` sí se usa tal cual (`DATABASE_URL`/`REDIS_URL` ap
 ```
 uv run manage.py check                              # valida settings/apps sin tocar la base de datos
 uv run manage.py makemigrations --check --dry-run    # confirma que no faltan migraciones
+uv run manage.py cargar_materias <csv>   # catálogo de materias
+uv run manage.py cargar_alumnos <csv>    # padrón de alumnos (upsert por número de cuenta)
 docker compose -f docker-compose.dev.yml logs celery-worker   # debe decir "ready.", no crash-loop
 docker compose -f docker-compose.dev.yml down          # apagar todo (los datos de postgres persisten en el volumen)
 ```

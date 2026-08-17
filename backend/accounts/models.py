@@ -12,6 +12,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(_("first name"), max_length=150, blank=True)
     apellido1 = models.CharField(_("apellido1"), max_length=150, blank=True)
     apellido2 = models.CharField(_("apellido2"), max_length=150, blank=True)
+    curp = models.CharField(
+        _("CURP"), max_length=18, unique=True, null=True, blank=True,
+    )
     is_staff = models.BooleanField(_("staff status"), default=False)
     is_active = models.BooleanField(_("active"), default=True)
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)

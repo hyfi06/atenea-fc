@@ -2958,7 +2958,7 @@ Re-corrible: sí, upsert por `numero_cuenta` (igual que `cargar_materias` upsert
 - Consumes: `User`, `PerfilAlumno`, `HistoriaAcademica`, `Carrera` (por `clave`).
 - Produces: `uv run manage.py cargar_alumnos <csv_path>`. `User.curp: str | None`.
 
-- [ ] **Step 0: Agregar `User.curp`**
+- [x] **Step 0: Agregar `User.curp`**
 
 En `backend/accounts/models.py`, en `class User`, después de `apellido2`:
 
@@ -2973,7 +2973,7 @@ En `backend/accounts/models.py`, en `class User`, después de `apellido2`:
 Run: `cd backend && uv run manage.py makemigrations accounts`
 Expected: crea `backend/accounts/migrations/0009_user_curp.py` (o el número que siga).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Crear `backend/accounts/tests/test_cargar_alumnos.py`:
 
@@ -3073,12 +3073,12 @@ class CargarAlumnosTests(TestCase):
             call_command("cargar_alumnos", "/no/existe.csv", stdout=StringIO(), stderr=StringIO())
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_cargar_alumnos -v 2`
 Expected: FAIL — `CommandError: Unknown command: 'cargar_alumnos'`.
 
-- [ ] **Step 3: Implementar el comando**
+- [x] **Step 3: Implementar el comando**
 
 Crear los `__init__.py` vacíos de `accounts/management/` y `accounts/management/commands/`, y `backend/accounts/management/commands/cargar_alumnos.py`:
 
@@ -3201,12 +3201,12 @@ class Command(BaseCommand):
         return creado
 ```
 
-- [ ] **Step 4: Verificar verde**
+- [x] **Step 4: Verificar verde**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_cargar_alumnos -v 2`
 Expected: PASS.
 
-- [ ] **Step 5: Documentar el comando**
+- [x] **Step 5: Documentar el comando**
 
 En `docs/development/getting-started.md`, en la sección "Comandos útiles", agregar:
 
@@ -3215,12 +3215,12 @@ uv run manage.py cargar_materias <csv>   # catálogo de materias
 uv run manage.py cargar_alumnos <csv>    # padrón de alumnos (upsert por número de cuenta)
 ```
 
-- [ ] **Step 6: Suite completa**
+- [x] **Step 6: Suite completa**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/accounts docs/development/getting-started.md
