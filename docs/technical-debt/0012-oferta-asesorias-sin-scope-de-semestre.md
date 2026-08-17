@@ -1,6 +1,6 @@
 # 0012 — Oferta/asesores/búsqueda no acotan por semestre vigente
 
-**Estado:** Activa
+**Estado:** Resuelta — 2026-08-15 ([ADR 0027](../decisions/0027-usuarios-reales-academico-autoservicio.md))
 **Origen:** [spec `2026-08-08-asesorias-alumno-api-design`](../decisions/0021-asesorias-alumno-api.md) / [ADR 0021](../decisions/0021-asesorias-alumno-api.md)
 
 ## Qué se simplificó
@@ -14,3 +14,7 @@ No existe una fuente de verdad del semestre vigente: es justamente la deuda [000
 ## Señal de revisión
 
 Cuando exista el modelo de calendario académico (deuda [0001](0001-sin-modelo-calendario-academico.md)), acotar estas tres vistas al periodo vigente en lugar de depender únicamente de `Disponibilidad.activa`.
+
+## Cómo se resolvió
+
+`OfertaView`, `AsesoresDeMateriaView` y `BuscarDisponibilidadView` filtran por `registro__semestre == semestre_vigente()` y `registro__asesor__activo=True`, además de `Disponibilidad.activa`. La fuente del semestre vigente es `academico.servicios.semestre_vigente`.

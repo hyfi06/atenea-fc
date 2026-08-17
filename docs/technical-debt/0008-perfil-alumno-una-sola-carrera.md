@@ -1,6 +1,6 @@
 # 0008 — `PerfilAlumno` solo registra una carrera vigente
 
-**Estado:** Activa
+**Estado:** Resuelta — 2026-08-15 ([ADR 0027](../decisions/0027-usuarios-reales-academico-autoservicio.md))
 **Origen:** [ADR 0016](../decisions/0016-asesorias-academicas.md)
 
 ## Qué se simplificó
@@ -16,3 +16,7 @@ Esta simplificación no compromete el historial de `Asesoria`: `Asesoria.carrera
 ## Señal de revisión
 
 Si aparece un alumno con más de una carrera simultánea, o si la SAE necesita dar de baja/actualizar la carrera de un alumno que cambió de carrera formalmente, revisar si sigue bastando con sobreescribir `PerfilAlumno.carrera` o si hace falta el `HistoriaAcademica` completo (múltiples carreras, fechas de inicio/fin).
+
+## Cómo se resolvió
+
+`HistoriaAcademica(perfil_alumno, carrera, generacion)` reemplazó `PerfilAlumno.carrera`/`generacion`. Un alumno puede tener varias filas bajo el mismo número de cuenta, y `AgendarAsesoria` pregunta con cuál agenda cuando hay más de una.

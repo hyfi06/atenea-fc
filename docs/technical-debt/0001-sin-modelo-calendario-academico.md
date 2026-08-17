@@ -14,3 +14,7 @@ No hay todavía un segundo servicio de la SAE que necesite fechas reales de seme
 ## Señal de revisión
 
 En cuanto un segundo servicio (o Asesorías mismo) necesite saber "¿estamos en periodo de exámenes?" o alinear la ventana agendable al calendario escolar real, hace falta un modelo `PeriodoAcademico` con fechas.
+
+## Estado tras el ADR 0027
+
+Parcialmente resuelta, sigue **Activa**. Ya existe `academico.PeriodoAcademico` con fechas reales de inicio/fin de semestre y con la ventana de registro de asesores, y `OfertaMateria`/`RegistroAsesor` se acotan al semestre vigente derivado de ahí. Lo que **no** existe todavía: subdivisiones internas del calendario (periodo de exámenes, vacaciones, días inhábiles), y la ventana agendable de Asesorías sigue siendo la regla fija en código (semana en curso + siguiente), no derivada de `PeriodoAcademico`.

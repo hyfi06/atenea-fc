@@ -43,7 +43,7 @@ Contrato completo y su razonamiento en [ADR 0003](../decisions/0003-google-oauth
     "apellido2": "Ruiz",
     "nombre_completo": "Ana López Ruiz",
     "roles": ["alumno"],
-    "perfil_alumno": {"id": 3, "numero_cuenta": "312345678", "carrera": 5, "carrera_nombre": "Actuaría", "generacion": 2023},
+    "perfil_alumno": {"id": 3, "numero_cuenta": "312345678", "historial": [{"id": 10, "carrera": 5, "carrera_nombre": "Actuaría", "generacion": 2023}]},
     "perfil_academico": null,
     "perfil_asesor_academico": null
   }
@@ -90,6 +90,20 @@ El mismo objeto `user` es lo que devuelve `GET /api/auth/user/` (mismo serialize
 El SPA consume `roles` de este payload para decidir qué puede ver el usuario (`frontend/src/auth/rol.ts`: `useEsAsesor`, `useEsAlumno`; `frontend/src/auth/RutaProtegida.tsx`). Ya **no** existe el sondeo de `GET /api/asesorias/registros/` con lectura de 200 vs 403 que describía la deuda técnica 0010: si `roles` no viene en la respuesta, el frontend trata al usuario como si no tuviera ningún rol.
 
 No existe endpoint de auto-registro (`dj_rest_auth.registration` no está incluido) — coherente con ADR 0013.
+
+## `academico`
+
+| Ruta | Método | Permiso | Qué devuelve |
+|---|---|---|---|
+| `/api/academico/periodo-vigente/` | GET | sesión | Detalle del `PeriodoAcademico` del semestre vigente |
+
+```json
+{ "semestre": "20271", "fecha_inicio": "2026-08-10", "fecha_fin": "2026-12-04",
+  "registro_asesores_inicio": "2026-07-01", "registro_asesores_fin": "2026-08-31",
+  "registro_asesores_abierto": true }
+```
+
+**404 es una respuesta esperada**: significa que la SAE todavía no dio de alta el periodo de ese semestre, no que la petición esté mal. El frontend calcula la clave del semestre por su cuenta (`semestreActual` en `logica.ts`) y usa este endpoint solo para fechas y ventanas.
 
 ## `carreras`
 
@@ -140,6 +154,7 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 
 | Método | Ruta | Notas |
 |---|---|---|
+| `POST` | `/api/asesorias/asesores/solicitud/` | `{ "area": <id> }` → crea el `PerfilAsesorAcademico` del usuario. `409` si ya lo tiene. El perfil puede nacer `activo: false` (validación externa pendiente). |
 | `GET`/`POST` | `/api/asesorias/registros/` | solo los propios; `asesor` se asigna server-side |
 | `GET` | `/api/asesorias/registros/{id}/` | |
 | `POST` | `/api/asesorias/registros/{id}/materias/` | agrega una materia al registro — `{materia_id}` |
@@ -150,6 +165,8 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 | `POST` | `/api/asesorias/disponibilidades/{id}/desactivar/` | `{cancelar_sesiones?: bool = false, motivo?: string}` → `{"disponibilidad": {...}, "sesiones_canceladas": n}`. Con `cancelar_sesiones=true` cancela todas las sesiones futuras y desactiva el bloque en una sola transacción; el motivo por defecto es `"El asesor dio de baja este horario."` |
 
 `RegistroAsesor` no acepta `PUT`/`DELETE` en ningún caso; `materias` es de solo lectura en el serializer excepto vía la acción `materias/`, que puede fallar con `400 {"detail": ["La materia no está habilitada para asesorías."]}` o `{"detail": ["La materia no se imparte en este semestre."]}`.
+
+Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..registro_asesores_fin` del `PeriodoAcademico` de ese semestre; fuera de ahí devuelve `400`. Consultar `/api/academico/periodo-vigente/` antes de ofrecer el alta.
 
 `Disponibilidad` es un slot fijo de 30 minutos, no un rango — `dia_semana` (0=Lunes…6=Domingo), `hora_inicio` debe caer en la rejilla `:00`/`:30`, `formato` (`presencial`/`virtual`) determina si `ubicacion` o `liga_virtual` es obligatorio. Validaciones fallidas → `400 {"detail": ["..."]}`.
 
@@ -170,6 +187,8 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 ```
 
 **Ventana agendable:** hoy hasta el domingo que cierra la semana siguiente (semana en curso + la próxima). Regla fija en código (`asesorias/servicios.py`), no hay modelo de calendario académico — ver [deuda técnica 0001](../technical-debt/0001-sin-modelo-calendario-academico.md).
+
+Las tres rutas se acotan al semestre vigente y a asesores con `activo=true`.
 
 **`POST /api/asesorias/asesorias/`** — `EsAlumno`. Body: `{disponibilidad, materia, fecha}` — son los **únicos** campos que el cliente escribe; todo lo demás (`alumno`, `carrera`, `hora_inicio`, `formato`, `ubicacion`, `liga_virtual`) se copia server-side desde la disponibilidad y el perfil del alumno al momento de crear, y queda congelado aunque la disponibilidad cambie después.
 

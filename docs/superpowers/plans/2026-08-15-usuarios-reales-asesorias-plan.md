@@ -3472,7 +3472,7 @@ EOF
 - Create: `docs/technical-debt/0018-validacion-academico-activo-con-stub.md`, `docs/technical-debt/0019-home-sin-catalogo-de-servicios.md`
 - Modify: `docs/development/api-frontend.md`
 
-- [ ] **Step 1: Marcar 0002, 0008 y 0012 como Resueltas**
+- [x] **Step 1: Marcar 0002, 0008 y 0012 como Resueltas**
 
 En cada uno de los tres archivos, reemplazar la línea `**Estado:** Activa` por:
 
@@ -3491,7 +3491,7 @@ seguida de una línea:
 - `0008`: `` `HistoriaAcademica(perfil_alumno, carrera, generacion)` reemplazó `PerfilAlumno.carrera`/`generacion`. Un alumno puede tener varias filas bajo el mismo número de cuenta, y `AgendarAsesoria` pregunta con cuál agenda cuando hay más de una.``
 - `0012`: `` `OfertaView`, `AsesoresDeMateriaView` y `BuscarDisponibilidadView` filtran por `registro__semestre == semestre_vigente()` y `registro__asesor__activo=True`, además de `Disponibilidad.activa`. La fuente del semestre vigente es `academico.servicios.semestre_vigente`.``
 
-- [ ] **Step 2: Actualizar 0001 (parcialmente resuelta, sigue Activa)**
+- [x] **Step 2: Actualizar 0001 (parcialmente resuelta, sigue Activa)**
 
 En `docs/technical-debt/0001-sin-modelo-calendario-academico.md`, agregar al final:
 
@@ -3501,7 +3501,7 @@ En `docs/technical-debt/0001-sin-modelo-calendario-academico.md`, agregar al fin
 Parcialmente resuelta, sigue **Activa**. Ya existe `academico.PeriodoAcademico` con fechas reales de inicio/fin de semestre y con la ventana de registro de asesores, y `OfertaMateria`/`RegistroAsesor` se acotan al semestre vigente derivado de ahí. Lo que **no** existe todavía: subdivisiones internas del calendario (periodo de exámenes, vacaciones, días inhábiles), y la ventana agendable de Asesorías sigue siendo la regla fija en código (semana en curso + siguiente), no derivada de `PeriodoAcademico`.
 ```
 
-- [ ] **Step 3: Crear la deuda 0018**
+- [x] **Step 3: Crear la deuda 0018**
 
 Crear `docs/technical-debt/0018-validacion-academico-activo-con-stub.md`:
 
@@ -3524,7 +3524,7 @@ El autoservicio ya elimina la mitad del trabajo manual (la SAE deja de crear el 
 En cuanto se defina el contrato del servicio externo. El cambio es reescribir el cuerpo de `validar_academico_activo` (y agregar sus variables de entorno); ni la vista ni el modelo deberían tener que tocarse. Revisar también qué hacer ante caída del servicio: hoy no hay decisión tomada.
 ```
 
-- [ ] **Step 4: Crear la deuda 0019**
+- [x] **Step 4: Crear la deuda 0019**
 
 Crear `docs/technical-debt/0019-home-sin-catalogo-de-servicios.md`:
 
@@ -3547,7 +3547,7 @@ Hay exactamente dos tiles y un solo servicio integrado (Asesorías). Un endpoint
 Cuando se integre el segundo servicio real de la SAE, o cuando aparezca un servicio cuya visibilidad no se derive de un rol (por carrera, por generación, por convocatoria abierta). Ahí conviene el endpoint de catálogo que anticipaba el comentario original de `data/services.ts`.
 ```
 
-- [ ] **Step 5: Actualizar el índice**
+- [x] **Step 5: Actualizar el índice**
 
 En `docs/technical-debt/README.md`:
 - quitar de **Activa** las entradas de `0002`, `0008` y `0012`;
@@ -3563,7 +3563,7 @@ En `docs/technical-debt/README.md`:
 - [0012 — Oferta/asesores/búsqueda no acotan por semestre vigente](0012-oferta-asesorias-sin-scope-de-semestre.md) — resuelta 2026-08-15
 ```
 
-- [ ] **Step 6: Actualizar la guía de API para frontend**
+- [x] **Step 6: Actualizar la guía de API para frontend**
 
 En `docs/development/api-frontend.md`:
 - en la sección de `accounts`, actualizar el ejemplo de `GET /api/auth/user/` para que `perfil_alumno` traiga `historial` en vez de `carrera`/`carrera_nombre`/`generacion`;
@@ -3599,7 +3599,7 @@ Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..regi
 
 - en el listado de oferta/búsqueda, agregar: `Las tres rutas se acotan al semestre vigente y a asesores con `activo=true`.`
 
-- [ ] **Step 7: Verificar que el repo entero sigue verde**
+- [x] **Step 7: Verificar que el repo entero sigue verde**
 
 Run: `cd backend && uv run manage.py test -v 1 && uv run manage.py makemigrations --check --dry-run`
 Expected: PASS y `No changes detected`.
