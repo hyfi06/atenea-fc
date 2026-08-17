@@ -3607,7 +3607,7 @@ Expected: PASS y `No changes detected`.
 Run: `cd frontend && npx vitest run && npx tsc -b && npm run lint`
 Expected: PASS, sin errores.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add docs
