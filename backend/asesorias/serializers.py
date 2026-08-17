@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from academico.servicios import registro_asesores_abierto, semestre_vigente
 from carreras.models import Carrera, Area
 from materias.models import Materia
 
@@ -12,6 +13,24 @@ class RegistroAsesorSerializer(serializers.ModelSerializer):
         model = RegistroAsesor
         fields = ["id", "semestre", "materias"]
         read_only_fields = ["materias"]
+
+    def validate_semestre(self, value):
+        """El autoservicio solo crea el registro del semestre vigente, y solo
+        dentro de la ventana que fija `PeriodoAcademico` (ADR 0027 decisión 8).
+
+        Solo aplica al alta: gestionar materias y horario de un registro que ya
+        existe (incluido el de un semestre pasado) no pasa por aquí.
+        """
+        vigente = semestre_vigente()
+        if value != vigente:
+            raise serializers.ValidationError(
+                f"Solo puedes registrarte en el semestre vigente ({vigente})."
+            )
+        if not registro_asesores_abierto():
+            raise serializers.ValidationError(
+                "El registro de asesores no está abierto para este semestre."
+            )
+        return value
 
 
 class MateriaDelRegistroSerializer(serializers.Serializer):

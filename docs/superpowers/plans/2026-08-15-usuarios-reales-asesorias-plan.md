@@ -2064,11 +2064,24 @@ EOF
 >
 > Mientras tanto voy a construir el endpoint de solicitud con la validación aislada en `validar_academico_activo(numero_trabajador) -> bool`, con un stub que devuelve **`False`**: el `PerfilAsesorAcademico` se crea con `activo=False` y la SAE lo activa desde el admin. Elegí `False` y no `True` porque `activo=True` sin validación dejaría a un académico no vigente publicando disponibilidad y recibiendo alumnos, mientras que `False` solo deja el perfil pendiente — y como los permisos de asesor (`EsAsesorAcademico`) dependen de que el perfil **exista**, no de `activo`, el stub no bloquea el resto del plan: el asesor puede seguir cargando materias y horario.
 
-- [ ] **Step 2: Registrar la respuesta**
+- [x] **Step 2: Registrar la respuesta**
 
-Anotar la respuesta de Héctor en este archivo, justo debajo de este paso, antes de continuar con la Task 14. Si Héctor confirma que el contrato sigue sin definirse, dejarlo escrito aquí también — eso es lo que justifica la deuda 0018.
+**Respuesta de Héctor (2026-08-16):** No hay un servicio dedicado con contrato propio. Lo que existe es el directorio público de la Facultad de Ciencias (`https://www.fciencias.unam.mx`), que el propio Héctor ya usa en otro proyecto (DirectorioFC, Apps Script). El orquestador exploró el endpoint en vivo con dos académicos de prueba (Claudia Solís Said, Luis Medrano González) y confirmó:
 
-- [ ] **Step 3: No hay commit en esta tarea.** Continuar a la Task 14.
+1. **Búsqueda:** `GET https://www.fciencias.unam.mx/gql/busquedadirectorio/<nombre-url-encoded>` → JSON `{"data":{"busca_directorio":[...]}}`. Sin resultados → `200` con arreglo vacío (nunca 404).
+2. **Método:** GET, sin body. El campo de búsqueda es el **nombre completo como texto libre en la ruta**, no un identificador estructurado.
+3. **Autenticación:** ninguna — endpoint público. No hace falta agregar variables de entorno.
+4. **Detalle con materias/semestre:** `GET https://www.fciencias.unam.mx/directorio/<persona_id>` → HTML con un bloque JSON embebido (`queryData`); `persona__grupos[].calendario__periodo` usa el mismo formato `AAAAN` que `semestre_vigente()` (confirmado: `20271`, `20262`).
+5. **Ante caída/timeout:** no hay SLA declarado (es la web pública de la Facultad, no un servicio dedicado) — la solicitud debe tratarse como no confirmada (pendiente), nunca aceptarse a ciegas.
+6. **Entorno de pruebas:** solo producción (es el sitio público).
+
+**Limitación real descubierta:** el directorio indexa por **nombre**, no por `numero_trabajador` — no hay forma determinista de correlacionar `PerfilAcademico.numero_trabajador` con una persona del directorio.
+
+**Decisión de Héctor sobre cómo resolverlo:** validación automática **solo** cuando la búsqueda por nombre completo devuelve exactamente un resultado, **y** ese resultado coincide campo a campo (nombre, apellido1, apellido2, limpiando acentos/mayúsculas/espacios) con el nombre esperado. En cualquier otro caso — cero resultados, más de uno, o un nombre que no calza exactamente — la solicitud queda pendiente para que la SAE la valide a mano. "Activo" se define como "imparte clases en el semestre vigente" (`persona__grupos` con `calendario__periodo == semestre_vigente()`), no el campo `nombramientos`/`activo` del adaptador original de Héctor (ese calculaba otra cosa: vigencia del nombramiento, no docencia en el semestre).
+
+Con esto, la Task 14 deja de construir un stub que siempre devuelve `False` y en su lugar integra esta validación real, con matching estricto y fallback pesimista (cualquier error de red/parseo también resuelve a `False`).
+
+- [x] **Step 3: No hay commit en esta tarea.** Continuar a la Task 14.
 
 ---
 
@@ -2332,7 +2345,7 @@ EOF
 - Consumes: `academico.servicios.registro_asesores_abierto`, `semestre_vigente` (Tasks 8-9).
 - Produces: `POST /api/asesorias/registros/` acepta solo el semestre vigente y solo con la ventana abierta; `GET`/materias siguen sin restricción.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Agregar a `backend/asesorias/tests/test_api_registro.py`:
 
@@ -2383,12 +2396,12 @@ class VentanaDeRegistroTests(APITestCase):
         self.assertEqual(response.status_code, 400)
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test asesorias.tests.test_api_registro.VentanaDeRegistroTests -v 2`
 Expected: FAIL — los cuatro casos devuelven 201.
 
-- [ ] **Step 3: Implementar la validación**
+- [x] **Step 3: Implementar la validación**
 
 En `backend/asesorias/serializers.py`, reemplazar `RegistroAsesorSerializer` (líneas 10-14) por:
 
@@ -2424,17 +2437,17 @@ y agregar al bloque de imports del archivo:
 from academico.servicios import registro_asesores_abierto, semestre_vigente
 ```
 
-- [ ] **Step 4: Verificar verde**
+- [x] **Step 4: Verificar verde**
 
 Run: `cd backend && uv run manage.py test asesorias -v 2`
 Expected: PASS. Los tests preexistentes que hacen `POST /api/asesorias/registros/` (`test_api_registro.test_asesor_crea_su_registro`) necesitarán ahora un `PeriodoAcademico` del semestre vigente con ventana abierta en su `setUp`, y `semestre=semestre_vigente()` en vez de `"20271"`. Agregarlo.
 
-- [ ] **Step 5: Suite completa**
+- [x] **Step 5: Suite completa**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias

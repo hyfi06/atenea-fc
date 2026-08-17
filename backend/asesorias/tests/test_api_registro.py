@@ -1,5 +1,9 @@
+import datetime
+
 from accounts.models import PerfilAcademico, User
 from accounts.tests.factories import crear_alumno
+from academico.models import PeriodoAcademico
+from academico.servicios import semestre_vigente
 from asesorias.models import PerfilAsesorAcademico, RegistroAsesor
 from carreras.models import Area, Carrera
 from materias.models import Materia, OfertaMateria
@@ -7,13 +11,23 @@ from rest_framework.test import APITestCase
 
 class RegistroAsesorApiTests(APITestCase):
     def setUp(self):
+        self.semestre = semestre_vigente()
+        # Crear PeriodoAcademico vigente con ventana abierta para permitir registros
+        PeriodoAcademico.objects.create(
+            semestre=self.semestre,
+            fecha_inicio=datetime.date(2000, 1, 1),
+            fecha_fin=datetime.date(2099, 12, 31),
+            registro_asesores_inicio=datetime.date(2000, 1, 1),
+            registro_asesores_fin=datetime.date(2099, 12, 31),
+        )
+
         self.area = Area.objects.create(nombre="Area test")
         self.carrera = Carrera.objects.create(clave=801, nombre="Carrer test", area=self.area)
         self.materia = Materia.objects.create(
             clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
             habilitada_asesorias=True,
         )
-        self.oferta = OfertaMateria.objects.create(materia=self.materia, semestre="20271", se_imparte=True)
+        self.oferta = OfertaMateria.objects.create(materia=self.materia, semestre=self.semestre, se_imparte=True)
 
         self.asesor_user = User.objects.create_user(email="asesor@ciencias.unam.mx", password="x")
         self.academico = PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
@@ -22,7 +36,7 @@ class RegistroAsesorApiTests(APITestCase):
         self.otro_user = User.objects.create_user(email="otro@ciencias.unam.mx", password="x")
         self.otro_academico = PerfilAcademico.objects.create(user=self.otro_user, numero_trabajador="54321")
         self.otro_asesor = PerfilAsesorAcademico.objects.create(user=self.otro_user, area=self.area)
-        self.registro_ajeno = RegistroAsesor.objects.create(asesor=self.otro_asesor, semestre="20271")
+        self.registro_ajeno = RegistroAsesor.objects.create(asesor=self.otro_asesor, semestre=self.semestre)
 
         self.alumno_user = User.objects.create_user(email="alumno@ciencias.unam.mx", password="x")
         self.alumno = crear_alumno(
@@ -47,25 +61,25 @@ class RegistroAsesorApiTests(APITestCase):
 
     def test_alumno_no_puede_crear_registro(self):
         self.client.force_authenticate(user=self.alumno_user)
-        response = self.client.post("/api/asesorias/registros/", {"semestre": "20271"})
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
         self.assertEqual(response.status_code, 403)
 
     def test_asesor_crea_su_registro(self):
         self.client.force_authenticate(user=self.asesor_user)
-        response = self.client.post("/api/asesorias/registros/", {"semestre": "20271"})
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
         self.assertEqual(response.status_code, 201)
         self.assertEqual(RegistroAsesor.objects.get(id=response.data["id"]).asesor, self.asesor)
         RegistroAsesor.objects.get(id=response.data["id"]).delete()
 
     def test_listar_solo_ve_sus_propios_registros(self):
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get("/api/asesorias/registros/")
         self.assertEqual(len(response.data), 1)
         registro.delete()
 
     def test_agregar_materia_exitoso(self):
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.post(
             f"/api/asesorias/registros/{registro.id}/materias/", {"materia_id": self.materia.id}
@@ -80,7 +94,7 @@ class RegistroAsesorApiTests(APITestCase):
             clave="1802", nombre="Cálculo", carrera=self.carrera, nivel=1, plan=2006,
             habilitada_asesorias=False,
         )
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.post(
             f"/api/asesorias/registros/{registro.id}/materias/", {"materia_id": materia_no_habilitada.id}
@@ -97,7 +111,7 @@ class RegistroAsesorApiTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_quitar_materia_exitoso(self):
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         registro.agregar_materia(self.materia)
         self.client.force_authenticate(user=self.asesor_user)
 
@@ -113,7 +127,7 @@ class RegistroAsesorApiTests(APITestCase):
         registro.delete()
 
     def test_quitar_materia_que_no_esta_devuelve_400(self):
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         self.client.force_authenticate(user=self.asesor_user)
 
         response = self.client.post(
@@ -135,7 +149,7 @@ class RegistroAsesorApiTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_alumno_no_puede_quitar_materia(self):
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         registro.agregar_materia(self.materia)
         self.client.force_authenticate(user=self.alumno_user)
 
@@ -146,3 +160,49 @@ class RegistroAsesorApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 403)
         registro.delete()
+
+
+class VentanaDeRegistroTests(APITestCase):
+    def setUp(self):
+        import datetime
+
+        from academico.models import PeriodoAcademico
+        from academico.servicios import semestre_vigente
+        from accounts.models import PerfilAcademico, User
+        from asesorias.models import PerfilAsesorAcademico
+        from carreras.models import Area
+
+        self.semestre = semestre_vigente()
+        self.area = Area.objects.create(nombre="Area ventana")
+        self.user = User.objects.create_user(email="ventana@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=self.user, numero_trabajador="70099")
+        PerfilAsesorAcademico.objects.create(user=self.user, area=self.area)
+        self.PeriodoAcademico = PeriodoAcademico
+        self.date = datetime.date
+        self.client.force_authenticate(user=self.user)
+
+    def _periodo(self, inicio, fin):
+        return self.PeriodoAcademico.objects.create(
+            semestre=self.semestre,
+            fecha_inicio=self.date(2000, 1, 1), fecha_fin=self.date(2099, 12, 31),
+            registro_asesores_inicio=inicio, registro_asesores_fin=fin,
+        )
+
+    def test_sin_periodo_dado_de_alta_no_se_puede_registrar(self):
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
+        self.assertEqual(response.status_code, 400)
+
+    def test_con_la_ventana_abierta_se_crea(self):
+        self._periodo(self.date(2000, 1, 1), self.date(2099, 12, 31))
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
+        self.assertEqual(response.status_code, 201)
+
+    def test_con_la_ventana_cerrada_se_rechaza(self):
+        self._periodo(self.date(2000, 1, 1), self.date(2000, 1, 31))
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
+        self.assertEqual(response.status_code, 400)
+
+    def test_no_se_puede_registrar_un_semestre_que_no_es_el_vigente(self):
+        self._periodo(self.date(2000, 1, 1), self.date(2099, 12, 31))
+        response = self.client.post("/api/asesorias/registros/", {"semestre": "19991"})
+        self.assertEqual(response.status_code, 400)

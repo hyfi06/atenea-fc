@@ -2,6 +2,8 @@ import datetime
 
 from accounts.models import PerfilAcademico, PerfilAlumno, User
 from accounts.tests.factories import crear_alumno
+from academico.models import PeriodoAcademico
+from academico.servicios import semestre_vigente
 from asesorias.models import Asesoria
 from carreras.models import Area, Carrera
 from django.utils import timezone
@@ -11,13 +13,22 @@ from rest_framework.test import APITestCase
 
 class FlujoCompletoAsesoriaApiTests(APITestCase):
     def setUp(self):
+        self.semestre = semestre_vigente()
+        PeriodoAcademico.objects.create(
+            semestre=self.semestre,
+            fecha_inicio=datetime.date(2000, 1, 1),
+            fecha_fin=datetime.date(2099, 12, 31),
+            registro_asesores_inicio=datetime.date(2000, 1, 1),
+            registro_asesores_fin=datetime.date(2099, 12, 31),
+        )
+
         self.area = Area.objects.create(nombre="Area test")
         self.carrera = Carrera.objects.create(clave=801, nombre="Carrera Test", area=self.area)
         self.materia = Materia.objects.create(
             clave="1801", nombre="Álgebra", carrera=self.carrera, nivel=1, plan=2006,
             habilitada_asesorias=True,
         )
-        OfertaMateria.objects.create(materia=self.materia, semestre="20271", se_imparte=True)
+        OfertaMateria.objects.create(materia=self.materia, semestre=self.semestre, se_imparte=True)
 
         self.asesor_user = User.objects.create_user(email="asesor@ciencias.unam.mx", password="x")
         PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
@@ -48,7 +59,7 @@ class FlujoCompletoAsesoriaApiTests(APITestCase):
         materia_id = response.data[0]["id"]
 
         # 2. Asesor crea su registro del semestre.
-        response = self.client.post("/api/asesorias/registros/", {"semestre": "20271"})
+        response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
         self.assertEqual(response.status_code, 201)
         registro_id = response.data["id"]
 
@@ -111,7 +122,7 @@ class FlujoCompletoAsesoriaApiTests(APITestCase):
 
     def test_alumno_cancela_y_slot_vuelve_a_aparecer_en_busqueda(self):
         from asesorias.models import Disponibilidad, RegistroAsesor
-        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre=self.semestre)
         registro.agregar_materia(self.materia)
         disponibilidad = Disponibilidad.objects.create(
             registro=registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
