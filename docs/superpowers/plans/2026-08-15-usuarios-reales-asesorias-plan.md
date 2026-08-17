@@ -79,12 +79,12 @@ El hotfix `1533d53` cambió la heurística pero no sus tests: `frontend/src/feat
 - Consumes: nada.
 - Produces: `semestreActual(hoy: Date = new Date()): string` queda documentada y verificada — Task 8 la porta a Python.
 
-- [ ] **Step 1: Ver el fallo actual**
+- [x] **Step 1: Ver el fallo actual**
 
 Run: `cd frontend && npx vitest run src/features/asesorias/logica.test.ts`
 Expected: FAIL, 2 tests — `expected '20262' to be '20261'` y `expected '20271' to be '20262'`.
 
-- [ ] **Step 2: Corregir las expectativas al comportamiento correcto**
+- [x] **Step 2: Corregir las expectativas al comportamiento correcto**
 
 Reemplazar el bloque `describe('semestreActual', ...)` completo (líneas 5-13) por:
 
@@ -106,17 +106,17 @@ describe('semestreActual', () => {
 
 Nota: las fechas llevan hora `T12:00:00` a propósito — `new Date('2026-08-01')` se parsea como UTC medianoche y en `America/Mexico_City` cae el 31 de julio, lo que cambiaría el mes evaluado.
 
-- [ ] **Step 3: Verificar verde**
+- [x] **Step 3: Verificar verde**
 
 Run: `cd frontend && npx vitest run src/features/asesorias/logica.test.ts`
 Expected: PASS, 21 tests.
 
-- [ ] **Step 4: Confirmar que el resto del frontend sigue verde**
+- [x] **Step 4: Confirmar que el resto del frontend sigue verde**
 
 Run: `cd frontend && npx vitest run`
 Expected: PASS (todos los archivos).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/features/asesorias/logica.test.ts
@@ -143,7 +143,7 @@ EOF
 - Consumes: la spec.
 - Produces: el ADR al que apuntarán los ítems de deuda 0018 y 0019 (Task 20) en su campo **Origen**.
 
-- [ ] **Step 1: Escribir el ADR**
+- [x] **Step 1: Escribir el ADR**
 
 Crear `docs/decisions/0027-usuarios-reales-academico-autoservicio.md` con exactamente este contenido:
 
@@ -187,7 +187,7 @@ Atenea abre a usuarios reales para el semestre 20271. Eso rompe tres supuestos d
 - **Reemplazar los nueve mocks por tiles deshabilitados "próximamente"**: rechazado — anuncia fechas que nadie se comprometió a cumplir.
 ```
 
-- [ ] **Step 2: Enlazar el ADR desde la spec**
+- [x] **Step 2: Enlazar el ADR desde la spec**
 
 En `docs/superpowers/specs/2026-08-15-usuarios-reales-asesorias-design.md`, justo debajo de la línea `**Date:** 2026-08-15`, agregar:
 
@@ -195,7 +195,7 @@ En `docs/superpowers/specs/2026-08-15-usuarios-reales-asesorias-design.md`, just
 **ADR:** [0027](../../decisions/0027-usuarios-reales-academico-autoservicio.md)
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/decisions/0027-usuarios-reales-academico-autoservicio.md docs/superpowers/specs/2026-08-15-usuarios-reales-asesorias-design.md
@@ -231,7 +231,7 @@ Paso aditivo: `PerfilAlumno.carrera`/`generacion` **siguen existiendo** al final
   - `accounts.models.HistoriaAcademica` con campos `perfil_alumno` (FK, `related_name="historial"`), `carrera` (FK a `carreras.Carrera`, `related_name="historial_alumnos"`), `generacion` (`PositiveSmallIntegerField`).
   - `accounts.tests.factories.crear_alumno(user, numero_cuenta, carrera=None, generacion=2023) -> PerfilAlumno` — usada por todos los tests a partir de la Task 5.
 
-- [ ] **Step 1: Escribir los tests que fallan**
+- [x] **Step 1: Escribir los tests que fallan**
 
 Agregar al final de `backend/accounts/tests/test_perfiles.py`:
 
@@ -287,12 +287,12 @@ Agregar a `backend/accounts/tests/test_admin.py`:
         self.assertIn(HistoriaAcademica, admin.site._registry)
 ```
 
-- [ ] **Step 2: Correr para verificar que fallan**
+- [x] **Step 2: Correr para verificar que fallan**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_perfiles accounts.tests.test_admin -v 2`
 Expected: FAIL — `ImportError: cannot import name 'HistoriaAcademica' from 'accounts.models'`.
 
-- [ ] **Step 3: Implementar el modelo**
+- [x] **Step 3: Implementar el modelo**
 
 En `backend/accounts/models.py`, reemplazar la clase `PerfilAlumno` (líneas 36-43) por:
 
@@ -341,12 +341,12 @@ class HistoriaAcademica(models.Model):
         return f"{self.perfil_alumno.numero_cuenta} — {self.carrera} ({self.generacion})"
 ```
 
-- [ ] **Step 4: Generar la migración**
+- [x] **Step 4: Generar la migración**
 
 Run: `cd backend && uv run manage.py makemigrations accounts --name historiaacademica`
 Expected: crea `backend/accounts/migrations/0005_historiaacademica.py` con `CreateModel` + `AlterField` de `carrera` y `generacion` a nullable.
 
-- [ ] **Step 5: Registrar en el admin**
+- [x] **Step 5: Registrar en el admin**
 
 En `backend/accounts/admin.py`, reemplazar el bloque de `PerfilAlumnoAdmin` (líneas 54-58) por:
 
@@ -376,7 +376,7 @@ y cambiar el import de la línea 5 por:
 from .models import User, HistoriaAcademica, PerfilAcademico, PerfilAlumno, PerfilSAE
 ```
 
-- [ ] **Step 6: Crear la factory de tests**
+- [x] **Step 6: Crear la factory de tests**
 
 Crear `backend/accounts/tests/factories.py`:
 
@@ -401,17 +401,17 @@ def crear_alumno(user, numero_cuenta, carrera=None, generacion=2023):
     return perfil
 ```
 
-- [ ] **Step 7: Verificar verde**
+- [x] **Step 7: Verificar verde**
 
 Run: `cd backend && uv run manage.py test accounts -v 2`
 Expected: PASS.
 
-- [ ] **Step 8: Verificar que nada más se rompió**
+- [x] **Step 8: Verificar que nada más se rompió**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS (todo el backend).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/accounts/models.py backend/accounts/migrations/0005_historiaacademica.py backend/accounts/admin.py backend/accounts/tests/
@@ -444,7 +444,7 @@ EOF
   - `UserDetailsSerializer.get_perfil_alumno` devuelve `{"id", "numero_cuenta", "historial": [{"carrera", "carrera_nombre", "generacion"}]}` — lo consume `frontend/src/api/types.ts` en la Task 6.
   - `AsesoriaSerializer.validate` exige `carrera` explícita cuando el alumno tiene ≠1 historia.
 
-- [ ] **Step 1: Escribir el test de migración de datos**
+- [x] **Step 1: Escribir el test de migración de datos**
 
 Crear `backend/accounts/tests/test_migracion_historia.py`:
 
@@ -493,12 +493,12 @@ class MigrarCarreraAHistoriaTests(TestCase):
         self.assertEqual(historia.carrera.nombre, "Carrera Migracion")
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_migracion_historia -v 2`
 Expected: FAIL — `NodeNotFoundError` / `KeyError` sobre `accounts.0006_migrar_carrera_a_historia` (la migración no existe).
 
-- [ ] **Step 3: Escribir la migración de datos**
+- [x] **Step 3: Escribir la migración de datos**
 
 Crear `backend/accounts/migrations/0006_migrar_carrera_a_historia.py`:
 
@@ -534,12 +534,12 @@ class Migration(migrations.Migration):
     ]
 ```
 
-- [ ] **Step 4: Verificar que el test de migración pasa**
+- [x] **Step 4: Verificar que el test de migración pasa**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_migracion_historia -v 2`
 Expected: PASS.
 
-- [ ] **Step 5: Escribir el test del serializer de usuario**
+- [x] **Step 5: Escribir el test del serializer de usuario**
 
 En `backend/accounts/tests/test_user_details.py`, cambiar la aserción del perfil de alumno (líneas 45-50 aprox., el dict con `"carrera"`, `"carrera_nombre"`, `"generacion"`) por:
 
@@ -582,12 +582,12 @@ class PerfilAlumnoDosCarrerasTests(TestCase):
 
 (Si el archivo no importa ya `User`, `Area` o `Carrera`, agregarlos al bloque de imports de arriba: `from accounts.models import User` y `from carreras.models import Area, Carrera`.)
 
-- [ ] **Step 6: Correr para verificar que falla**
+- [x] **Step 6: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_user_details -v 2`
 Expected: FAIL — la respuesta trae `carrera`/`generacion`, no `historial`.
 
-- [ ] **Step 7: Implementar el serializer de usuario**
+- [x] **Step 7: Implementar el serializer de usuario**
 
 En `backend/accounts/serializers.py`, reemplazar `get_perfil_alumno` (líneas 126-136) por:
 
@@ -612,12 +612,12 @@ En `backend/accounts/serializers.py`, reemplazar `get_perfil_alumno` (líneas 12
         }
 ```
 
-- [ ] **Step 8: Verificar verde**
+- [x] **Step 8: Verificar verde**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_user_details -v 2`
 Expected: PASS.
 
-- [ ] **Step 9: Escribir los tests de agendar con historial**
+- [x] **Step 9: Escribir los tests de agendar con historial**
 
 En `backend/asesorias/tests/test_api_asesoria.py`, agregar al final del archivo:
 
@@ -707,12 +707,12 @@ class AgendarConHistorialTests(APITestCase):
         self.assertIn("carrera", response.data)
 ```
 
-- [ ] **Step 10: Correr para verificar que falla**
+- [x] **Step 10: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test asesorias.tests.test_api_asesoria.AgendarConHistorialTests -v 2`
 Expected: FAIL — `test_con_dos_carreras_la_carrera_es_obligatoria` devuelve 201 en vez de 400 (hoy el serializer cae a `alumno.carrera`).
 
-- [ ] **Step 11: Implementar la validación en `AsesoriaSerializer`**
+- [x] **Step 11: Implementar la validación en `AsesoriaSerializer`**
 
 En `backend/asesorias/serializers.py`, reemplazar las líneas 136-144 (desde `def validate(self, attrs):` hasta el `raise` de carrera) por:
 
@@ -737,7 +737,7 @@ En `backend/asesorias/serializers.py`, reemplazar las líneas 136-144 (desde `de
 
 El resto del método (desde `instance = Asesoria(` hasta `return attrs`) queda igual.
 
-- [ ] **Step 12: Verificar verde**
+- [x] **Step 12: Verificar verde**
 
 Run: `cd backend && uv run manage.py test asesorias.tests.test_api_asesoria -v 2`
 Expected: PASS. Si `test_api_asesoria.py:566` (`self.alumno.carrera = self.carrera_ajena`) falla, reemplazar esas líneas por:
@@ -746,12 +746,12 @@ Expected: PASS. Si `test_api_asesoria.py:566` (`self.alumno.carrera = self.carre
         self.alumno.historial.update(carrera=self.carrera_ajena)
 ```
 
-- [ ] **Step 13: Suite completa**
+- [x] **Step 13: Suite completa**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 14: Commit**
+- [x] **Step 14: Commit**
 
 ```bash
 git add backend/accounts backend/asesorias/serializers.py backend/asesorias/tests
@@ -780,12 +780,12 @@ EOF
 - Consumes: `crear_alumno` (Task 3), `historial` (Task 4).
 - Produces: `PerfilAlumno` con exactamente tres campos propios: `user`, `numero_cuenta`, y (Task 7) `correos_alternos`.
 
-- [ ] **Step 1: Localizar todos los call sites**
+- [x] **Step 1: Localizar todos los call sites**
 
 Run: `cd backend && grep -rn "PerfilAlumno.objects.create" --include=*.py .`
 Expected: 33 ocurrencias en 14 archivos de test (más las de `accounts/tests/factories.py`, que se dejan como están).
 
-- [ ] **Step 2: Reemplazar cada call site por `crear_alumno`**
+- [x] **Step 2: Reemplazar cada call site por `crear_alumno`**
 
 En cada archivo de test listado arriba, sustituir cada llamada de la forma
 
@@ -805,12 +805,12 @@ agregando en cada archivo el import `from accounts.tests.factories import crear_
 
 Los `tearDown` que hacen `self.carrera.delete()` (`test_asesoria.py:49`, `test_api_registro.py:44`) siguen funcionando: `HistoriaAcademica.carrera` es `PROTECT`, pero el `tearDown` borra primero al alumno, lo que cascadea su historial.
 
-- [ ] **Step 3: Verificar que la suite sigue verde antes de tocar el modelo**
+- [x] **Step 3: Verificar que la suite sigue verde antes de tocar el modelo**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS. (Si aquí falla algo, es un call site sin migrar — arreglarlo antes de seguir.)
 
-- [ ] **Step 4: Borrar los campos del modelo**
+- [x] **Step 4: Borrar los campos del modelo**
 
 En `backend/accounts/models.py`, dejar `PerfilAlumno` así:
 
@@ -823,22 +823,22 @@ class PerfilAlumno(models.Model):
         return f"{self.numero_cuenta}, {self.user.email}"
 ```
 
-- [ ] **Step 5: Generar la migración**
+- [x] **Step 5: Generar la migración**
 
 Run: `cd backend && uv run manage.py makemigrations accounts --name remove_perfilalumno_carrera_generacion`
 Expected: `0007_remove_perfilalumno_carrera_generacion.py` con dos `RemoveField`.
 
-- [ ] **Step 6: Verificar verde**
+- [x] **Step 6: Verificar verde**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 7: Confirmar que no faltan migraciones**
+- [x] **Step 7: Confirmar que no faltan migraciones**
 
 Run: `cd backend && uv run manage.py makemigrations --check --dry-run`
 Expected: `No changes detected`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/accounts backend/asesorias/tests
@@ -867,7 +867,7 @@ EOF
 - Consumes: `GET /api/auth/user/` → `perfil_alumno.historial` (Task 4).
 - Produces: `interface InscripcionAlumno { carrera: number; carrera_nombre: string; generacion: number }` y `PerfilAlumno.historial: InscripcionAlumno[]`.
 
-- [ ] **Step 1: Escribir el test de la pantalla**
+- [x] **Step 1: Escribir el test de la pantalla**
 
 En `frontend/src/features/asesorias/screens/AgendarAsesoria.test.tsx`, el helper `mockComun` (línea 22) mockea `useAuth` con el perfil viejo. Cambiar ese `vi.spyOn(auth, 'useAuth')` por una versión parametrizable:
 
@@ -951,12 +951,12 @@ describe('AgendarAsesoria — selección de carrera', () => {
 })
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd frontend && npx vitest run src/features/asesorias/screens/AgendarAsesoria.test.tsx`
 Expected: FAIL — error de tipos/propiedad: `perfil_alumno.carrera` es `undefined`.
 
-- [ ] **Step 3: Actualizar los tipos**
+- [x] **Step 3: Actualizar los tipos**
 
 En `frontend/src/api/types.ts`, reemplazar la interfaz `PerfilAlumno` (líneas 6-12) por:
 
@@ -978,7 +978,7 @@ export interface PerfilAlumno {
 }
 ```
 
-- [ ] **Step 4: Actualizar la factory de tests**
+- [x] **Step 4: Actualizar la factory de tests**
 
 En `frontend/src/test/factories.ts`, agregar debajo de `usuarioSAE`:
 
@@ -1007,7 +1007,7 @@ y en `frontend/src/auth/rol.test.tsx` reemplazar el objeto `perfil_alumno` del t
         },
 ```
 
-- [ ] **Step 5: Implementar la pantalla**
+- [x] **Step 5: Implementar la pantalla**
 
 En `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx`:
 
@@ -1046,17 +1046,17 @@ Reemplazar el contenido del `<select>` (líneas 201-205) por:
               ))}
 ```
 
-- [ ] **Step 6: Verificar verde**
+- [x] **Step 6: Verificar verde**
 
 Run: `cd frontend && npx vitest run`
 Expected: PASS.
 
-- [ ] **Step 7: Typecheck y lint**
+- [x] **Step 7: Typecheck y lint**
 
 Run: `cd frontend && npx tsc -b && npm run lint`
 Expected: sin errores.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src
@@ -1090,7 +1090,7 @@ EOF
 - Consumes: `PerfilAlumno` (Task 5).
 - Produces: `PerfilAlumno.correos_alternos: list[str]`; `GET /api/asesorias/admin/alumnos/` agrega la clave `correos_alternos` a cada fila.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Agregar a `backend/accounts/tests/test_perfiles.py`:
 
@@ -1145,12 +1145,12 @@ Agregar a `backend/asesorias/tests/test_api_admin.py`, dentro de la clase que ya
 
 (`self.sae_user` es el usuario SAE que ya construye el `setUp` de esa clase; usar el nombre real que tenga.)
 
-- [ ] **Step 2: Correr para verificar que fallan**
+- [x] **Step 2: Correr para verificar que fallan**
 
 Run: `cd backend && uv run manage.py test accounts.tests.test_perfiles accounts.tests.test_user_details asesorias.tests.test_api_admin -v 2`
 Expected: FAIL — `TypeError: PerfilAlumno() got unexpected keyword arguments: 'correos_alternos'`.
 
-- [ ] **Step 3: Agregar el campo**
+- [x] **Step 3: Agregar el campo**
 
 En `backend/accounts/models.py`, agregar el import al inicio:
 
@@ -1169,12 +1169,12 @@ y el campo dentro de `PerfilAlumno`, debajo de `numero_cuenta`:
     )
 ```
 
-- [ ] **Step 4: Generar la migración**
+- [x] **Step 4: Generar la migración**
 
 Run: `cd backend && uv run manage.py makemigrations accounts --name perfilalumno_correos_alternos`
 Expected: `0008_perfilalumno_correos_alternos.py`.
 
-- [ ] **Step 5: Mostrarlo en el admin**
+- [x] **Step 5: Mostrarlo en el admin**
 
 En `backend/accounts/admin.py`, dentro de `PerfilAlumnoAdmin`, agregar:
 
@@ -1185,7 +1185,7 @@ En `backend/accounts/admin.py`, dentro de `PerfilAlumnoAdmin`, agregar:
 
 (reemplazando el `list_display` anterior).
 
-- [ ] **Step 6: Exponerlo al SAE**
+- [x] **Step 6: Exponerlo al SAE**
 
 En `backend/asesorias/views.py`, dentro de `AdminAlumnosView.get`, agregar la clave al dict de `data`:
 
@@ -1196,12 +1196,12 @@ En `backend/asesorias/views.py`, dentro de `AdminAlumnosView.get`, agregar la cl
                 "correos_alternos": alumno.correos_alternos,
 ```
 
-- [ ] **Step 7: Verificar verde**
+- [x] **Step 7: Verificar verde**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 8: Reflejarlo en los tipos del frontend**
+- [x] **Step 8: Reflejarlo en los tipos del frontend**
 
 En `frontend/src/api/types.ts`, en `AlumnoBusqueda`, agregar:
 
@@ -1210,12 +1210,12 @@ En `frontend/src/api/types.ts`, en `AlumnoBusqueda`, agregar:
   correos_alternos: string[]
 ```
 
-- [ ] **Step 9: Verificar el frontend**
+- [x] **Step 9: Verificar el frontend**
 
 Run: `cd frontend && npx tsc -b && npx vitest run`
 Expected: PASS. Si algún mock de `AlumnoBusqueda` en los tests de `AdminAsesorias` falla el typecheck, agregarle `correos_alternos: []`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend frontend/src/api/types.ts frontend/src
@@ -1247,7 +1247,7 @@ EOF
 - Consumes: nada.
 - Produces: `academico.servicios.semestre_vigente(hoy: datetime.date | None = None) -> str`. `asesorias.servicios.semestre_vigente` se conserva como re-export para no romper sus importadores (`asesorias/views.py:27`).
 
-- [ ] **Step 1: Crear el esqueleto de la app**
+- [x] **Step 1: Crear el esqueleto de la app**
 
 Run:
 ```bash
@@ -1267,7 +1267,7 @@ LOCAL_APPS = [
 ]
 ```
 
-- [ ] **Step 2: Escribir el test de la heurística**
+- [x] **Step 2: Escribir el test de la heurística**
 
 Crear `backend/academico/tests/test_servicios.py`:
 
@@ -1305,12 +1305,12 @@ class SemestreVigenteTests(SimpleTestCase):
         self.assertEqual(semestre_vigente(), esperado)
 ```
 
-- [ ] **Step 3: Correr para verificar que falla**
+- [x] **Step 3: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test academico -v 2`
 Expected: FAIL — `ModuleNotFoundError: No module named 'academico.servicios'`.
 
-- [ ] **Step 4: Implementar**
+- [x] **Step 4: Implementar**
 
 Crear `backend/academico/servicios.py`:
 
@@ -1338,12 +1338,12 @@ def semestre_vigente(hoy: datetime.date | None = None) -> str:
     return f"{hoy.year + 1}1"
 ```
 
-- [ ] **Step 5: Verificar verde**
+- [x] **Step 5: Verificar verde**
 
 Run: `cd backend && uv run manage.py test academico -v 2`
 Expected: PASS.
 
-- [ ] **Step 6: Hacer que `asesorias` delegue**
+- [x] **Step 6: Hacer que `asesorias` delegue**
 
 En `backend/asesorias/servicios.py`, reemplazar la función `semestre_vigente` (líneas 14-23) por:
 
@@ -1357,7 +1357,7 @@ from academico.servicios import semestre_vigente  # noqa: F401
 
 y mover ese `import` al bloque de imports del inicio del archivo (arriba de `def ventana_agendable`).
 
-- [ ] **Step 7: Corregir el test viejo de la heurística**
+- [x] **Step 7: Corregir el test viejo de la heurística**
 
 En `backend/asesorias/tests/test_servicios.py`, reemplazar la clase `SemestreVigenteTests` completa (líneas 33-56) por:
 
@@ -1370,12 +1370,12 @@ class SemestreVigenteReexportTests(SimpleTestCase):
         self.assertIs(reexportada, canonica)
 ```
 
-- [ ] **Step 8: Verificar toda la suite**
+- [x] **Step 8: Verificar toda la suite**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS. Los tests que fijan `semestre="20271"` en sus fixtures (`test_api_registro.py`, `test_api_admin.py`) siguen pasando porque la clave sigue siendo un `CharField` libre; los que dependen del semestre vigente calculado ahora coinciden con el frontend.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/academico backend/config/settings/base.py backend/asesorias/servicios.py backend/asesorias/tests/test_servicios.py
@@ -1407,7 +1407,7 @@ EOF
   - `academico.servicios.periodo_vigente(hoy=None) -> PeriodoAcademico | None`.
   - `academico.servicios.registro_asesores_abierto(hoy=None) -> bool` — la usa la Task 15.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Crear `backend/academico/tests/test_periodo.py`:
 
@@ -1464,12 +1464,12 @@ class PeriodoVigenteTests(TestCase):
         self.assertFalse(registro_asesores_abierto())
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test academico.tests.test_periodo -v 2`
 Expected: FAIL — `ImportError: cannot import name 'PeriodoAcademico'`.
 
-- [ ] **Step 3: Implementar el modelo**
+- [x] **Step 3: Implementar el modelo**
 
 Escribir `backend/academico/models.py`:
 
@@ -1516,7 +1516,7 @@ class PeriodoAcademico(models.Model):
         return self.semestre
 ```
 
-- [ ] **Step 4: Agregar los servicios**
+- [x] **Step 4: Agregar los servicios**
 
 Agregar al final de `backend/academico/servicios.py`:
 
@@ -1542,7 +1542,7 @@ def registro_asesores_abierto(hoy: datetime.date | None = None) -> bool:
     return periodo is not None and periodo.esta_abierto_el_registro(hoy)
 ```
 
-- [ ] **Step 5: Registrar en el admin**
+- [x] **Step 5: Registrar en el admin**
 
 Escribir `backend/academico/admin.py`:
 
@@ -1561,17 +1561,17 @@ class PeriodoAcademicoAdmin(admin.ModelAdmin):
     ordering = ("-semestre",)
 ```
 
-- [ ] **Step 6: Generar la migración**
+- [x] **Step 6: Generar la migración**
 
 Run: `cd backend && uv run manage.py makemigrations academico`
 Expected: `backend/academico/migrations/0001_initial.py`.
 
-- [ ] **Step 7: Verificar verde**
+- [x] **Step 7: Verificar verde**
 
 Run: `cd backend && uv run manage.py test academico -v 2`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/academico
@@ -1599,7 +1599,7 @@ EOF
 - Consumes: `periodo_vigente()` (Task 9).
 - Produces: `GET /api/academico/periodo-vigente/` → `200 {semestre, fecha_inicio, fecha_fin, registro_asesores_inicio, registro_asesores_fin, registro_asesores_abierto}` o `404 {"detail": ...}`. Lo consume `usePeriodoVigente()` (Task 12).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Crear `backend/academico/tests/test_api.py`:
 
@@ -1649,12 +1649,12 @@ class PeriodoVigenteApiTests(APITestCase):
         self.assertFalse(response.data["registro_asesores_abierto"])
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test academico.tests.test_api -v 2`
 Expected: FAIL — 404 de Django (la ruta no existe) en todos los casos.
 
-- [ ] **Step 3: Escribir el serializer**
+- [x] **Step 3: Escribir el serializer**
 
 Crear `backend/academico/serializers.py`:
 
@@ -1679,7 +1679,7 @@ class PeriodoAcademicoSerializer(serializers.ModelSerializer):
         return obj.esta_abierto_el_registro()
 ```
 
-- [ ] **Step 4: Escribir la vista y las rutas**
+- [x] **Step 4: Escribir la vista y las rutas**
 
 Escribir `backend/academico/views.py`:
 
@@ -1728,12 +1728,12 @@ En `backend/config/urls.py`, agregar debajo de la línea de `api/auth/`:
     path("api/academico/", include("academico.urls")),
 ```
 
-- [ ] **Step 5: Verificar verde**
+- [x] **Step 5: Verificar verde**
 
 Run: `cd backend && uv run manage.py test academico -v 2`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/academico backend/config/urls.py
@@ -1762,7 +1762,7 @@ Cierra la [deuda 0012](../../technical-debt/0012-oferta-asesorias-sin-scope-de-s
 - Consumes: `semestre_vigente()` (Task 8).
 - Produces: las tres vistas solo consideran `RegistroAsesor` del semestre vigente con `asesor.activo=True`.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Agregar a `backend/asesorias/tests/test_api_oferta.py`:
 
@@ -1831,12 +1831,12 @@ class OfertaScopeSemestreTests(APITestCase):
         self.assertEqual(response.data, [])
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd backend && uv run manage.py test asesorias.tests.test_api_oferta.OfertaScopeSemestreTests -v 2`
 Expected: FAIL — los cuatro tests: hoy las vistas solo miran `Disponibilidad.activa`.
 
-- [ ] **Step 3: Implementar el scope**
+- [x] **Step 3: Implementar el scope**
 
 En `backend/asesorias/views.py`:
 
@@ -1885,17 +1885,17 @@ En `AsesoresDeMateriaView.get`, reemplazar el queryset `registros` (líneas 193-
         )
 ```
 
-- [ ] **Step 4: Verificar verde**
+- [x] **Step 4: Verificar verde**
 
 Run: `cd backend && uv run manage.py test asesorias -v 2`
 Expected: PASS. Los tests existentes de `test_api_oferta.py` / `test_api_busqueda.py` que crean su `RegistroAsesor` con `semestre="20271"` fijo empezarán a fallar cuando la fecha real deje de caer en 20271; cambiar esos fixtures a `semestre=semestre_vigente()` (import: `from asesorias.servicios import semestre_vigente`).
 
-- [ ] **Step 5: Suite completa**
+- [x] **Step 5: Suite completa**
 
 Run: `cd backend && uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/asesorias
@@ -1927,7 +1927,7 @@ EOF
   - `usePeriodoVigente()` → `UseQueryResult<PeriodoVigente>`
   - `useRegistroAsesoresAbierto(): boolean` — usada por la Task 16.
 
-- [ ] **Step 1: Escribir el test**
+- [x] **Step 1: Escribir el test**
 
 Crear `frontend/src/features/academico/api.test.ts`:
 
@@ -1971,12 +1971,12 @@ describe('useRegistroAsesoresAbierto', () => {
 
 Renombrar el archivo a `api.test.tsx` si vitest se queja del JSX en `.ts`.
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd frontend && npx vitest run src/features/academico`
 Expected: FAIL — no existe `src/features/academico/api`.
 
-- [ ] **Step 3: Agregar el tipo**
+- [x] **Step 3: Agregar el tipo**
 
 En `frontend/src/api/types.ts`, agregar al final:
 
@@ -1992,7 +1992,7 @@ export interface PeriodoVigente {
 }
 ```
 
-- [ ] **Step 4: Implementar el hook**
+- [x] **Step 4: Implementar el hook**
 
 Crear `frontend/src/features/academico/api.ts`:
 
@@ -2024,12 +2024,12 @@ export function useRegistroAsesoresAbierto(): boolean {
 }
 ```
 
-- [ ] **Step 5: Verificar verde**
+- [x] **Step 5: Verificar verde**
 
 Run: `cd frontend && npx vitest run src/features/academico && npx tsc -b`
 Expected: PASS, sin errores de tipos.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src
@@ -2052,7 +2052,7 @@ EOF
 
 **Esta tarea no escribe código. Se detiene y pregunta.**
 
-- [ ] **Step 1: Preguntar a Héctor, con estas palabras**
+- [x] **Step 1: Preguntar a Héctor, con estas palabras**
 
 > Antes de integrar la validación de "académico activo" del autoservicio de asesor necesito el contrato del servicio externo:
 > 1. URL base y ruta exacta del endpoint que responde si un número de trabajador corresponde a un académico vigente.
@@ -2101,7 +2101,7 @@ Con esto, la Task 14 deja de construir un stub que siempre devuelve `False` y en
   - `asesorias.permissions.EsAcademico`.
   - `POST /api/asesorias/asesores/solicitud/` con body `{"area": <id>}` → `201 {"id", "area", "area_nombre", "activo"}`.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 Crear `backend/asesorias/tests/test_api_solicitud_asesor.py`:
 
@@ -2175,12 +2175,12 @@ class ValidarAcademicoActivoTests(SimpleTestCase):
         self.assertFalse(validar_academico_activo("70001"))
 ```
 
-- [ ] **Step 2: Correr para verificar que fallan**
+- [x] **Step 2: Correr para verificar que fallan**
 
 Run: `cd backend && uv run manage.py test asesorias.tests.test_api_solicitud_asesor asesorias.tests.test_validacion_externa -v 2`
 Expected: FAIL — `ModuleNotFoundError: No module named 'asesorias.validacion_externa'` y 404 en la ruta.
 
-- [ ] **Step 3: Escribir el punto de validación aislado**
+- [x] **Step 3: Escribir el punto de validación aislado**
 
 Crear `backend/asesorias/validacion_externa.py`:
 
@@ -2200,7 +2200,7 @@ def validar_academico_activo(numero_trabajador: str) -> bool:
     return False
 ```
 
-- [ ] **Step 4: Agregar el campo de trazabilidad al modelo**
+- [x] **Step 4: Agregar el campo de trazabilidad al modelo**
 
 En `backend/asesorias/models.py`, dentro de `PerfilAsesorAcademico`, debajo de `activo`:
 
@@ -2214,7 +2214,7 @@ En `backend/asesorias/models.py`, dentro de `PerfilAsesorAcademico`, debajo de `
 Run: `cd backend && uv run manage.py makemigrations asesorias --name perfilasesoracademico_solicitado_por_el_usuario`
 Expected: `backend/asesorias/migrations/0006_....py`.
 
-- [ ] **Step 5: Agregar el permiso**
+- [x] **Step 5: Agregar el permiso**
 
 En `backend/asesorias/permissions.py`, agregar:
 
@@ -2226,7 +2226,7 @@ class EsAcademico(BasePermission):
         return hasattr(request.user, "perfil_academico")
 ```
 
-- [ ] **Step 6: Agregar el serializer**
+- [x] **Step 6: Agregar el serializer**
 
 En `backend/asesorias/serializers.py`, agregar (y ampliar el import de `.models` con `PerfilAsesorAcademico`, y el de `carreras.models` con `Area`):
 
@@ -2247,7 +2247,7 @@ class SolicitudAsesorSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "activo"]
 ```
 
-- [ ] **Step 7: Agregar la vista y la ruta**
+- [x] **Step 7: Agregar la vista y la ruta**
 
 En `backend/asesorias/views.py`, agregar al final del archivo:
 
@@ -2300,7 +2300,7 @@ En `backend/asesorias/urls.py`, agregar `SolicitudAsesorView` al import y este `
     path("asesores/solicitud/", SolicitudAsesorView.as_view(), name="asesor-solicitud"),
 ```
 
-- [ ] **Step 8: Mostrar el estado de solicitud en el admin**
+- [x] **Step 8: Mostrar el estado de solicitud en el admin**
 
 En `backend/asesorias/admin.py`, en el `ModelAdmin` de `PerfilAsesorAcademico`, agregar `"solicitado_por_el_usuario"` a `list_display` y a `list_filter` (si el archivo no lo registra todavía con un `ModelAdmin` propio, registrarlo así):
 
@@ -2312,12 +2312,12 @@ class PerfilAsesorAcademicoAdmin(admin.ModelAdmin):
     search_fields = ("user__email",)
 ```
 
-- [ ] **Step 9: Verificar verde**
+- [x] **Step 9: Verificar verde**
 
 Run: `cd backend && uv run manage.py test asesorias -v 2`
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend/asesorias
@@ -2896,7 +2896,7 @@ EOF
 
 **Esta tarea no escribe código. Se detiene y pregunta.**
 
-- [ ] **Step 1: Preguntar a Héctor, con estas palabras**
+- [x] **Step 1: Preguntar a Héctor, con estas palabras**
 
 > Antes de escribir el management command `cargar_alumnos` necesito el CSV real:
 > 1. El encabezado exacto del archivo (la primera línea, tal cual, con acentos y mayúsculas como vengan).
