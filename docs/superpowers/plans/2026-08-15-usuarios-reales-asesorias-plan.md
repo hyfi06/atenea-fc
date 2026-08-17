@@ -2485,7 +2485,7 @@ EOF
   - `refrescarSesion(): Promise<void>` en el valor de `useAuth()`.
   - Ruta `/asesorias/soy-asesor`.
 
-- [ ] **Step 1: Escribir los tests de rol y guard**
+- [x] **Step 1: Escribir los tests de rol y guard**
 
 En `frontend/src/auth/rol.test.tsx`, agregar al final:
 
@@ -2540,12 +2540,12 @@ En `frontend/src/auth/RutaProtegida.test.tsx`, agregar un caso siguiendo el patr
 
 Ajustar `montarRuta` al helper real del archivo.
 
-- [ ] **Step 2: Correr para verificar que fallan**
+- [x] **Step 2: Correr para verificar que fallan**
 
 Run: `cd frontend && npx vitest run src/auth`
 Expected: FAIL — `useEsAcademico` no existe.
 
-- [ ] **Step 3: Implementar el hook y los guards**
+- [x] **Step 3: Implementar el hook y los guards**
 
 En `frontend/src/auth/rol.ts`, agregar al final:
 
@@ -2581,12 +2581,12 @@ export function RutaDeAcademico({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 4: Verificar verde**
+- [x] **Step 4: Verificar verde**
 
 Run: `cd frontend && npx vitest run src/auth`
 Expected: PASS.
 
-- [ ] **Step 5: Escribir el test de la pantalla de solicitud**
+- [x] **Step 5: Escribir el test de la pantalla de solicitud**
 
 Crear `frontend/src/features/asesorias/screens/SolicitudAsesor.test.tsx`:
 
@@ -2642,12 +2642,12 @@ describe('SolicitudAsesor', () => {
 })
 ```
 
-- [ ] **Step 6: Correr para verificar que falla**
+- [x] **Step 6: Correr para verificar que falla**
 
 Run: `cd frontend && npx vitest run src/features/asesorias/screens/SolicitudAsesor.test.tsx`
 Expected: FAIL — no existe `./SolicitudAsesor`.
 
-- [ ] **Step 7: Implementar la mutación y la pantalla**
+- [x] **Step 7: Implementar la mutación y la pantalla**
 
 Primero, `AuthContext` **no** usa TanStack Query: carga la sesión con un `apiGet` dentro de un `useEffect` y la guarda en `useState`, así que no hay caché que invalidar. Para que `roles` incluya `asesor_academico` justo después de la solicitud, en `frontend/src/auth/AuthContext.tsx`:
 
@@ -2789,7 +2789,7 @@ export function SolicitudAsesor() {
 }
 ```
 
-- [ ] **Step 8: Registrar la ruta**
+- [x] **Step 8: Registrar la ruta**
 
 En `frontend/src/App.tsx`, agregar `RutaDeAcademico` al import de `./auth/RutaProtegida`, `SolicitudAsesor` al de screens, y esta ruta antes de `/asesorias/:id`:
 
@@ -2806,7 +2806,7 @@ En `frontend/src/App.tsx`, agregar `RutaDeAcademico` al import de `./auth/RutaPr
 
 Nota de orden: `/asesorias/soy-asesor` debe declararse **antes** que `/asesorias/:id` para que el segmento literal gane sobre el paramétrico.
 
-- [ ] **Step 9: Ofrecer la entrada desde `Asesorias.tsx`**
+- [x] **Step 9: Ofrecer la entrada desde `Asesorias.tsx`**
 
 En `frontend/src/features/asesorias/screens/Asesorias.tsx`, agregar `useEsAcademico` al import de `'../../../auth/rol'`, `const esAcademico = useEsAcademico()` junto a los otros hooks, y dentro del `<div className="flex gap-2">`, antes del bloque `{esAlumno && ...}`:
 
@@ -2822,7 +2822,7 @@ En `frontend/src/features/asesorias/screens/Asesorias.tsx`, agregar `useEsAcadem
         )}
 ```
 
-- [ ] **Step 10: Gatear `SinRegistroAsesor` por la ventana**
+- [x] **Step 10: Gatear `SinRegistroAsesor` por la ventana**
 
 En `frontend/src/features/asesorias/components/SinRegistroAsesor.tsx`:
 - agregar `import { useRegistroAsesoresAbierto } from '../../academico/api'`;
@@ -2866,12 +2866,12 @@ Actualizar `SinRegistroAsesor.test.tsx`: los casos que escribían en el input de
   })
 ```
 
-- [ ] **Step 11: Verificar verde**
+- [x] **Step 11: Verificar verde**
 
 Run: `cd frontend && npx vitest run && npx tsc -b && npm run lint`
 Expected: PASS, sin errores.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add frontend/src

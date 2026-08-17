@@ -13,6 +13,7 @@ interface AuthContextValue {
   loginWithPassword: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
+  refrescarSesion: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -73,6 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('unauthenticated')
   }
 
+  /** Vuelve a pedir la sesión al backend. Lo necesita cualquier acción que
+   *  cambie los roles del propio usuario — hoy, el autoservicio de asesor:
+   *  sin esto, `roles` seguiría sin `asesor_academico` hasta recargar. */
+  async function refrescarSesion() {
+    try {
+      setUser(await apiGet<AuthUser>('/api/auth/user/'))
+      setStatus('authenticated')
+    } catch {
+      setStatus('unauthenticated')
+    }
+  }
+
   // `roles` se deriva de `user` en vez de guardarse aparte: hay una sola
   // fuente de verdad. El `?? []` es el ÚNICO punto del frontend que tolera
   // que el backend todavía no mande el campo (Task 3 del plan del paso 4);
@@ -81,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, roles, status, loginWithPassword, loginWithGoogle, logout }}
+      value={{ user, roles, status, loginWithPassword, loginWithGoogle, logout, refrescarSesion }}
     >
       {children}
     </AuthContext.Provider>

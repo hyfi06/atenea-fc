@@ -4,6 +4,7 @@ import type {
   RegistroAsesor, Disponibilidad, Asesoria, SesionesFuturas,
   MateriaOferta, AsesorDisponible, SlotDisponibilidad, EstadoAsesoria,
   AsesoriaAdmin, AsesorDirectorio, AsesorDetalle, AlumnoBusqueda, AsesorBusqueda,
+  PerfilAsesorAcademico,
 } from '../../api/types'
 import { semestreActual } from './logica'
 
@@ -323,5 +324,16 @@ export function useBuscarAsesores(buscar: string) {
     queryKey: ['admin', 'asesores', 'buscar', buscar],
     queryFn: () => apiGet<AsesorBusqueda[]>(rutaBuscarAsesores(buscar)),
     enabled: buscar.length >= 2,
+  })
+}
+
+/** Autoservicio de alta como asesor (ADR 0027 decisión 7). El perfil puede
+ *  nacer inactivo: la vigencia la confirma un servicio externo. Quien la use
+ *  debe llamar a `refrescarSesion()` de `useAuth` para que `roles` incluya
+ *  `asesor_academico` sin recargar la página. */
+export function useSolicitarSerAsesor() {
+  return useMutation({
+    mutationFn: (areaId: number) =>
+      apiPost<PerfilAsesorAcademico>('/api/asesorias/asesores/solicitud/', { area: areaId }),
   })
 }

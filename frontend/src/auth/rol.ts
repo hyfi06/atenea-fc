@@ -26,3 +26,12 @@ export function useEsAlumno(): boolean {
 export function useEsMiembroSAE(): boolean {
   return useAuth().roles.includes('sae')
 }
+
+/**
+ * Académico (ADR 0012: existe `PerfilAcademico`). Es distinto de `useEsAsesor`:
+ * un académico sin `PerfilAsesorAcademico` todavía no es asesor, y este hook es
+ * lo único que le permite descubrir que puede registrarse (ADR 0027 decisión 9).
+ */
+export function useEsAcademico(): boolean {
+  return useAuth().roles.includes('academico')
+}

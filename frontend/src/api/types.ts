@@ -238,3 +238,13 @@ export interface PeriodoVigente {
   registro_asesores_fin: string
   registro_asesores_abierto: boolean
 }
+
+/** GET /api/academico/periodo-vigente/. 404 = la SAE no dio de alta el semestre. */
+export interface PeriodoVigente {
+  semestre: string
+  fecha_inicio: string
+  fecha_fin: string
+  registro_asesores_inicio: string
+  registro_asesores_fin: string
+  registro_asesores_abierto: boolean
+}

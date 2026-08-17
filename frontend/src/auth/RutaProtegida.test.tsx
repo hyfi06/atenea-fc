@@ -109,8 +109,8 @@ describe('RutaDeAsesorias', () => {
     expect(await screen.findByText('vista de asesorías')).toBeInTheDocument()
   })
 
-  it('manda a Home a quien no es alumno ni asesor', async () => {
-    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['academico'] }))
+  it('manda a Home a quien no es alumno ni asesor ni académico', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: [] }))
     montarAsesorias()
     expect(await screen.findByText('pantalla home')).toBeInTheDocument()
     expect(screen.queryByText('vista de asesorías')).not.toBeInTheDocument()
@@ -120,6 +120,14 @@ describe('RutaDeAsesorias', () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarAsesorias()
     expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+  })
+
+  it('RutaDeAsesorias deja pasar al académico sin perfil de asesor', async () => {
+    // Es la puerta al autoservicio de registro: sin esto, un académico que
+    // toca el tile de Asesorías rebota a /home y no encuentra dónde darse de alta.
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['academico'] }))
+    montarAsesorias()
+    expect(await screen.findByText('vista de asesorías')).toBeInTheDocument()
   })
 })
 

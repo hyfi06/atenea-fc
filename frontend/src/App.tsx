@@ -4,13 +4,14 @@ import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
 import { NoEncontrado } from './screens/NoEncontrado'
-import { RutaConSesion, RutaDeAsesor, RutaDeAsesorias, RutaDeSAE } from './auth/RutaProtegida'
+import { RutaConSesion, RutaDeAsesor, RutaDeAsesorias, RutaDeSAE, RutaDeAcademico } from './auth/RutaProtegida'
 import { Asesorias } from './features/asesorias/screens/Asesorias'
 import { OfertaAsesorias } from './features/asesorias/screens/OfertaAsesorias'
 import { AgendarAsesoria } from './features/asesorias/screens/AgendarAsesoria'
 import { DetalleAsesoria } from './features/asesorias/screens/DetalleAsesoria'
 import { MisMaterias } from './features/asesorias/screens/MisMaterias'
 import { MiHorario } from './features/asesorias/screens/MiHorario'
+import { SolicitudAsesor } from './features/asesorias/screens/SolicitudAsesor'
 import { AdminAsesorias } from './features/asesorias/screens/AdminAsesorias'
 import { AdminOfertaMateria } from './features/asesorias/screens/AdminOfertaMateria'
 import { AdminAsesores } from './features/asesorias/screens/AdminAsesores'
@@ -70,6 +71,14 @@ function App() {
             <RutaDeAsesor>
               <MiHorario />
             </RutaDeAsesor>
+          }
+        />
+        <Route
+          path="/asesorias/soy-asesor"
+          element={
+            <RutaDeAcademico>
+              <SolicitudAsesor />
+            </RutaDeAcademico>
           }
         />
         <Route

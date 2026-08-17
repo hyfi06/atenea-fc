@@ -34,6 +34,7 @@ function envolver({ children }: { children: React.ReactNode }) {
 function montar({ esAsesor, esAlumno }: { esAsesor: boolean; esAlumno: boolean }) {
   vi.spyOn(rol, 'useEsAsesor').mockReturnValue(esAsesor)
   vi.spyOn(rol, 'useEsAlumno').mockReturnValue(esAlumno)
+  vi.spyOn(rol, 'useEsAcademico').mockReturnValue(false)
   vi.spyOn(api, 'useMisAsesorias').mockReturnValue({
     data: [crearAsesoria({ id: 1 })], isPending: false,
   } as ReturnType<typeof api.useMisAsesorias>)

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { AuthProvider } from './AuthContext'
-import { useEsAlumno, useEsAsesor, useEsMiembroSAE } from './rol'
+import { useEsAlumno, useEsAsesor, useEsMiembroSAE, useEsAcademico } from './rol'
 import * as client from '../api/client'
 import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 import type { AuthUser } from '../api/types'
@@ -119,5 +119,39 @@ describe('useEsMiembroSAE', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sae')).toHaveTextContent('sae=false')
     })
+  })
+})
+
+function SondaAcademico() {
+  const esAcademico = useEsAcademico()
+  return <div data-testid="academico">{`academico=${esAcademico}`}</div>
+}
+
+describe('useEsAcademico', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('reconoce al académico sin perfil de asesor', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(
+      usuarioDePrueba({
+        roles: ['academico'],
+        perfil_academico: { id: 7, numero_trabajador: '70001' },
+      }),
+    )
+    render(
+      <AuthProvider>
+        <SondaAcademico />
+      </AuthProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('academico')).toHaveTextContent('academico=true'))
+  })
+
+  it('no reconoce como académico a un alumno', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
+    render(
+      <AuthProvider>
+        <SondaAcademico />
+      </AuthProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('academico')).toHaveTextContent('academico=false'))
   })
 })

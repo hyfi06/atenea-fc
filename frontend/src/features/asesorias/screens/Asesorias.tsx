@@ -6,7 +6,7 @@ import { useMapaMaterias } from '../../catalogo/api'
 import { proximas, historial } from '../logica'
 import { TarjetaAsesoria } from '../components/TarjetaAsesoria'
 import { Skeleton } from '../../../components/ui/Skeleton'
-import { useEsAsesor, useEsAlumno } from '../../../auth/rol'
+import { useEsAsesor, useEsAlumno, useEsAcademico } from '../../../auth/rol'
 import type { Asesoria } from '../../../api/types'
 
 export function Asesorias() {
@@ -14,6 +14,7 @@ export function Asesorias() {
   const location = useLocation()
   const esAsesor = useEsAsesor()
   const esAlumno = useEsAlumno()
+  const esAcademico = useEsAcademico()
   const { data: asesorias = [], isPending } = useMisAsesorias()
   const mapaMaterias = useMapaMaterias()
   // `location.state` sobrevive a refresh/back-nav, así que el resaltado se
@@ -56,6 +57,15 @@ export function Asesorias() {
               Mi horario
             </button>
           </>
+        )}
+        {esAcademico && !esAsesor && (
+          <button
+            type="button"
+            onClick={() => navigate('/asesorias/soy-asesor')}
+            className="foco-visible min-h-11 flex-1 rounded-full bg-primary px-3 text-sm font-semibold text-on-primary"
+          >
+            Registrarme como asesor
+          </button>
         )}
         {esAlumno && (
           <button
