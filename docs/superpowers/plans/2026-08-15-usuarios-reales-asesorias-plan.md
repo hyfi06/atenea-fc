@@ -3254,7 +3254,7 @@ EOF
 - Consumes: `useEsAlumno`, `useEsAcademico`, `useEsMiembroSAE` (Task 16).
 - Produces: nada que consuman tareas posteriores.
 
-- [ ] **Step 1: Reescribir el test**
+- [x] **Step 1: Reescribir el test**
 
 Reemplazar `frontend/src/screens/Home.test.tsx` completo por:
 
@@ -3346,12 +3346,12 @@ describe('Home', () => {
 })
 ```
 
-- [ ] **Step 2: Correr para verificar que falla**
+- [x] **Step 2: Correr para verificar que falla**
 
 Run: `cd frontend && npx vitest run src/screens/Home.test.tsx`
 Expected: FAIL — sigue apareciendo "Becas" y no existe el tile "Asesorías".
 
-- [ ] **Step 3: Reescribir la pantalla**
+- [x] **Step 3: Reescribir la pantalla**
 
 Reemplazar `frontend/src/screens/Home.tsx` completo por:
 
@@ -3425,7 +3425,7 @@ export function Home() {
 }
 ```
 
-- [ ] **Step 4: Borrar el mock y los íconos huérfanos**
+- [x] **Step 4: Borrar el mock y los íconos huérfanos**
 
 Run: `cd frontend && rm src/data/services.ts && rmdir src/data 2>/dev/null; grep -rn "IconOrientacionVocacional\|IconBecas\|IconIdiomas\|IconServicioSocial\|IconBolsaDeTrabajo\|IconMovilidad\|IconVoluntariado\|IconPracticasProfesionales" src/`
 Expected: sin resultados (nadie los usa ya).
@@ -3440,12 +3440,12 @@ En `frontend/src/components/icons/ServiceIcons.tsx`, borrar los ocho componentes
  */
 ```
 
-- [ ] **Step 5: Verificar verde**
+- [x] **Step 5: Verificar verde**
 
 Run: `cd frontend && npx vitest run && npx tsc -b && npm run lint`
 Expected: PASS, sin errores.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A frontend/src
