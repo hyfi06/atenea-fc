@@ -2911,25 +2911,67 @@ EOF
 >
 > Con eso escribo el comando siguiendo el patrón de `cargar_materias`: upsert por llave natural, reporte de creados/actualizados/errores por fila, sin abortar la carga completa por una fila mala.
 
-- [ ] **Step 2: Registrar la respuesta**
+- [x] **Step 2: Registrar la respuesta**
 
-Anotar la respuesta de Héctor debajo de este paso antes de continuar con la Task 18. La Task 18 está escrita con un encabezado **hipotético** y debe reescribirse con el real.
+**Respuesta de Héctor (2026-08-17):**
 
-- [ ] **Step 3: No hay commit en esta tarea.** Continuar a la Task 18.
+Encabezado real (separado por tabs en el ejemplo, tratado como CSV estándar):
+
+```
+cuenta	ap1	ap2	nombre	carrera_id	curp	correo	gen
+```
+
+Fila de ejemplo (datos ficticios — no corresponden a una persona real):
+
+```
+312099999	Pérez	Gómez	Juan	122	PEGJ000101HDFXXX00	juan.perez@ciencias.unam.mx	2026
+```
+
+Mapeo columna → campo:
+- `cuenta` → `PerfilAlumno.numero_cuenta` (llave natural del upsert).
+- `ap1` / `ap2` → `User.apellido1` / `apellido2`. `nombre` → `User.first_name`.
+- `correo` → `User.email` (login) **solo si el número de cuenta es nuevo**.
+- `carrera_id` → clave numérica; resuelve contra `Carrera.clave` (no contra el nombre — a diferencia de `cargar_materias`, que resuelve por texto con `Carrera.objects.resolve`).
+- `gen` → `HistoriaAcademica.generacion`.
+- `curp` → columna nueva, sin campo existente. Decisión: agregar `User.curp` (`CharField`, `unique=True, null=True, blank=True` — es la llave única de población pero no obligatoria; `null=True` para que Postgres permita varias filas sin CURP bajo el `unique`).
+
+Multi-carrera: **dos filas con el mismo `cuenta`**, una por carrera — confirmado. El comando crea/actualiza una `HistoriaAcademica` por fila vía `update_or_create(perfil_alumno, carrera)`.
+
+Conflicto de correo: si `numero_cuenta` ya existe y el `correo` de la fila es distinto al `User.email` guardado, **no se pisa el correo de login** — el correo de la fila se agrega a `PerfilAlumno.correos_alternos` (sin duplicar, mismo criterio que la Task 14/`correos_alternos`). El caso inverso — un `correo` que ya pertenece a otro `numero_cuenta` — no lo cubrió la respuesta explícitamente; como `User.email` es `unique`, ese choque revienta como `IntegrityError` al crear el `User` nuevo y cae al mismo manejo de "fila con error" que ya usa el comando (no aborta la carga completa) — coherente con el resto del contrato, así que no hace falta una rama especial.
+
+Re-corrible: sí, upsert por `numero_cuenta` (igual que `cargar_materias` upsertea por `Clave`).
+
+- [x] **Step 3: No hay commit en esta tarea.** Continuar a la Task 18.
 
 ---
 
 ## Task 18: Management command `cargar_alumnos`
 
-> **Requiere la Task 17.** Las columnas de abajo son un marcador de posición estructural, no el contrato: sustituir `columnas_requeridas` y el cuerpo del bucle por el mapeo real que dio Héctor antes de escribir una sola línea. El resto (manejo de errores, transacción por fila, resumen) sí es definitivo.
+**Contrato real (Task 17), no hipotético.** Encabezado del CSV: `cuenta,ap1,ap2,nombre,carrera_id,curp,correo,gen`. `carrera_id` resuelve contra `Carrera.clave` (numérico), no contra el nombre. Sin columna de correo alterno: el correo alterno se detecta comparando el `correo` de la fila contra el `User.email` ya guardado cuando `cuenta` ya existe.
 
 **Files:**
+- Modify: `backend/accounts/models.py` (agregar `User.curp`), migración nueva
 - Create: `backend/accounts/management/__init__.py`, `backend/accounts/management/commands/__init__.py`, `backend/accounts/management/commands/cargar_alumnos.py`
 - Test: `backend/accounts/tests/test_cargar_alumnos.py`
 
 **Interfaces:**
-- Consumes: `User`, `PerfilAlumno`, `HistoriaAcademica`, `Carrera.objects.resolve`.
-- Produces: `uv run manage.py cargar_alumnos <csv_path>`.
+- Consumes: `User`, `PerfilAlumno`, `HistoriaAcademica`, `Carrera` (por `clave`).
+- Produces: `uv run manage.py cargar_alumnos <csv_path>`. `User.curp: str | None`.
+
+- [ ] **Step 0: Agregar `User.curp`**
+
+En `backend/accounts/models.py`, en `class User`, después de `apellido2`:
+
+```python
+    curp = models.CharField(
+        _("CURP"), max_length=18, unique=True, null=True, blank=True,
+    )
+```
+
+`null=True` (no solo `blank=True`): Postgres permite varias filas `NULL` bajo un `unique`, pero no varias cadenas vacías — y el CURP no es obligatorio (ADR: dato de identidad, pero la carga no debe fallar si falta).
+
+Run: `cd backend && uv run manage.py makemigrations accounts`
+Expected: crea `backend/accounts/migrations/0009_user_curp.py` (o el número que siga).
 
 - [ ] **Step 1: Escribir los tests**
 
@@ -2946,7 +2988,7 @@ from django.test import TestCase
 from accounts.models import HistoriaAcademica, PerfilAlumno, User
 from carreras.models import Area, Carrera
 
-ENCABEZADO = "Cuenta,Correo,Nombre,Apellido1,Apellido2,Carrera,Generacion,CorreoAlterno"
+ENCABEZADO = "cuenta,ap1,ap2,nombre,carrera_id,curp,correo,gen"
 
 
 def escribir_csv(*filas):
@@ -2963,19 +3005,20 @@ class CargarAlumnosTests(TestCase):
 
     def test_crea_user_perfil_e_historia(self):
         ruta = escribir_csv(
-            "312000100,ana@ciencias.unam.mx,Ana,López,Ruiz,Actuaría Carga,2023,ana.vieja@gmail.com"
+            "312000100,López,Ruiz,Ana,931,LORA000101MDFXXX01,ana@ciencias.unam.mx,2023"
         )
         call_command("cargar_alumnos", ruta, stdout=StringIO())
 
         perfil = PerfilAlumno.objects.get(numero_cuenta="312000100")
         self.assertEqual(perfil.user.email, "ana@ciencias.unam.mx")
         self.assertEqual(perfil.user.apellido1, "López")
-        self.assertEqual(perfil.correos_alternos, ["ana.vieja@gmail.com"])
+        self.assertEqual(perfil.user.curp, "LORA000101MDFXXX01")
+        self.assertEqual(perfil.correos_alternos, [])
         self.assertEqual(perfil.historial.get().carrera, self.carrera)
         self.assertEqual(perfil.historial.get().generacion, 2023)
 
     def test_es_idempotente(self):
-        fila = "312000101,bea@ciencias.unam.mx,Bea,Sosa,Paz,Actuaría Carga,2023,"
+        fila = "312000101,Sosa,Paz,Bea,931,,bea@ciencias.unam.mx,2023"
         ruta = escribir_csv(fila)
         call_command("cargar_alumnos", ruta, stdout=StringIO())
         call_command("cargar_alumnos", ruta, stdout=StringIO())
@@ -2986,27 +3029,32 @@ class CargarAlumnosTests(TestCase):
 
     def test_dos_filas_con_la_misma_cuenta_dan_dos_carreras(self):
         ruta = escribir_csv(
-            "312000102,cin@ciencias.unam.mx,Cin,Mora,Vega,Actuaría Carga,2022,",
-            "312000102,cin@ciencias.unam.mx,Cin,Mora,Vega,Matemáticas Carga,2025,",
+            "312000102,Mora,Vega,Cin,931,,cin@ciencias.unam.mx,2022",
+            "312000102,Mora,Vega,Cin,932,,cin@ciencias.unam.mx,2025",
         )
         call_command("cargar_alumnos", ruta, stdout=StringIO())
 
         perfil = PerfilAlumno.objects.get(numero_cuenta="312000102")
         self.assertEqual(perfil.historial.count(), 2)
 
-    def test_no_duplica_un_correo_alterno_ya_registrado(self):
-        fila = "312000103,dan@ciencias.unam.mx,Dan,Paz,Sol,Actuaría Carga,2023,dan.viejo@gmail.com"
+    def test_cuenta_existente_con_correo_distinto_lo_guarda_como_alterno(self):
+        fila = "312000103,Paz,Sol,Dan,931,,dan@ciencias.unam.mx,2023"
         ruta = escribir_csv(fila)
         call_command("cargar_alumnos", ruta, stdout=StringIO())
-        call_command("cargar_alumnos", ruta, stdout=StringIO())
+
+        # Reaparece con un correo distinto: no se pisa el de login.
+        ruta2 = escribir_csv("312000103,Paz,Sol,Dan,931,,dan.nuevo@ciencias.unam.mx,2023")
+        call_command("cargar_alumnos", ruta2, stdout=StringIO())
+        call_command("cargar_alumnos", ruta2, stdout=StringIO())  # no duplica
 
         perfil = PerfilAlumno.objects.get(numero_cuenta="312000103")
-        self.assertEqual(perfil.correos_alternos, ["dan.viejo@gmail.com"])
+        self.assertEqual(perfil.user.email, "dan@ciencias.unam.mx")
+        self.assertEqual(perfil.correos_alternos, ["dan.nuevo@ciencias.unam.mx"])
 
     def test_una_fila_mala_no_aborta_las_buenas(self):
         ruta = escribir_csv(
-            "312000104,eva@ciencias.unam.mx,Eva,Ruiz,Paz,Carrera Que No Existe,2023,",
-            "312000105,fer@ciencias.unam.mx,Fer,Sosa,Luz,Actuaría Carga,2023,",
+            "312000104,Ruiz,Paz,Eva,9999,,eva@ciencias.unam.mx,2023",
+            "312000105,Sosa,Luz,Fer,931,,fer@ciencias.unam.mx,2023",
         )
         with self.assertRaises(CommandError):
             call_command("cargar_alumnos", ruta, stdout=StringIO(), stderr=StringIO())
@@ -3016,7 +3064,7 @@ class CargarAlumnosTests(TestCase):
 
     def test_encabezado_invalido_falla_de_inmediato(self):
         ruta = Path(tempfile.mkdtemp()) / "malo.csv"
-        ruta.write_text("Cuenta,Correo\n1,a@b.com\n", encoding="utf-8")
+        ruta.write_text("cuenta,correo\n1,a@b.com\n", encoding="utf-8")
         with self.assertRaises(CommandError):
             call_command("cargar_alumnos", str(ruta), stdout=StringIO(), stderr=StringIO())
 
@@ -3043,16 +3091,13 @@ from django.db import DataError, IntegrityError, transaction
 from accounts.models import HistoriaAcademica, PerfilAlumno, User
 from carreras.models import Carrera
 
-COLUMNAS_REQUERIDAS = {
-    "Cuenta", "Correo", "Nombre", "Apellido1", "Apellido2", "Carrera", "Generacion",
-    "CorreoAlterno",
-}
+COLUMNAS_REQUERIDAS = {"cuenta", "ap1", "ap2", "nombre", "carrera_id", "curp", "correo", "gen"}
 
 
 class Command(BaseCommand):
     help = (
         "Carga o actualiza alumnos desde un CSV (columnas: "
-        "Cuenta,Correo,Nombre,Apellido1,Apellido2,Carrera,Generacion,CorreoAlterno). "
+        "cuenta,ap1,ap2,nombre,carrera_id,curp,correo,gen). "
         "Upsert por número de cuenta; una fila por carrera."
     )
 
@@ -3079,7 +3124,7 @@ class Command(BaseCommand):
 
             for numero_fila, fila in enumerate(lector, start=2):
                 try:
-                    carrera = Carrera.objects.resolve(fila["Carrera"])
+                    carrera = Carrera.objects.get(clave=int(fila["carrera_id"].strip()))
                 except Carrera.DoesNotExist as exc:
                     errores += 1
                     self.stderr.write(f"Fila {numero_fila}: {exc}")
@@ -3115,26 +3160,39 @@ class Command(BaseCommand):
 
         Devuelve True si el alumno se creó, False si ya existía y se actualizó.
         """
-        correo = fila["Correo"].strip().lower()
-        user, _ = User.objects.update_or_create(
-            email=correo,
-            defaults={
-                "first_name": fila["Nombre"].strip(),
-                "apellido1": fila["Apellido1"].strip(),
-                "apellido2": fila["Apellido2"].strip(),
-            },
-        )
-        perfil, creado = PerfilAlumno.objects.get_or_create(
-            numero_cuenta=fila["Cuenta"].strip(), defaults={"user": user}
-        )
+        cuenta = fila["cuenta"].strip()
+        correo = fila["correo"].strip().lower()
+        curp = fila["curp"].strip().upper() or None
 
-        alterno = fila["CorreoAlterno"].strip().lower()
-        # Sin duplicar: el comando se corre varias veces sobre el mismo archivo.
-        if alterno and alterno not in perfil.correos_alternos:
-            perfil.correos_alternos = [*perfil.correos_alternos, alterno]
-            perfil.save(update_fields=["correos_alternos"])
+        perfil = PerfilAlumno.objects.select_related("user").filter(numero_cuenta=cuenta).first()
 
-        generacion_texto = fila["Generacion"].strip()
+        if perfil is None:
+            # Alumno nuevo: el correo de la fila es el de login.
+            user = User.objects.create(
+                email=correo,
+                first_name=fila["nombre"].strip(),
+                apellido1=fila["ap1"].strip(),
+                apellido2=fila["ap2"].strip(),
+                curp=curp,
+            )
+            perfil = PerfilAlumno.objects.create(user=user, numero_cuenta=cuenta)
+            creado = True
+        else:
+            user = perfil.user
+            user.first_name = fila["nombre"].strip()
+            user.apellido1 = fila["ap1"].strip()
+            user.apellido2 = fila["ap2"].strip()
+            if curp:
+                user.curp = curp
+            if correo != user.email and correo not in perfil.correos_alternos:
+                # La cuenta ya existe con otro correo: no se pisa el correo de
+                # login (Task 17 respuesta de Héctor) — se guarda como alterno.
+                perfil.correos_alternos = [*perfil.correos_alternos, correo]
+                perfil.save(update_fields=["correos_alternos"])
+            user.save()
+            creado = False
+
+        generacion_texto = fila["gen"].strip()
         HistoriaAcademica.objects.update_or_create(
             perfil_alumno=perfil,
             carrera=carrera,
@@ -3169,8 +3227,10 @@ git add backend/accounts docs/development/getting-started.md
 git commit -s -m "$(cat <<'EOF'
 [feat][backend] agregar el management command cargar_alumnos
 
+- agregar User.curp (opcional, único)
 - cargar User, PerfilAlumno e HistoriaAcademica desde un CSV, con upsert por número de cuenta
-- acumular correos alternos sin duplicar y aceptar varias carreras por alumno
+- resolver carrera_id contra Carrera.clave; aceptar varias carreras por alumno (una fila por carrera)
+- si la cuenta ya existe con otro correo, guardarlo como alterno sin pisar el de login
 - reportar creados/actualizados/errores por fila sin abortar la carga completa
 
 Signed-off-by: Héctor Olvera Vital <hector.olvera@ciencias.unam.mx>
