@@ -20,7 +20,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md)
 - [0014 — Alta de `PerfilSAE` solo por admin](0014-alta-perfil-sae-solo-admin.md)
 - [0015 — Estáticos por WhiteNoise; media en MinIO/S3 pendiente](0015-estaticos-whitenoise-media-pendiente.md)
-- [0016 — `Materia.habilitada_asesorias` se cura manualmente en el admin](0015-habilitar-asesorias-manual-en-admin.md)
+- [0016 — `Materia.habilitada_asesorias` se cura manualmente en el admin](0016-habilitar-asesorias-manual-en-admin.md)
 - [0017 — La salida animada del diálogo modal no cubre el cierre por botón](0017-salida-dialogo-no-cubre-cierre-por-boton.md)
 - [0018 — La vigencia del académico no se valida: `validar_academico_activo` es un stub](0018-validacion-academico-activo-con-stub.md)
 - [0019 — Home arma sus tiles en el cliente, sin catálogo de servicios en el backend](0019-home-sin-catalogo-de-servicios.md)
