@@ -23,6 +23,7 @@ class AsesoriaApiTestsBase(APITestCase):
         PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12345")
         self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
         self.registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20271")
+        self.registro.agregar_materia(self.materia)
         self.disponibilidad = Disponibilidad.objects.create(
             registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
             formato="virtual", liga_virtual="https://meet.example.com/x",
@@ -89,6 +90,34 @@ class AgendarAsesoriaApiTests(AsesoriaApiTestsBase):
             "fecha": str(self.proximo_lunes),
         })
         self.assertEqual(response.status_code, 409)
+
+    def test_materia_fuera_del_registro_del_asesor_devuelve_400(self):
+        """Deuda 0013: el slot es del asesor X, pero la materia declarada no
+        está en su registro."""
+        materia_ajena = Materia.objects.create(
+            clave="1802", nombre="Cálculo", carrera=self.carrera, nivel=1, plan=2006,
+            habilitada_asesorias=True,
+        )
+        OfertaMateria.objects.create(materia=materia_ajena, semestre="20271", se_imparte=True)
+
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": materia_ajena.id,
+            "fecha": str(self.proximo_lunes),
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("materia", response.data)
+
+    def test_materia_del_registro_sigue_devolviendo_201(self):
+        """Regresión del caso feliz: la materia sí está en el registro."""
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes),
+        })
+
+        self.assertEqual(response.status_code, 201)
 
 
 class ListarAsesoriaApiTests(AsesoriaApiTestsBase):

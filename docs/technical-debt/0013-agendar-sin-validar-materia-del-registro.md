@@ -1,6 +1,6 @@
 # 0013 — Agendar no valida que la materia pertenezca al registro del asesor
 
-**Estado:** Activa
+**Estado:** Resuelta — 2026-08-18 (commit de este fix)
 **Origen:** [spec `2026-08-08-asesorias-alumno-api-design`](../decisions/0021-asesorias-alumno-api.md) / [ADR 0021](../decisions/0021-asesorias-alumno-api.md)
 
 ## Qué se simplificó
@@ -14,3 +14,11 @@ El flujo de UI encadena materia → asesor → slot pasando IDs coherentes entre
 ## Señal de revisión
 
 Si se detecta una asesoría agendada con una materia incoherente con el registro del asesor, o antes de exponer la API a clientes no confiables (fuera del SPA propio), añadir la validación en `AsesoriaSerializer.validate`: rechazar cuando `materia` no esté en `disponibilidad.registro.materias`.
+
+## Resolución (2026-08-18)
+
+`AsesoriaSerializer.validate` ahora rechaza con 400 cuando `materia` no
+pertenece a `disponibilidad.registro.materias`. Confirmado en vivo contra
+staging antes del fix (POST con materia incoherente devolvía 201) y
+después del fix (mismo POST devuelve 400). Ver auditoría:
+https://claude.ai/code/artifact/e73411a0-fdae-405e-ab8f-d38b56482f9e

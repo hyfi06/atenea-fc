@@ -154,6 +154,11 @@ class AsesoriaSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]
+        materia = attrs["materia"]
+        if not disponibilidad.registro.materias.filter(pk=materia.pk).exists():
+            raise serializers.ValidationError(
+                {"materia": "Esta materia no está en el registro del asesor de este horario."}
+            )
         alumno = self.context["request"].user.perfil_alumno
         # ADR 0027 decisión 2: el backend no elige por el alumno. Con una sola
         # inscripción la infiere por conveniencia (contrato previo intacto);

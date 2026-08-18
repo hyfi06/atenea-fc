@@ -17,7 +17,6 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0006 — Sin paginación en los endpoints de listado](0006-sin-paginacion-listados.md)
 - [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md)
 - [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md)
-- [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md)
 - [0014 — Alta de `PerfilSAE` solo por admin](0014-alta-perfil-sae-solo-admin.md)
 - [0015 — Estáticos por WhiteNoise; media en MinIO/S3 pendiente](0015-estaticos-whitenoise-media-pendiente.md)
 - [0016 — `Materia.habilitada_asesorias` se cura manualmente en el admin](0016-habilitar-asesorias-manual-en-admin.md)
@@ -32,3 +31,4 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0002 — Alta de `PerfilAsesorAcademico` solo por admin](0002-alta-perfil-asesor-solo-admin.md) — resuelta 2026-08-15
 - [0008 — `PerfilAlumno` solo registra una carrera vigente](0008-perfil-alumno-una-sola-carrera.md) — resuelta 2026-08-15
 - [0012 — Oferta/asesores/búsqueda no acotan por semestre vigente](0012-oferta-asesorias-sin-scope-de-semestre.md) — resuelta 2026-08-15
+- [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md) — resuelta 2026-08-18
