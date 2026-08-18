@@ -96,6 +96,21 @@ class GoogleLoginTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    @patch.object(GoogleOAuth2Adapter, "complete_login")
+    def test_google_no_devuelve_access_en_el_body_con_httponly(self, mock_complete_login):
+        """SocialLoginView hereda get_response() de LoginView, así que arrastra
+        el mismo hallazgo H1 que el login por password."""
+        user = User.objects.create_user("google-sin-access@ciencias.unam.mx")
+        mock_complete_login.side_effect = _complete_login_as(user.email)
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            response = self._post_google_login()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["access"], "")
+        self.assertEqual(response.data["refresh"], "")
+        self.assertNotEqual(response.cookies["atenea-access-token"].value, "")
+
 
 class PasswordResetLoginFlowTests(APITestCase):
     def test_reset_then_login_then_refresh(self):
@@ -239,7 +254,7 @@ class CookieBasedLoginTests(APITestCase):
                 "/api/auth/logout/",
                 {},
                 format="json",
-                HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}",
+                HTTP_AUTHORIZATION=f"Bearer {login_response.cookies['atenea-access-token'].value}",
             )
 
         self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
@@ -299,6 +314,23 @@ class CookieBasedLoginTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], user.email)
+
+    def test_login_no_devuelve_access_en_el_body_con_httponly(self):
+        """ADR 0018: con la cookie httpOnly activa, ni access ni refresh viajan
+        en el body — dj-rest-auth 7.2.0 solo vacía refresh."""
+        user = User.objects.create_user("sin-access-body@ciencias.unam.mx", password="ClaveSegura123!")
+
+        with patch.multiple(dra_settings, **PROD_COOKIE_SETTINGS):
+            response = self.client.post(
+                "/api/auth/login/",
+                {"email": user.email, "password": "ClaveSegura123!"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["access"], "")
+        self.assertEqual(response.data["refresh"], "")
+        self.assertNotEqual(response.cookies["atenea-access-token"].value, "")
 
 
 import time
