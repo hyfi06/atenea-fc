@@ -191,6 +191,15 @@ SIMPLE_JWT = {
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@atenea.ciencias.unam.mx")
 
+# SMTP de Google Workspace, cuenta dedicada con app password (ver ADR 0028 y
+# deuda técnica 0021). Solo se usan cuando EMAIL_BACKEND apunta al backend
+# smtp.EmailBackend; con el backend de consola (default) quedan sin efecto.
+EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 
 CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
