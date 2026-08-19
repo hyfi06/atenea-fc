@@ -48,3 +48,15 @@ Esto resuelve el único consumidor que lista+busca (`DialogoAgregarMateria`). Lo
 
 - Paginar otros listados del proyecto (`RegistroAsesor`, `Disponibilidad`, `Asesoria`, etc.) — la deuda 0006 los menciona, pero el pedido de este sprint es solo materias.
 - Generalizar `apiGet` a un cliente consciente de paginación — se deja para cuando un segundo endpoint lo necesite.
+
+## Enmienda: selector de carrera en `DialogoAgregarMateria`
+
+Aprobada en brainstorming bounded (2026-08-19), sobre el mismo componente que ya se reescribe arriba — se integra al mismo plan, no aparte.
+
+- `Materia` registra `carrera` (FK a `carreras.Carrera`); hoy `DialogoAgregarMateria` no deja filtrar por carrera, solo lista+busca en texto.
+- Nuevo estado local `carrera: number | null` (default `null` = "Todas"), mismo patrón que `OfertaAsesorias.tsx:32`.
+- `<select>` poblado con el catálogo completo de carreras vía el hook ya existente `useCarreras()` (`catalogo/api.ts`, pega a `/api/carreras/carreras/`) — no derivado de las materias ya cargadas (con scroll infinito estaría incompleto hasta scrollear todo).
+- `carrera` se pasa como parámetro adicional a `useMateriasInfinitas({ habilitada_asesorias: true, carrera, search })`. El backend (`MateriaViewSet.get_queryset`) ya combina `carrera` + `habilitada_asesorias`; combinarlo también con `search` es parte del mismo trabajo de paginación de este spec, no un requisito nuevo.
+- `carrera` entra a la `queryKey` de `useInfiniteQuery` — cambiar de carrera reinicia la paginación/búsqueda de forma natural.
+- UI: mismo layout que `OfertaAsesorias.tsx:57-71` (label + `<select>` con opción "Todas"), colocado arriba del campo de búsqueda dentro del diálogo.
+- Testing: caso nuevo en `DialogoAgregarMateria.test.tsx` — cambiar carrera dispara refetch con el query param correcto; combinar carrera + búsqueda funciona.
