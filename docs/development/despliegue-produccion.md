@@ -58,6 +58,8 @@ ATENEA_DB_PASSWORD=...           # ya generado por gen-secrets.sh
 ATENEA_SECRET_KEY=...            # openssl rand -hex 50
 ATENEA_GOOGLE_CLIENT_ID=...      # OAuth client id (mismo que el del SPA)
 ATENEA_GOOGLE_CLIENT_SECRET=...  # OAuth client secret
+ATENEA_EMAIL_HOST_USER=...       # cuenta dedicada de Workspace, ver ADR 0028
+ATENEA_EMAIL_HOST_PASSWORD=...   # app password de 16 caracteres de esa cuenta
 ```
 
 > **Rotación:** durante la preparación quedaron expuestos en texto plano un
@@ -87,9 +89,11 @@ Agregar tres servicios sobre `sae-network` (`atenea-db` y `atenea-redis` ya exis
       - FRONTEND_URL=https://atenea.unam.dev
       - GOOGLE_OAUTH_CLIENT_ID=${ATENEA_GOOGLE_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${ATENEA_GOOGLE_CLIENT_SECRET}
-      # Email: por ahora consola. Cambiar a SMTP cuando se envíen correos reales.
-      - EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-      - DEFAULT_FROM_EMAIL=no-reply@atenea.ciencias.unam.mx
+      # Email vía SMTP de Google Workspace, cuenta dedicada (ADR 0028).
+      - EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+      - EMAIL_HOST_USER=${ATENEA_EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${ATENEA_EMAIL_HOST_PASSWORD}
+      - DEFAULT_FROM_EMAIL=${ATENEA_EMAIL_HOST_USER}
     networks: [sae-network]
     depends_on: [atenea-db, atenea-redis]
 
@@ -105,6 +109,11 @@ Agregar tres servicios sobre `sae-network` (`atenea-db` y `atenea-redis` ya exis
       - FRONTEND_URL=https://atenea.unam.dev
       - GOOGLE_OAUTH_CLIENT_ID=${ATENEA_GOOGLE_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${ATENEA_GOOGLE_CLIENT_SECRET}
+      # asesorias/tasks.py envía correo desde el worker (recordatorios, avisos).
+      - EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+      - EMAIL_HOST_USER=${ATENEA_EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${ATENEA_EMAIL_HOST_PASSWORD}
+      - DEFAULT_FROM_EMAIL=${ATENEA_EMAIL_HOST_USER}
     networks: [sae-network]
     depends_on: [atenea-db, atenea-redis]
 

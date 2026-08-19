@@ -24,6 +24,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0018 — La vigencia del académico no se valida: `validar_academico_activo` es un stub](0018-validacion-academico-activo-con-stub.md)
 - [0019 — Home arma sus tiles en el cliente, sin catálogo de servicios en el backend](0019-home-sin-catalogo-de-servicios.md)
 - [0020 — CSP del frontend con `unsafe-inline` en `style-src`, sin CSP en el backend](0020-csp-frontend-parcial.md)
+- [0021 — Envío de correo depende de una cuenta de Workspace dedicada y su app password](0021-smtp-cuenta-dedicada-app-password.md)
 
 ### Resuelta
 
