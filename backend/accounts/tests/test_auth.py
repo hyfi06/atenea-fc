@@ -473,3 +473,28 @@ class LoginThrottleTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_throttle_usa_cf_connecting_ip_no_x_forwarded_for(self):
+        """CF-Connecting-IP no es falseable por el cliente (Cloudflare lo
+        sobrescribe en su borde); X-Forwarded-For sí, porque el nginx interno
+        solo lo agrega sin descartar lo que traiga la peticion entrante."""
+        User.objects.create_user("throttle-cf@ciencias.unam.mx", password="ClaveSegura123!")
+
+        for i in range(5):
+            response = self.client.post(
+                "/api/auth/login/",
+                {"email": "throttle-cf@ciencias.unam.mx", "password": "clave-incorrecta"},
+                format="json",
+                HTTP_X_FORWARDED_FOR=f"1.2.3.{i}",  # distinto en cada intento
+                HTTP_CF_CONNECTING_IP="9.9.9.9",  # mismo cliente real
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "throttle-cf@ciencias.unam.mx", "password": "clave-incorrecta"},
+            format="json",
+            HTTP_X_FORWARDED_FOR="1.2.3.99",
+            HTTP_CF_CONNECTING_IP="9.9.9.9",
+        )
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

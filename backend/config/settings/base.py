@@ -156,7 +156,7 @@ REST_FRAMEWORK = {
     # fábrica; el resto de la API (asesorias, materias, carreras, academico)
     # no lo declara y queda sin límite. Hallazgo H3 del pentest 2026-08-18.
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.ScopedRateThrottle",
+        "accounts.throttling.CloudflareScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "dj_rest_auth": "5/min",
@@ -208,6 +208,18 @@ DIRECTORIO_FC_URL_BASE = env("DIRECTORIO_FC_URL_BASE", default="")
 # en dev y prod (ADR 0018), y sin este flag el navegador descarta toda
 # respuesta cross-origin credenciada como error de red.
 CORS_ALLOW_CREDENTIALS = True
+
+# Cache compartido entre workers de gunicorn (varios procesos, ver
+# docker-entrypoint.sh). Sin esto, DEFAULT_THROTTLE_CLASSES cae a LocMemCache
+# (por proceso) y el límite real depende de cuántos workers atienden la
+# request — hallazgo del review final del branch de fixes de seguridad,
+# 2026-08-19. Redis ya es dependencia dura (Celery), no agrega infraestructura.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_URL"),
+    }
+}
 
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")

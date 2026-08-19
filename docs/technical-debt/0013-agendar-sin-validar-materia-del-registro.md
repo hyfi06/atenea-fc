@@ -1,6 +1,6 @@
 # 0013 — Agendar no valida que la materia pertenezca al registro del asesor
 
-**Estado:** Resuelta — 2026-08-18 (commit de este fix)
+**Estado:** Resuelta — 2026-08-18 (commit 8f2d0a0)
 **Origen:** [spec `2026-08-08-asesorias-alumno-api-design`](../decisions/0021-asesorias-alumno-api.md) / [ADR 0021](../decisions/0021-asesorias-alumno-api.md)
 
 ## Qué se simplificó
