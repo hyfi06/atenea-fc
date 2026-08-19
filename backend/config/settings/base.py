@@ -150,6 +150,17 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # ScopedRateThrottle solo actúa sobre vistas que declaran throttle_scope
+    # (allow_request retorna True de inmediato si la vista no lo tiene). Las
+    # vistas de dj-rest-auth ya traen throttle_scope = "dj_rest_auth" de
+    # fábrica; el resto de la API (asesorias, materias, carreras, academico)
+    # no lo declara y queda sin límite. Hallazgo H3 del pentest 2026-08-18.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "dj_rest_auth": "5/min",
+    },
     # JWTCookieAuthentication extiende JWTAuthentication: revisa el header
     # Authorization primero (así es como sigue funcionando dev sin cambios) y
     # cae a la cookie JWT_AUTH_COOKIE solo si no hay header — necesario para

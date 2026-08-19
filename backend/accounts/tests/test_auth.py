@@ -11,6 +11,7 @@ from allauth.socialaccount.adapter import get_adapter as get_social_adapter
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from django.core import mail
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -35,6 +36,9 @@ def _complete_login_as(email):
 
 
 class GoogleLoginTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
     def _post_google_login(self):
         return self.client.post(
             "/api/auth/google/", {"id_token": "fake-token"}, format="json"
@@ -113,6 +117,9 @@ class GoogleLoginTests(APITestCase):
 
 
 class PasswordResetLoginFlowTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
     def test_reset_then_login_then_refresh(self):
         user = User.objects.create_user("staff@ciencias.unam.mx", password="throwaway")
 
@@ -217,6 +224,9 @@ PROD_COOKIE_SETTINGS = dict(
 
 
 class CookieBasedLoginTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
     def test_login_sets_httponly_secure_cookies_when_configured(self):
         user = User.objects.create_user("cookies@ciencias.unam.mx", password="ClaveSegura123!")
 
@@ -369,6 +379,9 @@ def _id_token_de_prueba(*, audience, email):
 class GoogleIdTokenVerificacionTests(APITestCase):
     """Ejercita la verificación real de allauth, sin mockear complete_login."""
 
+    def setUp(self):
+        cache.clear()
+
     @staticmethod
     def _client_id_configurado():
         adapter = GoogleIdTokenAdapter(RequestFactory().get("/"))
@@ -429,3 +442,34 @@ class GoogleIdTokenVerificacionTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LoginThrottleTests(APITestCase):
+    """Hallazgo H3: sin DEFAULT_THROTTLE_CLASSES, /api/auth/login/ acepta
+    intentos ilimitados. ScopedRateThrottle + el scope dj_rest_auth que la
+    librería ya declara lo acota a 5/min."""
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_sexto_intento_de_login_devuelve_429(self):
+        User.objects.create_user("throttle@ciencias.unam.mx", password="ClaveSegura123!")
+
+        for _ in range(5):
+            response = self.client.post(
+                "/api/auth/login/",
+                {"email": "throttle@ciencias.unam.mx", "password": "clave-incorrecta"},
+                format="json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "throttle@ciencias.unam.mx", "password": "clave-incorrecta"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

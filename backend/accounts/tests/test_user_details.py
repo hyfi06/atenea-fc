@@ -2,11 +2,13 @@ from accounts.models import PerfilAcademico, PerfilAlumno, User
 from accounts.tests.factories import crear_alumno
 from asesorias.models import PerfilAsesorAcademico
 from carreras.models import Area, Carrera
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 
 class UserDetailsApiTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.area = Area.objects.create(nombre="Area test")
         self.carrera = Carrera.objects.create(clave=801, nombre="Carrera Test", area=self.area)
 
