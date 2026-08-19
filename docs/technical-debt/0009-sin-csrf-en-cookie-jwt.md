@@ -14,3 +14,11 @@ En prod, el JWT viaja como cookie `httpOnly`+`Secure` (`JWTCookieAuthentication`
 ## Señal de revisión
 
 Si se identifica un endpoint de escritura (`POST`/`PATCH`/`DELETE`) accesible desde un subdominio hermano no controlado por este proyecto vía POST con `application/x-www-form-urlencoded`, o si el despliegue pasa a compartir dominio/subdominio con contenido de terceros no confiable, activar `JWT_AUTH_COOKIE_USE_CSRF=True` y coordinar el trabajo correspondiente en `api/client.ts` del frontend.
+
+## Confirmado en vivo (2026-08-18)
+
+Pentest contra staging reprodujo el POST de escritura autenticada (agendar
+una Asesoria) sin token CSRF ni header custom, solo con la cookie —
+aceptado por la API. Sigue activa; `SameSite=Lax` en las cookies JWT
+mitiga el vector de formulario cross-site clásico. Ver auditoría:
+https://claude.ai/code/artifact/e73411a0-fdae-405e-ab8f-d38b56482f9e
