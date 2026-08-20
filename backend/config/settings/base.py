@@ -62,6 +62,12 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "dj_rest_auth",
+    # Cierra la deuda 0007: con esta app instalada, dj_rest_auth.views.LogoutView
+    # manda el refresh token al blacklist en cada logout (su lógica ya existe,
+    # condicionada solo a que la app esté en INSTALLED_APPS). Ojo: a partir de
+    # aquí el logout EXIGE el refresh — en el body si JWT_AUTH_HTTPONLY=False
+    # (dev), en la cookie si es True (prod) — o responde 401.
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 LOCAL_APPS = [

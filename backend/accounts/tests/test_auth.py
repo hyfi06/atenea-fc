@@ -259,6 +259,9 @@ class CookieBasedLoginTests(APITestCase):
                 format="json",
             )
             self.client.cookies["atenea-access-token"] = login_response.cookies["atenea-access-token"].value
+            # Con token_blacklist activo, LogoutView necesita el refresh token:
+            # en modo httpOnly lo lee de esta cookie o responde 401.
+            self.client.cookies["atenea-refresh-token"] = login_response.cookies["atenea-refresh-token"].value
 
             logout_response = self.client.post(
                 "/api/auth/logout/",
@@ -628,3 +631,71 @@ class PasswordResetThrottleTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class LogoutBlacklistTests(APITestCase):
+    """Deuda 0007: el logout limpiaba el estado del cliente pero el refresh
+    seguía siendo válido en el servidor hasta su expiración natural (7 días)."""
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def _login(self, email):
+        return self.client.post(
+            "/api/auth/login/", {"email": email, "password": "ClaveSegura123!"}, format="json"
+        )
+
+    def test_refresh_despues_de_logout_es_rechazado(self):
+        user = User.objects.create_user("blacklist@ciencias.unam.mx", password="ClaveSegura123!")
+        login = self._login(user.email)
+        refresh = login.data["refresh"]
+
+        logout = self.client.post(
+            "/api/auth/logout/",
+            {"refresh": refresh},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {login.data['access']}",
+        )
+        self.assertEqual(logout.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(
+            "/api/auth/token/refresh/", {"refresh": refresh}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_sin_refresh_en_el_body_devuelve_401(self):
+        """Contrato que el frontend tiene que respetar en dev: sin el refresh en
+        el body no hay nada que invalidar y la librería responde 401."""
+        user = User.objects.create_user("blacklist-sin@ciencias.unam.mx", password="ClaveSegura123!")
+        login = self._login(user.email)
+
+        response = self.client.post(
+            "/api/auth/logout/",
+            {},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {login.data['access']}",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_refresh_de_una_sesion_viva_sigue_funcionando_despues_de_otro_logout(self):
+        user = User.objects.create_user("blacklist-otra@ciencias.unam.mx", password="ClaveSegura123!")
+        primera = self._login(user.email)
+        segunda = self._login(user.email)
+
+        self.client.post(
+            "/api/auth/logout/",
+            {"refresh": primera.data["refresh"]},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {primera.data['access']}",
+        )
+
+        response = self.client.post(
+            "/api/auth/token/refresh/", {"refresh": segunda.data["refresh"]}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
