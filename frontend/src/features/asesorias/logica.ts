@@ -45,7 +45,7 @@ export function sesionesPreviasConNotas(
         a.alumno === alumnoId &&
         a.id !== excluirId &&
         a.estado === "realizada" &&
-        a.notas.trim() !== "",
+        (a.notas ?? "").trim() !== "",
     )
     .sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)));
 }

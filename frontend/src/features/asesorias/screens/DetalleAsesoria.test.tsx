@@ -94,6 +94,13 @@ describe('DetalleAsesoria por rol', () => {
     montar(crearAsesoria({ estado: 'realizada', asistio: true }), false)
     expect(screen.getByText('Asistió a la sesión.')).toBeInTheDocument()
   })
+
+  it('el alumno no crashea cuando el backend omite notas (payload real, no notas: "")', () => {
+    const asesoria = crearAsesoria()
+    delete (asesoria as Partial<Asesoria>).notas
+    montar(asesoria, false)
+    expect(screen.getByText('Salón O-221')).toBeInTheDocument()
+  })
 })
 
 describe('DetalleAsesoria: notas y navegación al historial', () => {

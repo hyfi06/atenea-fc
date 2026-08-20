@@ -111,8 +111,9 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
   const guardarNotas = useGuardarNotas()
   const idNotas = useId()
   const [dialogoCancelarAbierto, setDialogoCancelarAbierto] = useState(false)
-  const [notas, setNotas] = useState(asesoria.notas)
-  const [editandoNotas, setEditandoNotas] = useState(asesoria.notas.trim() === '')
+  const notasGuardadas = asesoria.notas ?? ''
+  const [notas, setNotas] = useState(notasGuardadas)
+  const [editandoNotas, setEditandoNotas] = useState(notasGuardadas.trim() === '')
   const [error, setError] = useState<string | null>(null)
 
   if (asesoria.estado === 'cancelada') {
@@ -147,7 +148,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
               />
               <Boton
                 type="button"
-                disabled={notas === asesoria.notas}
+                disabled={notas === notasGuardadas}
                 cargando={guardarNotas.isPending}
                 onClick={() =>
                   guardarNotas.mutate(

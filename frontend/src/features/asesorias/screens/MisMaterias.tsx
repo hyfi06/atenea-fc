@@ -31,7 +31,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   // En modo consulta quien mira es SAE: GET /registros/ le daría 403, así que
   // la query se apaga y los datos llegan por props.
-  const { registro, cargando } = useRegistroDelSemestre(undefined, !soloLectura)
+  const { registro, cargando } = useRegistroDelSemestre(undefined, !soloLectura && asesorActivo)
   const mapaMaterias = useMapaMaterias()
 
   const agregarMateria = useAgregarMateria(registro?.id ?? 0)

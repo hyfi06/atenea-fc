@@ -104,8 +104,8 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
 
   // En modo consulta quien mira es SAE: sus GET propios darían 403.
-  const { registro, cargando: cargandoRegistro } = useRegistroDelSemestre(undefined, !soloLectura)
-  const { data: propias = [], isPending: cargandoPropias } = useMisDisponibilidades(!soloLectura)
+  const { registro, cargando: cargandoRegistro } = useRegistroDelSemestre(undefined, !soloLectura && asesorActivo)
+  const { data: propias = [], isPending: cargandoPropias } = useMisDisponibilidades(!soloLectura && asesorActivo)
 
   const crearDisponibilidad = useCrearDisponibilidad()
   const actualizarDisponibilidad = useActualizarDisponibilidad()

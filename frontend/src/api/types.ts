@@ -110,9 +110,10 @@ export interface Asesoria {
   estado: EstadoAsesoria
   asistio: boolean | null
   // El backend omite `notas` cuando quien pide no es el asesor dueño
-  // (ADR 0021). Ninguna pantalla del alumno la lee; sólo DetalleAsesoria
-  // (asesor-only) la consume.
-  notas: string
+  // (ADR 0021): el campo viene ausente (`undefined`), no `''`, en esos
+  // payloads. DetalleAsesoria es la única pantalla que la consume para
+  // edición y debe normalizar con `?? ''` antes de leerla como string.
+  notas?: string
   creado_en: string
 }
 
