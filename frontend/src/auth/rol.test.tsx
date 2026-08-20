@@ -5,6 +5,17 @@ import { useEsAlumno, useEsAsesor, useEsMiembroSAE, useEsAcademico, useAsesorAct
 import * as client from '../api/client'
 import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 import type { AuthUser } from '../api/types'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+function Proveedores({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  )
+}
 
 function Sonda() {
   const esAsesor = useEsAsesor()
@@ -15,9 +26,9 @@ function Sonda() {
 function montarCon(usuario: AuthUser) {
   vi.spyOn(client, 'apiGet').mockResolvedValue(usuario)
   render(
-    <AuthProvider>
+    <Proveedores>
       <Sonda />
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
@@ -76,9 +87,9 @@ describe('hooks de rol', () => {
       .mockResolvedValue(usuarioDePrueba({ roles: ['asesor_academico'] }))
 
     render(
-      <AuthProvider>
+      <Proveedores>
         <Sonda />
-      </AuthProvider>,
+      </Proveedores>,
     )
 
     await waitFor(() => expect(screen.getByTestId('rol')).toHaveTextContent('asesor=true'))
@@ -98,9 +109,9 @@ describe('useEsMiembroSAE', () => {
   it('reconoce al miembro de la SAE por el rol del contexto', async () => {
     vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioSAE())
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaSAE />
-      </AuthProvider>,
+      </Proveedores>,
     )
 
     await waitFor(() => {
@@ -111,9 +122,9 @@ describe('useEsMiembroSAE', () => {
   it('no reconoce como SAE a quien no tiene el rol', async () => {
     vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaSAE />
-      </AuthProvider>,
+      </Proveedores>,
     )
 
     await waitFor(() => {
@@ -138,9 +149,9 @@ describe('useEsAcademico', () => {
       }),
     )
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaAcademico />
-      </AuthProvider>,
+      </Proveedores>,
     )
     await waitFor(() => expect(screen.getByTestId('academico')).toHaveTextContent('academico=true'))
   })
@@ -148,9 +159,9 @@ describe('useEsAcademico', () => {
   it('no reconoce como académico a un alumno', async () => {
     vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaAcademico />
-      </AuthProvider>,
+      </Proveedores>,
     )
     await waitFor(() => expect(screen.getByTestId('academico')).toHaveTextContent('academico=false'))
   })
@@ -172,9 +183,9 @@ describe('useAsesorActivo', () => {
       }),
     )
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaAsesorActivo />
-      </AuthProvider>,
+      </Proveedores>,
     )
     await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=true'))
   })
@@ -187,9 +198,9 @@ describe('useAsesorActivo', () => {
       }),
     )
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaAsesorActivo />
-      </AuthProvider>,
+      </Proveedores>,
     )
     await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=false'))
   })
@@ -197,9 +208,9 @@ describe('useAsesorActivo', () => {
   it('es false para quien no tiene perfil de asesor', async () => {
     vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
     render(
-      <AuthProvider>
+      <Proveedores>
         <SondaAsesorActivo />
-      </AuthProvider>,
+      </Proveedores>,
     )
     await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=false'))
   })

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigationType } from 'react-router-dom'
 import { MenuUsuario } from './MenuUsuario'
 import * as auth from '../auth/AuthContext'
 import { usuarioDePrueba } from '../test/factories'
@@ -10,6 +10,16 @@ type Estado = 'loading' | 'authenticated' | 'unauthenticated'
 interface Opciones {
   status?: Estado
   logout?: () => Promise<void>
+}
+
+/** Revela si se llegó a la landing con push o con replace. */
+function SondaLanding() {
+  return (
+    <>
+      <p>pantalla landing</p>
+      <p data-testid="tipo-navegacion">{useNavigationType()}</p>
+    </>
+  )
 }
 
 function montar({ status = 'authenticated', logout = vi.fn().mockResolvedValue(undefined) }: Opciones = {}) {
@@ -26,7 +36,7 @@ function montar({ status = 'authenticated', logout = vi.fn().mockResolvedValue(u
     <MemoryRouter initialEntries={['/home']}>
       <Routes>
         <Route path="/home" element={<MenuUsuario />} />
-        <Route path="/" element={<p>pantalla landing</p>} />
+        <Route path="/" element={<SondaLanding />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -118,5 +128,13 @@ describe('MenuUsuario', () => {
   it('sin sesión no dibuja el disparador', () => {
     montar({ status: 'unauthenticated' })
     expect(screen.queryByRole('button', { name: 'Menú' })).not.toBeInTheDocument()
+  })
+
+  it('reemplaza la entrada del historial al cerrar sesión', async () => {
+    montar()
+    abrir()
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
+    expect(screen.getByTestId('tipo-navegacion')).toHaveTextContent('REPLACE')
   })
 })

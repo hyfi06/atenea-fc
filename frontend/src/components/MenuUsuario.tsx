@@ -68,7 +68,7 @@ export function MenuUsuario() {
     // evita el doble disparo.
     setCerrando(true)
     await logout()
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   // /home es ruta pública: sin sesión no hay identidad que mostrar ni sesión

@@ -3,11 +3,22 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { AuthProvider, useAuth } from './AuthContext'
 import * as client from '../api/client'
 import * as google from './google'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usuarioDePrueba } from '../test/factories'
 import type { AuthUser } from '../api/types'
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+function Proveedores({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  )
+}
+
 function Sonda() {
-  const { status, user, roles, loginWithPassword, loginWithGoogle } = useAuth()
+  const { status, user, roles, loginWithPassword, loginWithGoogle, logout } = useAuth()
   return (
     <>
       <div data-testid="estado">{status}:{user?.email ?? 'sin-usuario'}</div>
@@ -18,15 +29,18 @@ function Sonda() {
       <button type="button" onClick={() => loginWithGoogle()}>
         Entrar con Google
       </button>
+      <button type="button" onClick={() => logout()}>
+        Cerrar sesión
+      </button>
     </>
   )
 }
 
 function montar() {
   render(
-    <AuthProvider>
+    <Proveedores>
       <Sonda />
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
@@ -135,5 +149,18 @@ describe('AuthProvider', () => {
     )
     expect(solicitar).toHaveBeenCalledWith('client-id-de-prueba')
     vi.unstubAllEnvs()
+  })
+
+  it('logout vacía la caché de react-query, para no filtrar datos entre usuarios', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba())
+    vi.spyOn(client, 'apiPost').mockResolvedValue({})
+    queryClient.setQueryData(['asesorias'], [{ id: 1 }])
+
+    montar()
+    await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('authenticated'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+    await waitFor(() => expect(queryClient.getQueryData(['asesorias'])).toBeUndefined())
   })
 })

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, ApiError, CLAVE_ACCESS, CLAVE_REFRESH } from '../api/client'
 import type { AuthUser, LoginResponse, RolUsuario } from '../api/types'
 import { solicitarIdTokenDeGoogle } from './google'
@@ -35,6 +36,7 @@ function limpiarSesion() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [status, setStatus] = useState<EstadoSesion>('loading')
 
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // el logout limpia el lado del cliente igual aunque el request falle
     }
     limpiarSesion()
+    queryClient.clear()
     setUser(null)
     setStatus('unauthenticated')
   }

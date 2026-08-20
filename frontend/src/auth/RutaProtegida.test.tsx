@@ -5,10 +5,21 @@ import { AuthProvider } from './AuthContext'
 import { RutaDeAsesor, RutaDeAsesorias, RutaDeSAE, RutaConSesion } from './RutaProtegida'
 import * as client from '../api/client'
 import { usuarioDePrueba, usuarioSAE } from '../test/factories'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+function Proveedores({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  )
+}
 
 function montar() {
   render(
-    <AuthProvider>
+    <Proveedores>
       <MemoryRouter initialEntries={['/asesorias']}>
         <Routes>
           <Route
@@ -23,7 +34,7 @@ function montar() {
           <Route path="/login" element={<p>pantalla login</p>} />
         </Routes>
       </MemoryRouter>
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
@@ -73,7 +84,7 @@ describe('RutaDeAsesor', () => {
 
 function montarAsesorias() {
   render(
-    <AuthProvider>
+    <Proveedores>
       <MemoryRouter initialEntries={['/asesorias']}>
         <Routes>
           <Route
@@ -88,7 +99,7 @@ function montarAsesorias() {
           <Route path="/login" element={<p>pantalla login</p>} />
         </Routes>
       </MemoryRouter>
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
@@ -133,7 +144,7 @@ describe('RutaDeAsesorias', () => {
 
 function montarSAE() {
   render(
-    <AuthProvider>
+    <Proveedores>
       <MemoryRouter initialEntries={['/sae/asesorias']}>
         <Routes>
           <Route
@@ -148,7 +159,7 @@ function montarSAE() {
           <Route path="/login" element={<p>pantalla login</p>} />
         </Routes>
       </MemoryRouter>
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
@@ -179,7 +190,7 @@ describe('RutaDeSAE', () => {
 
 function montarConSesion() {
   render(
-    <AuthProvider>
+    <Proveedores>
       <MemoryRouter initialEntries={['/home']}>
         <Routes>
           <Route
@@ -193,7 +204,7 @@ function montarConSesion() {
           <Route path="/login" element={<p>pantalla login</p>} />
         </Routes>
       </MemoryRouter>
-    </AuthProvider>,
+    </Proveedores>,
   )
 }
 
