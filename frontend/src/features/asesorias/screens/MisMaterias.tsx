@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { primerMensajeDeError } from '../../../api/errores'
+import { useAsesorActivo } from '../../../auth/rol'
 import { IconBasura } from '../../../components/icons/UiIcons'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
 import { useMapaMaterias } from '../../catalogo/api'
 import { useAgregarMateria, useQuitarMateria, useRegistroDelSemestre } from '../api'
+import { AsesorPendiente } from '../components/AsesorPendiente'
 import { DialogoAgregarMateria } from '../components/DialogoAgregarMateria'
 import { DialogoQuitarMateria } from '../components/DialogoQuitarMateria'
 import { SinRegistroAsesor } from '../components/SinRegistroAsesor'
@@ -25,6 +27,7 @@ interface MisMateriasProps {
 
 export function MisMaterias({ soloLectura = false, materias = null, semestre = null }: MisMateriasProps) {
   const navigate = useNavigate()
+  const asesorActivo = useAsesorActivo()
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   // En modo consulta quien mira es SAE: GET /registros/ le daría 403, así que
   // la query se apaga y los datos llegan por props.
@@ -50,6 +53,10 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
 
   if (!soloLectura && cargando) {
     return <p className="p-6 text-sm text-on-surface-variant">Cargando…</p>
+  }
+
+  if (!soloLectura && !asesorActivo) {
+    return <AsesorPendiente titulo="Mis materias" />
   }
 
   if (!soloLectura && !registro) {

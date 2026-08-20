@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MisMaterias } from './MisMaterias'
 import * as api from '../api'
 import * as catalogo from '../../catalogo/api'
+import * as rol from '../../../auth/rol'
 import type { Materia, RegistroAsesor } from '../../../api/types'
 
 const NOMBRE_LARGO = 'Aplicación de las Ciencias de la Tierra en la Vigilancia de Ensayos Nucleares'
@@ -24,7 +25,8 @@ function envolver({ children }: { children: React.ReactNode }) {
   )
 }
 
-function montar() {
+function montar({ asesorActivo = true }: { asesorActivo?: boolean } = {}) {
+  vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(asesorActivo)
   vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: REGISTRO, cargando: false })
   vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(
     new Map([
@@ -84,6 +86,7 @@ describe('MisMaterias', () => {
   })
 
   it('sin materias muestra el estado vacío', () => {
+    vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
     vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({
       registro: { ...REGISTRO, materias: [] },
       cargando: false,
@@ -104,6 +107,7 @@ describe('MisMaterias', () => {
   })
 
   it('en solo lectura muestra las materias recibidas y el semestre pedido', () => {
+    vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
     vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
     vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[2, materia(2, 'Física')]]))
     vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
@@ -123,6 +127,7 @@ describe('MisMaterias', () => {
   })
 
   it('en solo lectura no ofrece agregar ni quitar', () => {
+    vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
     vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
     vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[2, materia(2, 'Física')]]))
     vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
@@ -143,6 +148,7 @@ describe('MisMaterias', () => {
   })
 
   it('en solo lectura sin materias muestra el vacío del asesor consultado', () => {
+    vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
     vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
     vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map())
     vi.spyOn(api, 'useQuitarMateria').mockReturnValue({
@@ -157,5 +163,11 @@ describe('MisMaterias', () => {
     expect(
       screen.getByText('Este asesor no imparte materias en el semestre seleccionado.'),
     ).toBeInTheDocument()
+  })
+
+  it('el asesor pendiente de aprobación ve el aviso en vez del formulario', () => {
+    montar({ asesorActivo: false })
+    expect(screen.getByText(/pendiente de que la SAE confirme tu nombramiento/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: NOMBRE_LARGO })).not.toBeInTheDocument()
   })
 })

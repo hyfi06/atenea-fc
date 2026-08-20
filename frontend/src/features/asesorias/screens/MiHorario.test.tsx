@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MiHorario } from './MiHorario'
 import * as api from '../api'
+import * as rol from '../../../auth/rol'
 import type { Disponibilidad, RegistroAsesor } from '../../../api/types'
 
 const REGISTRO: RegistroAsesor = { id: 3, semestre: '20262', materias: [1] }
@@ -21,7 +22,9 @@ const BLOQUE_LUNES: Disponibilidad = {
 function montar({
   disponibilidades = [BLOQUE_LUNES],
   totalSesionesFuturas = 0,
-}: { disponibilidades?: Disponibilidad[]; totalSesionesFuturas?: number } = {}) {
+  asesorActivo = true,
+}: { disponibilidades?: Disponibilidad[]; totalSesionesFuturas?: number; asesorActivo?: boolean } = {}) {
+  vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(asesorActivo)
   vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: REGISTRO, cargando: false })
   vi.spyOn(api, 'useMisDisponibilidades').mockReturnValue({
     data: disponibilidades,
@@ -140,6 +143,7 @@ describe('MiHorario', () => {
   })
 
   function montarSoloLectura(disponibilidades: Disponibilidad[]) {
+    vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
     vi.spyOn(api, 'useRegistroDelSemestre').mockReturnValue({ registro: null, cargando: false })
     vi.spyOn(api, 'useMisDisponibilidades').mockReturnValue({
       data: [], isPending: false,
@@ -205,5 +209,11 @@ describe('MiHorario', () => {
 
     expect(screen.queryByText('Salón O-221')).not.toBeInTheDocument()
     expect(screen.getByText('Sin disponibilidad este día')).toBeInTheDocument()
+  })
+
+  it('el asesor pendiente de aprobación ve el aviso en vez de la rejilla', () => {
+    montar({ asesorActivo: false })
+    expect(screen.getByText(/pendiente de que la SAE confirme tu nombramiento/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Mi horario' })).toBeInTheDocument()
   })
 })

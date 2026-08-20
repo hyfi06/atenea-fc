@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { primerMensajeDeError } from '../../../api/errores'
+import { useAsesorActivo } from '../../../auth/rol'
 import type { Disponibilidad, FormatoAsesoria } from '../../../api/types'
 import { IconPresencial, IconVirtual } from '../../../components/icons/UiIcons'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
@@ -16,6 +17,7 @@ import {
   useRegistroDelSemestre,
   useSesionesFuturas,
 } from '../api'
+import { AsesorPendiente } from '../components/AsesorPendiente'
 import { DialogoBloqueActivo } from '../components/DialogoBloqueActivo'
 import { DialogoDesactivarConSesiones } from '../components/DialogoDesactivarConSesiones'
 import { DialogoNuevoBloque } from '../components/DialogoNuevoBloque'
@@ -98,6 +100,7 @@ interface MiHorarioProps {
 
 export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHorarioProps) {
   const navigate = useNavigate()
+  const asesorActivo = useAsesorActivo()
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
 
   // En modo consulta quien mira es SAE: sus GET propios darían 403.
@@ -122,6 +125,10 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
 
   if (!soloLectura && cargandoRegistro) {
     return <p className="p-6 text-sm text-on-surface-variant">Cargando…</p>
+  }
+
+  if (!soloLectura && !asesorActivo) {
+    return <AsesorPendiente titulo="Mi horario" />
   }
 
   if (!soloLectura && !registro) {
