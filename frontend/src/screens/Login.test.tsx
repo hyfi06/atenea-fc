@@ -32,6 +32,7 @@ function montar({
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<p>pantalla home</p>} />
+        <Route path="/forgot-password" element={<p>pantalla recuperar</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -110,5 +111,13 @@ describe('Login', () => {
 
     expect(screen.getByText('pantalla home')).toBeInTheDocument()
     expect(screen.queryByLabelText('Correo')).not.toBeInTheDocument()
+  })
+
+  it('el botón de contraseña olvidada navega a /forgot-password', async () => {
+    montar()
+
+    fireEvent.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+
+    expect(await screen.findByText('pantalla recuperar')).toBeInTheDocument()
   })
 })

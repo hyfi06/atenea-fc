@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Landing } from './screens/Landing'
 import { Login } from './screens/Login'
+import { ForgotPassword } from './screens/ForgotPassword'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
 import { NoEncontrado } from './screens/NoEncontrado'
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route
           path="/home"
           element={

@@ -73,7 +73,11 @@ export function Login() {
           </p>
         )}
 
-        <button type="button" className={`self-end rounded-md text-xs font-medium text-primary ${FOCO_VISIBLE}`}>
+        <button
+          type="button"
+          onClick={() => navigate('/forgot-password')}
+          className={`self-end rounded-md text-xs font-medium text-primary ${FOCO_VISIBLE}`}
+        >
           ¿Olvidaste tu contraseña?
         </button>
 
