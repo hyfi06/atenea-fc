@@ -43,6 +43,7 @@ function asesoria(overrides: Partial<AsesoriaAdmin> = {}): AsesoriaAdmin {
 
 function montar() {
   vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
+  vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
   const adminAsesorias = vi.spyOn(api, 'useAdminAsesorias').mockReturnValue({
     data: [asesoria()], isPending: false,
   } as ReturnType<typeof api.useAdminAsesorias>)

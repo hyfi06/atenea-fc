@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AdminAsesorDetalle } from './AdminAsesorDetalle'
 import * as api from '../api'
 import * as catalogo from '../../catalogo/api'
+import * as rol from '../../../auth/rol'
 import type { AsesorDetalle } from '../../../api/types'
 
 const DETALLE: AsesorDetalle = {
@@ -27,6 +28,7 @@ const DETALLE: AsesorDetalle = {
 }
 
 function montar() {
+  vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(true)
   const adminAsesor = vi.spyOn(api, 'useAdminAsesor').mockReturnValue({
     data: DETALLE, isPending: false,
   } as ReturnType<typeof api.useAdminAsesor>)
