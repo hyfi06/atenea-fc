@@ -1,42 +1,10 @@
-import { useId, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError } from '../api/client'
 import { Boton } from '../components/ui/Boton'
+import { CampoTexto, FOCO_VISIBLE } from '../components/ui/CampoTexto'
 import { PantallaCargando } from '../components/PantallaCargando'
-
-const FOCO_VISIBLE = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-
-interface TextFieldProps {
-  label: string
-  type: string
-  value: string
-  autoComplete: string
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void
-}
-
-function TextField({ label, type, value, autoComplete, onChange }: TextFieldProps) {
-  const id = useId()
-  return (
-    <div className="relative">
-      <label
-        htmlFor={id}
-        className="absolute -top-2 left-3 z-10 bg-background px-1 text-xs text-on-surface-variant"
-      >
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete}
-        required
-        className={`h-14 w-full rounded-md border border-outline bg-transparent px-3.5 text-sm text-on-surface focus:border-primary ${FOCO_VISIBLE}`}
-      />
-    </div>
-  )
-}
 
 export function Login() {
   const navigate = useNavigate()
@@ -96,8 +64,8 @@ export function Login() {
       </button>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <TextField label="Correo" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <CampoTexto etiqueta="Correo" tipo="email" autoComplete="email" valor={email} onChange={(e) => setEmail(e.target.value)} />
+        <CampoTexto etiqueta="Contraseña" tipo="password" autoComplete="current-password" valor={password} onChange={(e) => setPassword(e.target.value)} />
 
         {error && (
           <p role="alert" className="entrada-lista text-sm text-error">
