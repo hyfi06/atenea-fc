@@ -498,3 +498,61 @@ class LoginThrottleTests(APITestCase):
             HTTP_CF_CONNECTING_IP="9.9.9.9",
         )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class PasswordResetSoloCuentasConPasswordTests(APITestCase):
+    """El reset existe para las cuentas que entran con contraseña (staff, SAE,
+    asesores no-alumnos). Una cuenta que solo entra por Google no tiene
+    contraseña que restablecer: pedirla no debe mandar ningún correo, y la
+    respuesta debe ser idéntica a la de un correo que no existe (no-enumeración).
+    """
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def _post_reset(self, email):
+        return self.client.post(
+            "/api/auth/password/reset/", {"email": email}, format="json"
+        )
+
+    def test_cuenta_sin_password_usable_no_recibe_enlace(self):
+        user = User.objects.create_user("solo-google@ciencias.unam.mx")
+        self.assertFalse(user.has_usable_password())
+
+        response = self._post_reset(user.email)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mail.outbox, [])
+
+    def test_correo_inexistente_no_revienta_y_no_manda_nada(self):
+        response = self._post_reset("nadie@ciencias.unam.mx")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mail.outbox, [])
+
+    def test_respuesta_indistinguible_entre_google_only_y_correo_inexistente(self):
+        User.objects.create_user("google-only@ciencias.unam.mx")
+
+        respuesta_google = self._post_reset("google-only@ciencias.unam.mx")
+        correos_google = list(mail.outbox)
+        mail.outbox = []
+        cache.clear()
+        respuesta_inexistente = self._post_reset("nadie@ciencias.unam.mx")
+
+        self.assertEqual(respuesta_google.status_code, respuesta_inexistente.status_code)
+        self.assertEqual(respuesta_google.data, respuesta_inexistente.data)
+        self.assertEqual(len(correos_google), len(mail.outbox))
+
+    def test_cuenta_con_password_usable_sigue_recibiendo_el_enlace(self):
+        user = User.objects.create_user(
+            "con-password@ciencias.unam.mx", password="ClaveSegura123!"
+        )
+
+        response = self._post_reset(user.email)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/reset-password/", mail.outbox[0].body)

@@ -72,6 +72,27 @@ class PasswordResetSerializer(BasePasswordResetSerializer):
     def get_email_options(self):
         return {"url_generator": atenea_password_reset_url_generator}
 
+    def validate_email(self, value):
+        """Acota el reset a cuentas password-based.
+
+        No existe un campo de "tipo de cuenta" en `User`: la distinción es de
+        comportamiento. Los alumnos se dan de alta con `.create()` (password no
+        usable) y entran por Google; las cuentas con contraseña se crean desde el
+        admin. `has_usable_password()` es el criterio verificable.
+
+        Se vacía `reset_form.users` en vez de levantar un error para caer en el
+        MISMO camino que un correo desconocido (`request_password_reset` con
+        `users=[]`): la respuesta queda indistinguible y no filtra ni qué cuentas
+        existen ni de qué tipo son.
+        """
+        value = super().validate_email(value)
+        self.reset_form.users = [
+            user
+            for user in getattr(self.reset_form, "users", [])
+            if user.has_usable_password()
+        ]
+        return value
+
 
 class UserDetailsSerializer(BaseUserDetailsSerializer):
     """Perfil y rol del usuario autenticado en una sola llamada (deuda 0010).
