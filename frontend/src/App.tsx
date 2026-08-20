@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Landing } from './screens/Landing'
 import { Login } from './screens/Login'
 import { ForgotPassword } from './screens/ForgotPassword'
+import { ResetPassword } from './screens/ResetPassword'
 import { Home } from './screens/Home'
 import { HealthCheck } from './screens/HealthCheck'
 import { NoEncontrado } from './screens/NoEncontrado'
@@ -26,6 +27,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
         <Route
           path="/home"
           element={
