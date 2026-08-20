@@ -67,7 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      await apiPost('/api/auth/logout/', {})
+      // Con `token_blacklist` instalado (deuda 0007), el logout invalida el
+      // refresh en el servidor: en prod lo toma de la cookie httpOnly, en dev
+      // hay que mandárselo explícito o responde 401 y no invalida nada.
+      // Mismo criterio que `refrescarToken` en api/client.ts.
+      const body = import.meta.env.PROD ? {} : { refresh: localStorage.getItem(CLAVE_REFRESH) }
+      await apiPost('/api/auth/logout/', body)
     } catch {
       // el logout limpia el lado del cliente igual aunque el request falle
     }

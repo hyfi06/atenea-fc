@@ -30,7 +30,7 @@ function Sonda() {
         Entrar con Google
       </button>
       <button type="button" onClick={() => logout()}>
-        Cerrar sesión
+        Salir
       </button>
     </>
   )
@@ -159,8 +159,31 @@ describe('AuthProvider', () => {
     montar()
     await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('authenticated'))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Salir' }))
 
     await waitFor(() => expect(queryClient.getQueryData(['asesorias'])).toBeUndefined())
+  })
+
+  it('el logout manda el refresh token en el body (dev): sin él el blacklist responde 401', async () => {
+    vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
+    const apiPost = vi.spyOn(client, 'apiPost').mockResolvedValue({
+      access: 'jwt-access',
+      refresh: 'jwt-refresh',
+      user: usuarioDePrueba({ roles: ['alumno'] }),
+    })
+
+    montar()
+    await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('unauthenticated'))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar con contraseña' }))
+    await waitFor(() => expect(screen.getByTestId('roles')).toHaveTextContent('alumno'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salir' }))
+
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/auth/logout/', { refresh: 'jwt-refresh' }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('estado')).toHaveTextContent('unauthenticated:sin-usuario'),
+    )
   })
 })
