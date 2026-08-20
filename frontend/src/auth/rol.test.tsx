@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { AuthProvider } from './AuthContext'
-import { useEsAlumno, useEsAsesor, useEsMiembroSAE, useEsAcademico } from './rol'
+import { useEsAlumno, useEsAsesor, useEsMiembroSAE, useEsAcademico, useAsesorActivo } from './rol'
 import * as client from '../api/client'
 import { usuarioDePrueba, usuarioSAE } from '../test/factories'
 import type { AuthUser } from '../api/types'
@@ -153,5 +153,54 @@ describe('useEsAcademico', () => {
       </AuthProvider>,
     )
     await waitFor(() => expect(screen.getByTestId('academico')).toHaveTextContent('academico=false'))
+  })
+})
+
+function SondaAsesorActivo() {
+  const activo = useAsesorActivo()
+  return <div data-testid="activo">{`activo=${activo}`}</div>
+}
+
+describe('useAsesorActivo', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('es true cuando la SAE ya aprobó el perfil', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(
+      usuarioDePrueba({
+        roles: ['academico', 'asesor_academico'],
+        perfil_asesor_academico: { id: 3, area: 2, area_nombre: 'Matemáticas', activo: true },
+      }),
+    )
+    render(
+      <AuthProvider>
+        <SondaAsesorActivo />
+      </AuthProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=true'))
+  })
+
+  it('es false mientras el perfil está pendiente, aunque useEsAsesor sea true', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(
+      usuarioDePrueba({
+        roles: ['academico', 'asesor_academico'],
+        perfil_asesor_academico: { id: 3, area: 2, area_nombre: 'Matemáticas', activo: false },
+      }),
+    )
+    render(
+      <AuthProvider>
+        <SondaAsesorActivo />
+      </AuthProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=false'))
+  })
+
+  it('es false para quien no tiene perfil de asesor', async () => {
+    vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: ['alumno'] }))
+    render(
+      <AuthProvider>
+        <SondaAsesorActivo />
+      </AuthProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('activo')).toHaveTextContent('activo=false'))
   })
 })

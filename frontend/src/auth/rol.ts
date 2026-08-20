@@ -15,6 +15,13 @@ export function useEsAsesor(): boolean {
   return useAuth().roles.includes('asesor_academico')
 }
 
+/** Distinto de useEsAsesor: existe el perfil pero la SAE aún no lo aprueba.
+ *  Mientras tanto no puede registrar materias ni disponibilidad (bug de
+ *  staging 2026-08-19: antes sí podía). */
+export function useAsesorActivo(): boolean {
+  return useAuth().user?.perfil_asesor_academico?.activo ?? false
+}
+
 export function useEsAlumno(): boolean {
   return useAuth().roles.includes('alumno')
 }
