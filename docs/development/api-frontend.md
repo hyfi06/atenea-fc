@@ -65,6 +65,14 @@ El mismo objeto `user` es lo que devuelve `GET /api/auth/user/` (mismo serialize
 
 > **Estado (2026-08-01):** el flujo de cookies de prod ya es funcional — `config/settings/prod.py` define `JWT_AUTH_COOKIE`/`JWT_AUTH_REFRESH_COOKIE`/`JWT_AUTH_SECURE`, y `DEFAULT_AUTHENTICATION_CLASSES` usa `JWTCookieAuthentication` (lee el header si está presente, si no cae a la cookie) — verificado con tests en `accounts/tests/test_auth.py::CookieBasedLoginTests`. Un detalle a tener presente: `access` sigue apareciendo en el body JSON de `/api/auth/login/` y `/api/auth/google/` incluso con `JWT_AUTH_HTTPONLY=True` (comportamiento default de `dj-rest-auth`, no algo que este proyecto controle sin sobreescribir la vista) — el SPA en prod debe simplemente ignorar ese campo del body y depender solo de la cookie (`credentials: 'include'`), nunca leerlo ni guardarlo.
 
+#### CSRF en prod (desde 2026-08-19)
+
+`JWT_AUTH_COOKIE_USE_CSRF = True` en prod: todo `POST`/`PATCH`/`DELETE` que se autentique **por cookie** exige además el header `X-CSRFToken`, o responde `403 {"detail": "CSRF Failed: ..."}`. Cierra la [deuda 0009](../technical-debt/0009-sin-csrf-en-cookie-jwt.md), confirmada explotable en el pentest de staging.
+
+- La cookie `csrftoken` la emiten `/api/auth/login/`, `/api/auth/google/` y `GET /api/auth/user/` (decoradas con `ensure_csrf_cookie`). No es `httpOnly`: el SPA tiene que poder leerla.
+- El SPA la reenvía desde `frontend/src/api/client.ts` (`leerCookie('csrftoken')` → header `X-CSRFToken`) en todo método que no sea seguro.
+- Los métodos seguros (`GET`/`HEAD`/`OPTIONS`) nunca se rechazan, y un request autenticado con `Authorization: Bearer` tampoco: `enforce_csrf` solo corre cuando la autenticación vino de la cookie (por eso dev no cambia).
+
 ### Refresh y expiración
 
 - Access token: vive 15 minutos (`ACCESS_TOKEN_LIFETIME`). El frontend necesita refrescar en `401` o antes de que expire.
@@ -76,15 +84,20 @@ El mismo objeto `user` es lo que devuelve `GET /api/auth/user/` (mismo serialize
 
 ### Logout
 
-`POST /api/auth/logout/` limpia el estado del lado del cliente (cookie si aplica). **No invalida el refresh token en el servidor** — no está instalado `token_blacklist`, así que el refresh sigue siendo válido hasta su expiración natural (7 días) aunque el usuario "cierre sesión". Deuda técnica aceptada, ver [0007](../technical-debt/0007-logout-sin-invalidacion-refresh-token.md).
+`POST /api/auth/logout/` limpia el estado del lado del cliente (cookie si aplica) **y manda el refresh token al blacklist** — desde 2026-08-19 está instalada `rest_framework_simplejwt.token_blacklist` ([ADR 0029](../decisions/0029-recuperacion-password-y-endurecimiento-de-sesion.md), cierra la [deuda 0007](../technical-debt/0007-logout-sin-invalidacion-refresh-token.md)). Un refresh usado después del logout es rechazado con `401` por `/api/auth/token/refresh/`.
+
+El refresh token es obligatorio en el request o el logout responde `401` sin invalidar nada:
+
+- **Dev:** body `{"refresh": "<token>"}`.
+- **Prod:** body vacío `{}`; la vista lo toma de la cookie `atenea-refresh-token`.
 
 ### Otros endpoints de `accounts`
 
 | Método | Ruta | Auth | Notas |
 |---|---|---|---|
 | `GET/PUT/PATCH` | `/api/auth/user/` | requerida | ver payload arriba; solo `first_name` es editable |
-| `POST` | `/api/auth/password/reset/` | `AllowAny` | `{email}` → siempre `200`, incluso si el correo no existe. El link generado apunta a `{FRONTEND_URL}/reset-password/:uid/:token` — **esa ruta debe existir en el SPA** |
-| `POST` | `/api/auth/password/reset/confirm/` | `AllowAny` | `{uid, token, new_password1, new_password2}` |
+| `POST` | `/api/auth/password/reset/` | `AllowAny` | `{email}` → siempre `200`, con el mismo cuerpo si el correo no existe **o si la cuenta solo entra por Google** (no manda correo en ninguno de esos dos casos). El link generado apunta a `{FRONTEND_URL}/reset-password/:uid/:token` — el SPA la sirve en `screens/ResetPassword.tsx`. Throttle propio: `3/hour` por IP → `429` |
+| `POST` | `/api/auth/password/reset/confirm/` | `AllowAny` | `{uid, token, new_password1, new_password2}`. Errores `400`: `{"token": [...]}`/`{"uid": [...]}` si el enlace venció, `{"new_password1"/"new_password2": [...]}` si la contraseña no pasa los validadores. Throttle propio: `10/hour` por IP |
 | `POST` | `/api/auth/password/change/` | requerida | `{old_password, new_password1, new_password2}` |
 
 El SPA consume `roles` de este payload para decidir qué puede ver el usuario (`frontend/src/auth/rol.ts`: `useEsAsesor`, `useEsAlumno`; `frontend/src/auth/RutaProtegida.tsx`). Ya **no** existe el sondeo de `GET /api/asesorias/registros/` con lectura de 200 vs 403 que describía la deuda técnica 0010: si `roles` no viene en la respuesta, el frontend trata al usuario como si no tuviera ningún rol.
@@ -237,4 +250,5 @@ Todo lo demás requiere `Authorization: Bearer <access>` (o cookie en prod, con 
 - [ADR 0015 — Catálogo académico](../decisions/0015-catalogo-academico.md) (`carreras`, `materias`)
 - [ADR 0016 — Asesorías académicas](../decisions/0016-asesorias-academicas.md) / [ADR 0017 — API](../decisions/0017-asesorias-academicas-api.md)
 - [ADR 0018 — Contrato de autenticación frontend-backend](../decisions/0018-contrato-autenticacion-frontend-backend.md)
-- [Deuda técnica](../technical-debt/README.md) — en particular 0001 (sin calendario académico), 0006 (sin paginación), 0007 (logout sin invalidación)
+- [ADR 0029 — Recuperación de contraseña y endurecimiento de la sesión](../decisions/0029-recuperacion-password-y-endurecimiento-de-sesion.md)
+- [Deuda técnica](../technical-debt/README.md) — en particular 0001 (sin calendario académico), 0006 (sin paginación), 0023 (correo de reset con template default), 0024 (blacklist sin purga)

@@ -15,8 +15,6 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos](0004-sin-cierre-automatico-recordatorios.md)
 - [0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas](0005-editar-disponibilidad-no-propaga.md)
 - [0006 — Sin paginación en los endpoints de listado](0006-sin-paginacion-listados.md)
-- [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md)
-- [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md)
 - [0014 — Alta de `PerfilSAE` solo por admin](0014-alta-perfil-sae-solo-admin.md)
 - [0015 — Estáticos por WhiteNoise; media en MinIO/S3 pendiente](0015-estaticos-whitenoise-media-pendiente.md)
 - [0016 — `Materia.habilitada_asesorias` se cura manualmente en el admin](0016-habilitar-asesorias-manual-en-admin.md)
@@ -26,6 +24,8 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0020 — CSP del frontend con `unsafe-inline` en `style-src`, sin CSP en el backend](0020-csp-frontend-parcial.md)
 - [0021 — Envío de correo depende de una cuenta de Workspace dedicada y su app password](0021-smtp-cuenta-dedicada-app-password.md)
 - [0022 — Detección de rol por usuario, no por sesión, en pantallas de asesoría](0022-deteccion-de-rol-por-usuario-no-por-sesion.md)
+- [0023 — El correo de recuperación usa el template default de allauth](0023-correo-de-reset-con-template-default.md)
+- [0024 — Las tablas del blacklist de tokens crecen sin purga](0024-blacklist-sin-purga-de-tokens-vencidos.md)
 
 ### Resuelta
 
@@ -35,3 +35,5 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0008 — `PerfilAlumno` solo registra una carrera vigente](0008-perfil-alumno-una-sola-carrera.md) — resuelta 2026-08-15
 - [0012 — Oferta/asesores/búsqueda no acotan por semestre vigente](0012-oferta-asesorias-sin-scope-de-semestre.md) — resuelta 2026-08-15
 - [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md) — resuelta 2026-08-18
+- [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md) — resuelta 2026-08-19
+- [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md) — resuelta 2026-08-19

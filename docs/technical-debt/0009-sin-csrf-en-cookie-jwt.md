@@ -1,6 +1,6 @@
 # 0009 — Sin protección CSRF explícita en el transporte de JWT por cookie
 
-**Estado:** Activa
+**Estado:** Resuelta — 2026-08-19 ([ADR 0029](../decisions/0029-recuperacion-password-y-endurecimiento-de-sesion.md))
 **Origen:** [ADR 0018](../decisions/0018-contrato-autenticacion-frontend-backend.md)
 
 ## Qué se simplificó
@@ -22,3 +22,7 @@ una Asesoria) sin token CSRF ni header custom, solo con la cookie —
 aceptado por la API. Sigue activa; `SameSite=Lax` en las cookies JWT
 mitiga el vector de formulario cross-site clásico. Ver auditoría:
 https://claude.ai/code/artifact/e73411a0-fdae-405e-ab8f-d38b56482f9e
+
+## Cómo se resolvió (2026-08-19)
+
+`JWT_AUTH_COOKIE_USE_CSRF = True` en `config/settings/prod.py`: toda escritura autenticada por cookie exige el header `X-CSRFToken`. Para que el SPA tenga qué reenviar, las vistas de login, de Google y de `/api/auth/user/` se decoran con `ensure_csrf_cookie` (Django solo emite la cookie `csrftoken` si alguna vista llama `get_token(request)`), y `frontend/src/api/client.ts` la lee y la manda en todo `POST`/`PATCH`/`DELETE`. El POST del pentest quedó como test de regresión en `accounts/tests/test_auth.py::CsrfEnCookieJwtTests`.
