@@ -31,8 +31,9 @@ export function SolicitudAsesor() {
       <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
         <h1 className="text-lg font-semibold text-on-background">Solicitud enviada</h1>
         <p className="text-sm text-on-surface-variant">
-          Tu perfil de asesor quedó pendiente de que la SAE confirme que tu nombramiento
-          está vigente. Mientras tanto ya puedes cargar tus materias y tu horario.
+          Tu perfil de asesor quedó pendiente de que la SAE confirme que tu
+          nombramiento está vigente. En cuanto quede aprobado podrás cargar tus
+          materias y tu horario.
         </p>
         <Boton type="button" onClick={() => navigate('/asesorias')} className="w-fit px-6">
           Ir a Asesorías

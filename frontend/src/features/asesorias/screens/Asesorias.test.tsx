@@ -21,7 +21,7 @@ function envolver({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/asesorias']}>
+      <MemoryRouter initialEntries={[{ pathname: '/asesorias', state: estadoInicial }]}>
         <Routes>
           <Route path="/asesorias" element={children} />
           <Route path="/home" element={<p>pantalla home</p>} />
@@ -31,18 +31,36 @@ function envolver({ children }: { children: React.ReactNode }) {
   )
 }
 
-function montar({ esAsesor, esAlumno }: { esAsesor: boolean; esAlumno: boolean }) {
+let estadoInicial: unknown = null
+
+function montar({
+  esAsesor,
+  esAlumno,
+  asesorActivo = true,
+  state = null,
+  historial = [],
+}: {
+  esAsesor: boolean
+  esAlumno: boolean
+  asesorActivo?: boolean
+  state?: unknown
+  historial?: Asesoria[]
+}) {
+  estadoInicial = state
+  // jsdom no implementa scrollIntoView y `destacar` lo invoca.
+  Element.prototype.scrollIntoView = vi.fn()
   vi.spyOn(rol, 'useEsAsesor').mockReturnValue(esAsesor)
   vi.spyOn(rol, 'useEsAlumno').mockReturnValue(esAlumno)
   vi.spyOn(rol, 'useEsAcademico').mockReturnValue(false)
+  vi.spyOn(rol, 'useAsesorActivo').mockReturnValue(asesorActivo)
   vi.spyOn(api, 'useMisAsesorias').mockReturnValue({
     data: [crearAsesoria({ id: 1 })], isPending: false,
   } as ReturnType<typeof api.useMisAsesorias>)
   vi.spyOn(api, 'useSemestres').mockReturnValue({
-    data: [], isPending: false,
+    data: historial.length > 0 ? ['20262'] : [], isPending: false,
   } as ReturnType<typeof api.useSemestres>)
   vi.spyOn(api, 'useAsesoriasDeSemestre').mockReturnValue({
-    data: [], isPending: false,
+    data: historial, isPending: false,
   } as ReturnType<typeof api.useAsesoriasDeSemestre>)
   vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(
     new Map([[1, { id: 1, nombre: 'Cálculo I' } as never]]),
@@ -76,5 +94,32 @@ describe('Asesorias (vista unificada)', () => {
     montar({ esAsesor: false, esAlumno: true })
     fireEvent.click(screen.getByRole('button', { name: '← Inicio' }))
     expect(screen.getByText('pantalla home')).toBeInTheDocument()
+  })
+
+  it('el asesor pendiente no ve Mis materias / Mi horario sino el aviso de revisión', () => {
+    montar({ esAsesor: true, esAlumno: false, asesorActivo: false })
+    expect(screen.queryByRole('button', { name: 'Mis materias' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mi horario' })).not.toBeInTheDocument()
+    expect(screen.getByText('Tu perfil de asesor está pendiente de revisión de la SAE.')).toBeInTheDocument()
+  })
+
+  it('al llegar con historialDestacarId abre la pestaña Historial', () => {
+    montar({
+      esAsesor: true,
+      esAlumno: false,
+      state: { historialDestacarId: 7 },
+      historial: [crearAsesoria({ id: 7, estado: 'realizada', fecha: '2020-01-01' })],
+    })
+    expect(screen.getByRole('tab', { name: 'Historial' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('destaca en Historial la sesión que viene en el router state', () => {
+    montar({
+      esAsesor: true,
+      esAlumno: false,
+      state: { historialDestacarId: 7 },
+      historial: [crearAsesoria({ id: 7, estado: 'realizada', fecha: '2020-01-01' })],
+    })
+    expect(screen.getByRole('button', { name: /Cálculo I/ })).toHaveClass('pulso-exito')
   })
 })

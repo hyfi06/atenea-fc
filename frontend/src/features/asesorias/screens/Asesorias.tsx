@@ -6,7 +6,7 @@ import { useMapaMaterias } from '../../catalogo/api'
 import { proximas, historial } from '../logica'
 import { TarjetaAsesoria } from '../components/TarjetaAsesoria'
 import { Skeleton } from '../../../components/ui/Skeleton'
-import { useEsAsesor, useEsAlumno, useEsAcademico } from '../../../auth/rol'
+import { useEsAsesor, useEsAlumno, useEsAcademico, useAsesorActivo } from '../../../auth/rol'
 import type { Asesoria } from '../../../api/types'
 
 export function Asesorias() {
@@ -15,19 +15,28 @@ export function Asesorias() {
   const esAsesor = useEsAsesor()
   const esAlumno = useEsAlumno()
   const esAcademico = useEsAcademico()
+  const asesorActivo = useAsesorActivo()
   const { data: asesorias = [], isPending } = useMisAsesorias()
   const mapaMaterias = useMapaMaterias()
   // `location.state` sobrevive a refresh/back-nav, así que el resaltado se
   // reactivaría sobre una asesoría vieja. Lo consumimos una vez: leemos el id
   // a estado local y limpiamos el state de navegación para que el pulso/scroll
   // dispare sólo tras el agendado real.
+  const [tabActiva, setTabActiva] = useState<'proximas' | 'historial'>('proximas')
   const [nuevaAsesoriaId, setNuevaAsesoriaId] = useState<number | null>(null)
+  const [historialDestacarId, setHistorialDestacarId] = useState<number | null>(null)
   const nombreMateria = (id: number) => mapaMaterias.get(id)?.nombre ?? `Materia #${id}`
 
   useEffect(() => {
-    const id = (location.state as { nuevaAsesoriaId?: number } | null)?.nuevaAsesoriaId
-    if (id != null) {
-      setNuevaAsesoriaId(id)
+    const state = location.state as
+      | { nuevaAsesoriaId?: number; historialDestacarId?: number }
+      | null
+    if (state?.nuevaAsesoriaId != null) {
+      setNuevaAsesoriaId(state.nuevaAsesoriaId)
+      navigate(location.pathname, { replace: true, state: null })
+    } else if (state?.historialDestacarId != null) {
+      setHistorialDestacarId(state.historialDestacarId)
+      setTabActiva('historial')
       navigate(location.pathname, { replace: true, state: null })
     }
   }, [location, navigate])
@@ -40,24 +49,29 @@ export function Asesorias() {
       <h1 className="text-lg font-semibold text-on-background">Asesorías</h1>
 
       <div className="flex gap-2">
-        {esAsesor && (
-          <>
-            <button
-              type="button"
-              onClick={() => navigate('/asesorias/materias')}
-              className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
-            >
-              Mis materias
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/asesorias/horario')}
-              className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
-            >
-              Mi horario
-            </button>
-          </>
-        )}
+        {esAsesor &&
+          (asesorActivo ? (
+            <>
+              <button
+                type="button"
+                onClick={() => navigate('/asesorias/materias')}
+                className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
+              >
+                Mis materias
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/asesorias/horario')}
+                className="foco-visible min-h-11 flex-1 rounded-full border border-outline px-3 text-sm font-medium text-primary"
+              >
+                Mi horario
+              </button>
+            </>
+          ) : (
+            <p role="status" className="entrada-lista w-full rounded-lg bg-secondary-container px-3 py-2 text-sm text-on-secondary-container">
+              Tu perfil de asesor está pendiente de revisión de la SAE.
+            </p>
+          ))}
         {esAcademico && !esAsesor && (
           <button
             type="button"
@@ -78,7 +92,7 @@ export function Asesorias() {
         )}
       </div>
 
-      <Tabs defaultValue="proximas">
+      <Tabs value={tabActiva} onValueChange={(v) => setTabActiva(v as 'proximas' | 'historial')}>
         <TabsList>
           <TabsTrigger value="proximas">Próximas</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
@@ -94,14 +108,20 @@ export function Asesorias() {
           />
         </TabsContent>
         <TabsContent value="historial">
-          <Historial nombreMateria={nombreMateria} />
+          <Historial nombreMateria={nombreMateria} destacarId={historialDestacarId} />
         </TabsContent>
       </Tabs>
     </main>
   )
 }
 
-function Historial({ nombreMateria }: { nombreMateria: (id: number) => string }) {
+function Historial({
+  nombreMateria,
+  destacarId,
+}: {
+  nombreMateria: (id: number) => string
+  destacarId: number | null
+}) {
   const { data: semestres = [], isPending } = useSemestres()
   const [activo, setActivo] = useState<string | null>(null)
   const semestre = activo ?? semestres[0] ?? null
@@ -132,7 +152,7 @@ function Historial({ nombreMateria }: { nombreMateria: (id: number) => string })
         asesorias={historial(asesorias)}
         cargando={cargandoLista}
         nombreMateria={nombreMateria}
-        destacarId={null}
+        destacarId={destacarId}
         vacio="Sin sesiones en este semestre."
       />
     </div>
