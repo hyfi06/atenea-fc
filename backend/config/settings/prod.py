@@ -43,6 +43,13 @@ REST_AUTH = {
     "JWT_AUTH_REFRESH_COOKIE": "atenea-refresh-token",
     "JWT_AUTH_SECURE": True,
     "JWT_AUTH_SAMESITE": "Lax",
+    # Cierra la deuda 0009 (explotada en el pentest de staging, 2026-08-18):
+    # toda escritura autenticada por cookie exige además el header X-CSRFToken.
+    # SameSite=Lax no bastaba: se evalúa sobre el dominio registrable, así que
+    # un subdominio hermano sigue siendo "same-site" y podía postear con la
+    # cookie. Solo en prod: en dev el JWT viaja en el header Authorization y
+    # JWTCookieAuthentication nunca llega a enforce_csrf.
+    "JWT_AUTH_COOKIE_USE_CSRF": True,
 }
 # CORS_ALLOW_CREDENTIALS ahora vive en base.py (aplica igual en dev y prod).
 

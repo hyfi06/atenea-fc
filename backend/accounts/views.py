@@ -1,5 +1,12 @@
 from dj_rest_auth.registration.views import SocialLoginView
-from dj_rest_auth.views import LoginView, PasswordResetConfirmView, PasswordResetView
+from dj_rest_auth.views import (
+    LoginView,
+    PasswordResetConfirmView,
+    PasswordResetView,
+    UserDetailsView,
+)
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .adapters import GoogleIdTokenAdapter
 from .serializers import GoogleLoginSerializer
@@ -57,13 +64,32 @@ class LoginResponseSinAccessEnBodyMixin:
         return response
 
 
+# `ensure_csrf_cookie` fuerza a Django a emitir la cookie `csrftoken` en la
+# respuesta. Sin ella, JWT_AUTH_COOKIE_USE_CSRF (prod) rechazaría toda escritura:
+# la cookie solo se emite si alguna vista llama get_token(request), y el SPA se
+# sirve desde nginx, así que su primer contacto con Django es el login o el
+# GET de /api/auth/user/ al montar. La cookie NO es httpOnly a propósito — el
+# SPA tiene que poder leerla para reenviarla como header X-CSRFToken.
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class AteneaLoginView(LoginResponseSinAccessEnBodyMixin, LoginView):
     pass
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class GoogleLoginView(LoginResponseSinAccessEnBodyMixin, SocialLoginView):
     adapter_class = GoogleIdTokenAdapter
     serializer_class = GoogleLoginSerializer
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class AteneaUserDetailsView(UserDetailsView):
+    """Igual que la de dj-rest-auth, solo emite la cookie CSRF.
+
+    Cubre la transición: una sesión abierta desde antes de este cambio no tiene
+    cookie `csrftoken`, y el SPA hace GET /api/auth/user/ al montar. GET es un
+    método seguro, nunca se rechaza por CSRF, así que ahí se siembra la cookie
+    sin obligar a nadie a volver a entrar.
+    """
 
 
 class AteneaPasswordResetView(PasswordResetView):

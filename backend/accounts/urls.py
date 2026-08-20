@@ -4,6 +4,7 @@ from .views import (
     AteneaLoginView,
     AteneaPasswordResetConfirmView,
     AteneaPasswordResetView,
+    AteneaUserDetailsView,
     GoogleLoginView,
 )
 
@@ -23,6 +24,7 @@ urlpatterns = [
         AteneaPasswordResetConfirmView.as_view(),
         name="rest_password_reset_confirm",
     ),
+    path("user/", AteneaUserDetailsView.as_view(), name="rest_user_details"),
     path("", include("dj_rest_auth.urls")),
     path("google/", GoogleLoginView.as_view(), name="google_login"),
 ]

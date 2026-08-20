@@ -186,7 +186,7 @@ class ProdSettingsJWTCookieTests(TestCase):
             "print(json.dumps({\n"
             "    'REST_AUTH': {\n"
             "        k: settings.REST_AUTH.get(k)\n"
-            "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE', 'JWT_AUTH_SAMESITE')\n"
+            "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE', 'JWT_AUTH_SAMESITE', 'JWT_AUTH_COOKIE_USE_CSRF')\n"
             "    },\n"
             "    'AUTH_CLASSES': settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'],\n"
             "}))\n"
@@ -207,6 +207,7 @@ class ProdSettingsJWTCookieTests(TestCase):
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_REFRESH_COOKIE"], "atenea-refresh-token")
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_SECURE"], True)
         self.assertEqual(output["REST_AUTH"]["JWT_AUTH_SAMESITE"], "Lax")
+        self.assertEqual(output["REST_AUTH"]["JWT_AUTH_COOKIE_USE_CSRF"], True)
         self.assertEqual(
             output["AUTH_CLASSES"], ["dj_rest_auth.jwt_auth.JWTCookieAuthentication"]
         )
@@ -697,5 +698,97 @@ class LogoutBlacklistTests(APITestCase):
         response = self.client.post(
             "/api/auth/token/refresh/", {"refresh": segunda.data["refresh"]}, format="json"
         )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+CSRF_COOKIE_SETTINGS = dict(PROD_COOKIE_SETTINGS, JWT_AUTH_COOKIE_USE_CSRF=True)
+
+
+class CsrfEnCookieJwtTests(APITestCase):
+    """Deuda 0009, confirmada explotable en el pentest de staging (2026-08-18):
+    una escritura autenticada solo por cookie, sin ningún token CSRF, era
+    aceptada por la API.
+
+    Ojo con `enforce_csrf_checks=True`: el APIClient default de DRF marca
+    `request._dont_enforce_csrf_checks` y el middleware CSRF acepta todo, así
+    que sin ese flag estos tests pasarían sin probar nada.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user("csrf@ciencias.unam.mx", password="ClaveSegura123!")
+
+    def tearDown(self):
+        cache.clear()
+
+    def _login(self):
+        return self.client.post(
+            "/api/auth/login/",
+            {"email": self.user.email, "password": "ClaveSegura123!"},
+            format="json",
+        )
+
+    def test_escritura_solo_con_cookie_y_sin_header_csrf_es_403(self):
+        with patch.multiple(dra_settings, **CSRF_COOKIE_SETTINGS):
+            login = self._login()
+            cliente = APIClient(enforce_csrf_checks=True)
+            cliente.cookies["atenea-access-token"] = login.cookies["atenea-access-token"].value
+
+            response = cliente.patch("/api/auth/user/", {"first_name": "Ana"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_escritura_con_cookie_csrf_y_header_pasa(self):
+        with patch.multiple(dra_settings, **CSRF_COOKIE_SETTINGS):
+            login = self._login()
+            cliente = APIClient(enforce_csrf_checks=True)
+            cliente.cookies["atenea-access-token"] = login.cookies["atenea-access-token"].value
+            # GET es método seguro: nunca se rechaza y siembra la cookie CSRF.
+            cliente.get("/api/auth/user/")
+            csrftoken = cliente.cookies["csrftoken"].value
+
+            response = cliente.patch(
+                "/api/auth/user/",
+                {"first_name": "Ana"},
+                format="json",
+                HTTP_X_CSRFTOKEN=csrftoken,
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["first_name"], "Ana")
+
+    def test_el_login_emite_la_cookie_csrf(self):
+        """El SPA se sirve desde nginx: el primer contacto con Django es el
+        login (o el GET de /api/auth/user/). Si ninguno emite la cookie, el SPA
+        no tiene nada que reenviar."""
+        response = self._login()
+
+        self.assertIn("csrftoken", response.cookies)
+
+    def test_el_get_de_user_emite_la_cookie_csrf(self):
+        login = self._login()
+        cliente = APIClient(enforce_csrf_checks=True)
+
+        response = cliente.get(
+            "/api/auth/user/", HTTP_AUTHORIZATION=f"Bearer {login.data['access']}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("csrftoken", response.cookies)
+
+    def test_header_authorization_no_exige_csrf(self):
+        """Dev (y cualquier cliente con Bearer) no se ve afectado: enforce_csrf
+        solo corre cuando la autenticación vino de la cookie."""
+        with patch.multiple(dra_settings, **CSRF_COOKIE_SETTINGS):
+            login = self._login()
+            cliente = APIClient(enforce_csrf_checks=True)
+
+            response = cliente.patch(
+                "/api/auth/user/",
+                {"first_name": "Ana"},
+                format="json",
+                HTTP_AUTHORIZATION=f"Bearer {login.cookies['atenea-access-token'].value}",
+            )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
