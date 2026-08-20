@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { apiGet, apiPost } from './client'
+import { apiGet, apiPost, apiPatch } from './client'
 
 const originalFetch = global.fetch
 
@@ -65,5 +65,62 @@ describe('apiPost', () => {
     expect(init.method).toBe('POST')
     expect(init.body).toBe(JSON.stringify({ motivo: 'ya no puedo' }))
     expect(init.credentials).toBe('include')
+  })
+})
+
+describe('X-CSRFToken', () => {
+  afterEach(() => {
+    document.cookie = 'csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+    global.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  function mockearFetch() {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true }),
+    } as Response)
+    global.fetch = fetchMock
+    return fetchMock
+  }
+
+  it('reenvía la cookie csrftoken como header en POST', async () => {
+    document.cookie = 'csrftoken=token-de-prueba; path=/'
+    const fetchMock = mockearFetch()
+
+    await apiPost('/api/auth/logout/', {})
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init.headers.get('X-CSRFToken')).toBe('token-de-prueba')
+  })
+
+  it('reenvía la cookie csrftoken como header en PATCH', async () => {
+    document.cookie = 'csrftoken=token-de-prueba; path=/'
+    const fetchMock = mockearFetch()
+
+    await apiPatch('/api/auth/user/', { first_name: 'Ana' })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init.headers.get('X-CSRFToken')).toBe('token-de-prueba')
+  })
+
+  it('no manda el header en GET (método seguro, Django no lo pide)', async () => {
+    document.cookie = 'csrftoken=token-de-prueba; path=/'
+    const fetchMock = mockearFetch()
+
+    await apiGet('/api/auth/user/')
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init.headers.get('X-CSRFToken')).toBeNull()
+  })
+
+  it('no manda el header si no hay cookie csrftoken', async () => {
+    const fetchMock = mockearFetch()
+
+    await apiPost('/api/auth/logout/', {})
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init.headers.get('X-CSRFToken')).toBeNull()
   })
 })
