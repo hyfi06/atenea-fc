@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { DetalleAsesoria } from './DetalleAsesoria'
 import * as api from '../api'
@@ -46,7 +46,7 @@ function montar(asesoria: Asesoria, esAsesor: boolean) {
   } as unknown as ReturnType<typeof api.useCancelarAsesoria>)
 
   render(
-    <MemoryRouter initialEntries={['/asesorias/1']}>
+    <MemoryRouter initialEntries={[`/asesorias/${asesoria.id}`]}>
       <Routes>
         <Route path="/asesorias/:id" element={<DetalleAsesoria />} />
         <Route path="/asesorias" element={<EspiaAsesorias />} />
@@ -93,5 +93,50 @@ describe('DetalleAsesoria por rol', () => {
   it('el texto de asistencia es neutral, legible por cualquiera de los dos roles', () => {
     montar(crearAsesoria({ estado: 'realizada', asistio: true }), false)
     expect(screen.getByText('Asistió a la sesión.')).toBeInTheDocument()
+  })
+})
+
+describe('DetalleAsesoria: notas y navegación al historial', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('sin nota previa arranca en modo edición, sin botón de Editar nota', () => {
+    montar(crearAsesoria({ estado: 'realizada', asistio: true, notas: '' }), true)
+    expect(screen.getByRole('button', { name: 'Guardar notas' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar nota' })).not.toBeInTheDocument()
+  })
+
+  it('con nota previa arranca en modo lectura', () => {
+    montar(crearAsesoria({ estado: 'realizada', asistio: true, notas: 'trajo dudas del examen' }), true)
+    expect(screen.getByText('trajo dudas del examen')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Editar nota' })).toBeInTheDocument()
+  })
+
+  it('Editar nota revela el campo con el texto guardado', () => {
+    montar(crearAsesoria({ estado: 'realizada', asistio: true, notas: 'trajo dudas del examen' }), true)
+    fireEvent.click(screen.getByRole('button', { name: 'Editar nota' }))
+    expect(screen.getByLabelText('Nota de la sesión')).toHaveValue('trajo dudas del examen')
+  })
+
+  it('al guardar la nota navega a Asesorías con el id a destacar en Historial', () => {
+    const { guardarNotas } = montar(
+      crearAsesoria({ id: 7, estado: 'realizada', asistio: true, notas: '' }), true,
+    )
+    fireEvent.change(screen.getByLabelText('Nota de la sesión'), { target: { value: 'repasamos límites' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar notas' }))
+    expect(guardarNotas).toHaveBeenCalledWith({ id: 7, texto: 'repasamos límites' }, expect.anything())
+    expect(screen.getByTestId('destino')).toHaveTextContent('asesorias:7')
+  })
+
+  it('marcar No asistió navega a Asesorías con el id a destacar en Historial', () => {
+    montar(crearAsesoria({ id: 7 }), true)
+    fireEvent.click(screen.getByRole('button', { name: 'No asistió' }))
+    expect(screen.getByTestId('destino')).toHaveTextContent('asesorias:7')
+  })
+
+  it('marcar Asistió no navega: el asesor se queda para escribir la nota', () => {
+    montar(crearAsesoria({ id: 7 }), true)
+    fireEvent.click(screen.getByRole('button', { name: 'Asistió' }))
+    expect(screen.queryByTestId('destino')).not.toBeInTheDocument()
   })
 })

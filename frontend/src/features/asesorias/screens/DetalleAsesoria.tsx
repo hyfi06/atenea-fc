@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useMisAsesorias, useCancelarAsesoria, useMarcarAsistencia, useGuardarNotas } from '../api'
 import { useMapaMaterias, useMapaCarreras } from '../../catalogo/api'
@@ -103,13 +103,16 @@ export function DetalleAsesoria() {
 }
 
 function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
+  const navigate = useNavigate()
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
   const esAsesor = useEsAsesor()
   const cancelar = useCancelarAsesoria()
   const marcarAsistencia = useMarcarAsistencia()
   const guardarNotas = useGuardarNotas()
+  const idNotas = useId()
   const [dialogoCancelarAbierto, setDialogoCancelarAbierto] = useState(false)
   const [notas, setNotas] = useState(asesoria.notas)
+  const [editandoNotas, setEditandoNotas] = useState(asesoria.notas.trim() === '')
   const [error, setError] = useState<string | null>(null)
 
   if (asesoria.estado === 'cancelada') {
@@ -129,36 +132,54 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
       <section className="flex flex-col gap-3 rounded-lg bg-surface-container-low p-4">
         <p className="text-sm text-on-surface">{asesoria.asistio ? 'Asistió a la sesión.' : 'No asistió a la sesión.'}</p>
         {esAsesor && puedeGuardarNotas(asesoria) ? (
-          <>
-            <textarea
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              rows={4}
-              placeholder="Notas de la sesión…"
-              className="rounded-md border border-outline bg-transparent px-2 py-1.5 text-sm text-on-surface"
-            />
-            <Boton
-              type="button"
-              disabled={notas === asesoria.notas}
-              cargando={guardarNotas.isPending}
-              onClick={() =>
-                guardarNotas.mutate(
-                  { id: asesoria.id, texto: notas },
-                  {
-                    onSuccess: () => {
-                      setError(null)
-                      mostrar('Notas guardadas')
+          editandoNotas ? (
+            <div className="entrada-lista flex flex-col gap-2">
+              <label htmlFor={idNotas} className="text-xs font-medium text-on-surface-variant">
+                Nota de la sesión
+              </label>
+              <textarea
+                id={idNotas}
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                rows={4}
+                placeholder="Notas de la sesión…"
+                className="foco-visible rounded-md border border-outline bg-transparent px-2 py-1.5 text-sm text-on-surface"
+              />
+              <Boton
+                type="button"
+                disabled={notas === asesoria.notas}
+                cargando={guardarNotas.isPending}
+                onClick={() =>
+                  guardarNotas.mutate(
+                    { id: asesoria.id, texto: notas },
+                    {
+                      onSuccess: () => navigate('/asesorias', { state: { historialDestacarId: asesoria.id } }),
+                      onError: (err) => setError(primerMensajeDeError(err)),
                     },
-                    onError: (err) => setError(primerMensajeDeError(err)),
-                  },
-                )
-              }
-              className="w-fit px-6"
-            >
-              Guardar notas
-            </Boton>
-            {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
-          </>
+                  )
+                }
+                className="w-fit px-6"
+              >
+                Guardar notas
+              </Boton>
+              {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
+            </div>
+          ) : (
+            <div className="entrada-lista flex flex-col gap-2">
+              <p className="text-xs font-medium text-on-surface-variant">Nota de la sesión</p>
+              <p className="max-w-prose whitespace-pre-wrap rounded-md bg-surface-container px-3 py-2 text-sm text-on-surface">
+                {asesoria.notas}
+              </p>
+              <Boton
+                type="button"
+                variante="secundario"
+                onClick={() => setEditandoNotas(true)}
+                className="w-fit px-6"
+              >
+                Editar nota
+              </Boton>
+            </div>
+          )
         ) : null}
         <Retroalimentacion mensaje={mensaje} saliendo={saliendo} />
       </section>
@@ -201,10 +222,7 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
                   marcarAsistencia.mutate(
                     { id: asesoria.id, asistio: false },
                     {
-                      onSuccess: () => {
-                        setError(null)
-                        mostrar('Asistencia registrada')
-                      },
+                      onSuccess: () => navigate('/asesorias', { state: { historialDestacarId: asesoria.id } }),
                       onError: (err) => setError(primerMensajeDeError(err)),
                     },
                   )
