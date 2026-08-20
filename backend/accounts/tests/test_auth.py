@@ -556,3 +556,75 @@ class PasswordResetSoloCuentasConPasswordTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("/reset-password/", mail.outbox[0].body)
+
+
+class PasswordResetThrottleTests(APITestCase):
+    """El reset tenía el scope `dj_rest_auth` (5/min) compartido con el login:
+    un atacante golpeando reset consumía el cupo de quien intenta entrar, y
+    viceversa. Scope propio y más estricto: 3/hour pedir el enlace, 10/hour
+    confirmarlo."""
+
+    CORREO = "reset-throttle@ciencias.unam.mx"
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user(self.CORREO, password="ClaveSegura123!")
+
+    def tearDown(self):
+        cache.clear()
+
+    def _post_reset(self, **extra):
+        return self.client.post(
+            "/api/auth/password/reset/", {"email": self.CORREO}, format="json", **extra
+        )
+
+    def _post_confirm(self):
+        return self.client.post(
+            "/api/auth/password/reset/confirm/",
+            {
+                "uid": "abc",
+                "token": "token-invalido",
+                "new_password1": "NuevaClave123!",
+                "new_password2": "NuevaClave123!",
+            },
+            format="json",
+        )
+
+    def test_cuarta_solicitud_de_enlace_devuelve_429(self):
+        for _ in range(3):
+            self.assertEqual(self._post_reset().status_code, status.HTTP_200_OK)
+
+        self.assertEqual(self._post_reset().status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_agotar_el_cupo_de_reset_no_bloquea_el_login(self):
+        for _ in range(3):
+            self._post_reset()
+        self.assertEqual(self._post_reset().status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": self.CORREO, "password": "ClaveSegura123!"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_confirm_tiene_su_propio_cupo(self):
+        for _ in range(4):
+            self.assertEqual(self._post_confirm().status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(self._post_reset().status_code, status.HTTP_200_OK)
+
+    def test_reset_usa_cf_connecting_ip_no_x_forwarded_for(self):
+        for i in range(3):
+            response = self._post_reset(
+                HTTP_X_FORWARDED_FOR=f"1.2.3.{i}",  # distinto en cada intento
+                HTTP_CF_CONNECTING_IP="9.9.9.9",  # mismo cliente real
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self._post_reset(
+            HTTP_X_FORWARDED_FOR="1.2.3.99", HTTP_CF_CONNECTING_IP="9.9.9.9"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

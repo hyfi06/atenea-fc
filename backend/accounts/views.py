@@ -1,5 +1,5 @@
 from dj_rest_auth.registration.views import SocialLoginView
-from dj_rest_auth.views import LoginView
+from dj_rest_auth.views import LoginView, PasswordResetConfirmView, PasswordResetView
 
 from .adapters import GoogleIdTokenAdapter
 from .serializers import GoogleLoginSerializer
@@ -64,3 +64,13 @@ class AteneaLoginView(LoginResponseSinAccessEnBodyMixin, LoginView):
 class GoogleLoginView(LoginResponseSinAccessEnBodyMixin, SocialLoginView):
     adapter_class = GoogleIdTokenAdapter
     serializer_class = GoogleLoginSerializer
+
+
+class AteneaPasswordResetView(PasswordResetView):
+    """Solo cambia el scope de throttle (ver DEFAULT_THROTTLE_RATES)."""
+
+    throttle_scope = "password_reset"
+
+
+class AteneaPasswordResetConfirmView(PasswordResetConfirmView):
+    throttle_scope = "password_reset_confirm"

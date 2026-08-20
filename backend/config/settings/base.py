@@ -167,6 +167,14 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "dj_rest_auth": "5/min",
+        # Scopes propios para el flujo de recuperación de contraseña: con el
+        # scope compartido, quien golpea reset consume el cupo de quien intenta
+        # entrar (y viceversa). Pedir el enlace dispara un correo y es una acción
+        # rarísima en operación normal -> 3/hour. Confirmarlo no manda correo y
+        # está protegido por el token del enlace, pero el usuario puede fallar
+        # los validadores de contraseña varias veces -> cupo propio, más holgado.
+        "password_reset": "3/hour",
+        "password_reset_confirm": "10/hour",
     },
     # JWTCookieAuthentication extiende JWTAuthentication: revisa el header
     # Authorization primero (así es como sigue funcionando dev sin cambios) y
