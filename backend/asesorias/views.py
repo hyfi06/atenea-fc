@@ -17,7 +17,7 @@ from accounts.models import PerfilAlumno
 
 from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
 from .permissions import (
-    EsAcademico, EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
+    EsAcademico, EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsAsesorAprobado, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
 from .serializers import (
     AsesorDetalleAdminSerializer, MateriaDelRegistroSerializer, AsesoriaSerializer, CancelarSerializer,
@@ -30,7 +30,7 @@ from .servicios import semestre_vigente, ventana_agendable
 
 class RegistroAsesorViewSet(ModelViewSet):
     serializer_class = RegistroAsesorSerializer
-    permission_classes = [EsAsesorAcademico, EsDuenoDelRegistro]
+    permission_classes = [EsAsesorAcademico, EsAsesorAprobado, EsDuenoDelRegistro]
     http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
@@ -67,7 +67,7 @@ class RegistroAsesorViewSet(ModelViewSet):
 
 class DisponibilidadViewSet(ModelViewSet):
     serializer_class = DisponibilidadSerializer
-    permission_classes = [EsAsesorAcademico, EsDuenoDelRegistro]
+    permission_classes = [EsAsesorAcademico, EsAsesorAprobado, EsDuenoDelRegistro]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):

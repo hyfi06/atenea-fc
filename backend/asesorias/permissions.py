@@ -65,3 +65,11 @@ class EsAlumnoOMiembroSAE(BasePermission):
 
     def has_permission(self, request, view):
         return hasattr(request.user, "perfil_alumno") or hasattr(request.user, "perfil_sae")
+
+
+class EsAsesorAprobado(BasePermission):
+    message = "Tu perfil de asesor está pendiente de revisión de la SAE."
+
+    def has_permission(self, request, view):
+        perfil = getattr(request.user, "perfil_asesor_academico", None)
+        return perfil is not None and perfil.activo
