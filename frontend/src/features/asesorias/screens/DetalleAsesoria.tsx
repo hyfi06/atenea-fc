@@ -9,6 +9,7 @@ import { Boton } from '../../../components/ui/Boton'
 import { Retroalimentacion, useRetroalimentacion } from '../../../components/ui/Retroalimentacion'
 import { DialogoCancelar } from '../components/DialogoCancelar'
 import { primerMensajeDeError } from '../../../api/errores'
+import { useEsAsesor } from '../../../auth/rol'
 import type { Asesoria } from '../../../api/types'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -17,6 +18,7 @@ const FORMATEADOR_HORA = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', min
 export function DetalleAsesoria() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const esAsesor = useEsAsesor()
   const { data: asesorias = [], isPending } = useMisAsesorias()
   const mapaMaterias = useMapaMaterias()
   const mapaCarreras = useMapaCarreras()
@@ -42,7 +44,7 @@ export function DetalleAsesoria() {
     )
   }
 
-  const previas = sesionesPreviasConNotas(asesorias, asesoria.alumno, asesoria.id)
+  const previas = esAsesor ? sesionesPreviasConNotas(asesorias, asesoria.alumno, asesoria.id) : []
 
   return (
     <main className="flex min-h-svh flex-col gap-6 px-6 py-6">
@@ -58,8 +60,8 @@ export function DetalleAsesoria() {
           <InsigniaEstado estado={asesoria.estado} />
         </div>
         <dl className="grid grid-cols-2 gap-y-1 text-sm text-on-surface-variant">
-          <dt>Alumno</dt>
-          <dd>Alumno #{asesoria.alumno}</dd>
+          <dt>{esAsesor ? 'Alumno' : 'Asesor'}</dt>
+          <dd>{esAsesor ? asesoria.alumno_nombre : asesoria.asesor_nombre}</dd>
           <dt>Carrera</dt>
           <dd>{mapaCarreras.get(asesoria.carrera)?.nombre ?? `Carrera #${asesoria.carrera}`}</dd>
           <dt>Fecha</dt>
@@ -81,11 +83,9 @@ export function DetalleAsesoria() {
 
       <SeccionAcciones asesoria={asesoria} />
 
-      <section>
-        <h2 className="mb-2 text-sm font-medium text-on-surface">Notas de sesiones anteriores con este alumno</h2>
-        {previas.length === 0 ? (
-          <p className="text-sm text-on-surface-variant">No hay notas de sesiones anteriores.</p>
-        ) : (
+      {esAsesor && previas.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-sm font-medium text-on-surface">Notas de sesiones anteriores con este alumno</h2>
           <ul className="flex flex-col gap-2">
             {previas.map((previa, indice) => (
               <li key={previa.id} className="entrada-lista rounded-lg bg-surface-container-low p-3 text-sm" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
@@ -96,14 +96,15 @@ export function DetalleAsesoria() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   )
 }
 
 function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
   const { mensaje, saliendo, mostrar } = useRetroalimentacion()
+  const esAsesor = useEsAsesor()
   const cancelar = useCancelarAsesoria()
   const marcarAsistencia = useMarcarAsistencia()
   const guardarNotas = useGuardarNotas()
@@ -126,8 +127,8 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
   if (asesoria.estado === 'realizada') {
     return (
       <section className="flex flex-col gap-3 rounded-lg bg-surface-container-low p-4">
-        <p className="text-sm text-on-surface">{asesoria.asistio ? 'El alumno asistió.' : 'El alumno no asistió.'}</p>
-        {puedeGuardarNotas(asesoria) ? (
+        <p className="text-sm text-on-surface">{asesoria.asistio ? 'Asistió a la sesión.' : 'No asistió a la sesión.'}</p>
+        {esAsesor && puedeGuardarNotas(asesoria) ? (
           <>
             <textarea
               value={notas}
@@ -168,57 +169,58 @@ function SeccionAcciones({ asesoria }: { asesoria: Asesoria }) {
 
   return (
     <section className="flex flex-col gap-3 rounded-lg bg-surface-container-low p-4">
-      {yaOcurrio ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-on-surface">¿El alumno asistió a esta sesión?</p>
-          <div className="flex gap-2">
-            <Boton
-              type="button"
-              cargando={marcarAsistencia.isPending}
-              onClick={() =>
-                marcarAsistencia.mutate(
-                  { id: asesoria.id, asistio: true },
-                  {
-                    onSuccess: () => {
-                      setError(null)
-                      mostrar('Asistencia registrada')
+      {esAsesor &&
+        (yaOcurrio ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-on-surface">¿El alumno asistió a esta sesión?</p>
+            <div className="flex gap-2">
+              <Boton
+                type="button"
+                cargando={marcarAsistencia.isPending}
+                onClick={() =>
+                  marcarAsistencia.mutate(
+                    { id: asesoria.id, asistio: true },
+                    {
+                      onSuccess: () => {
+                        setError(null)
+                        mostrar('Asistencia registrada')
+                      },
+                      onError: (err) => setError(primerMensajeDeError(err)),
                     },
-                    onError: (err) => setError(primerMensajeDeError(err)),
-                  },
-                )
-              }
-              className="flex-1"
-            >
-              Asistió
-            </Boton>
-            <Boton
-              type="button"
-              variante="secundario"
-              cargando={marcarAsistencia.isPending}
-              onClick={() =>
-                marcarAsistencia.mutate(
-                  { id: asesoria.id, asistio: false },
-                  {
-                    onSuccess: () => {
-                      setError(null)
-                      mostrar('Asistencia registrada')
+                  )
+                }
+                className="flex-1"
+              >
+                Asistió
+              </Boton>
+              <Boton
+                type="button"
+                variante="secundario"
+                cargando={marcarAsistencia.isPending}
+                onClick={() =>
+                  marcarAsistencia.mutate(
+                    { id: asesoria.id, asistio: false },
+                    {
+                      onSuccess: () => {
+                        setError(null)
+                        mostrar('Asistencia registrada')
+                      },
+                      onError: (err) => setError(primerMensajeDeError(err)),
                     },
-                    onError: (err) => setError(primerMensajeDeError(err)),
-                  },
-                )
-              }
-              className="flex-1"
-            >
-              No asistió
-            </Boton>
+                  )
+                }
+                className="flex-1"
+              >
+                No asistió
+              </Boton>
+            </div>
+            {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
           </div>
-          {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
-        </div>
-      ) : (
-        <p className="text-xs text-on-surface-variant">
-          Podrás marcar asistencia después de las {FORMATEADOR_HORA.format(new Date(`${asesoria.fecha}T${asesoria.hora_inicio}`))}.
-        </p>
-      )}
+        ) : (
+          <p className="text-xs text-on-surface-variant">
+            Podrás marcar asistencia después de las {FORMATEADOR_HORA.format(new Date(`${asesoria.fecha}T${asesoria.hora_inicio}`))}.
+          </p>
+        ))}
 
       <Boton variante="peligro" type="button" onClick={() => setDialogoCancelarAbierto(true)} className="w-fit px-6">
         Cancelar asesoría
