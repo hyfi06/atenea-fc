@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Asesoria } from '../../../api/types'
 import { InsigniaEstado } from '../../../components/ui/InsigniaEstado'
-import { useEsAsesor } from '../../../auth/rol'
+import { useEsAsesor, useEsAlumno } from '../../../auth/rol'
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })
 
@@ -34,6 +34,7 @@ export function TarjetaAsesoria({
 }: TarjetaAsesoriaProps) {
   const navigate = useNavigate()
   const esAsesor = useEsAsesor()
+  const esAlumno = useEsAlumno()
   const ref = useRef<HTMLElement | null>(null)
   const fecha = FORMATEADOR_FECHA.format(new Date(`${asesoria.fecha}T00:00:00`))
 
@@ -46,7 +47,7 @@ export function TarjetaAsesoria({
 
   // El destino depende del MODO, no del rol: un miembro SAE que además sea
   // asesor no debe caer en el detalle del asesor, que monta mutaciones.
-  const interactiva = admin || esAsesor
+  const interactiva = admin || esAsesor || esAlumno
 
   // El detalle SAE no tiene endpoint propio y el listado admin está cacheado
   // por combinación de filtros: la sesión viaja en el router state para que el

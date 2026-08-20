@@ -84,9 +84,9 @@ function App() {
         <Route
           path="/asesorias/:id"
           element={
-            <RutaDeAsesor>
+            <RutaDeAsesorias>
               <DetalleAsesoria />
-            </RutaDeAsesor>
+            </RutaDeAsesorias>
           }
         />
         <Route

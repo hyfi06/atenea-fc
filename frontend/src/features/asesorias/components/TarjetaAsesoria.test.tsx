@@ -30,14 +30,34 @@ function crearAsesoria(overrides: Partial<Asesoria> = {}): Asesoria {
 describe('TarjetaAsesoria', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('para el alumno muestra el nombre del asesor y no navega', () => {
+  it('para el alumno muestra el nombre del asesor y navega a su detalle', () => {
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
-    render(<TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} />, { wrapper: MemoryRouter })
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(true)
+    render(
+      <MemoryRouter initialEntries={['/asesorias']}>
+        <Routes>
+          <Route
+            path="/asesorias"
+            element={<TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} />}
+          />
+          <Route path="/asesorias/1" element={<p>detalle de la asesoría</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
     expect(screen.getByText(/Ana Asesora/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button'))
+    expect(screen.getByText('detalle de la asesoría')).toBeInTheDocument()
+  })
+
+  it('quien no es alumno ni asesor ni admin recibe una tarjeta no interactiva', () => {
+    vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
+    render(<TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} />, { wrapper: MemoryRouter })
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('para el asesor muestra el nombre del alumno en un botón', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(true)
     render(<TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} />, { wrapper: MemoryRouter })
     expect(screen.getByText(/Beto Alumno/)).toBeInTheDocument()
@@ -45,12 +65,14 @@ describe('TarjetaAsesoria', () => {
   })
 
   it('nunca renderiza las notas', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
     render(<TarjetaAsesoria asesoria={crearAsesoria({ notas: 'texto privado' })} nombreMateria="Cálculo I" indice={0} />, { wrapper: MemoryRouter })
     expect(screen.queryByText(/texto privado/)).not.toBeInTheDocument()
   })
 
   it('en modo admin muestra ambos nombres y tampoco las notas', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
     render(
       <TarjetaAsesoria
@@ -66,6 +88,7 @@ describe('TarjetaAsesoria', () => {
   })
 
   it('en modo admin es interactiva aunque quien mire no sea asesor', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
     render(
       <TarjetaAsesoria asesoria={crearAsesoria()} nombreMateria="Cálculo I" indice={0} admin />,
@@ -75,6 +98,7 @@ describe('TarjetaAsesoria', () => {
   })
 
   it('en modo admin navega al detalle SAE y no al del asesor', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(true)
     render(
       <MemoryRouter initialEntries={['/sae/asesorias']}>
@@ -100,6 +124,7 @@ describe('TarjetaAsesoria', () => {
   })
 
   it('en modo admin lleva la sesión y la materia en el router state', () => {
+    vi.spyOn(rol, 'useEsAlumno').mockReturnValue(false)
     vi.spyOn(rol, 'useEsAsesor').mockReturnValue(false)
     render(
       <MemoryRouter initialEntries={['/sae/asesorias']}>
