@@ -564,3 +564,14 @@ propagacion-design.md`, `2026-08-19-catalogo-materias-scroll-infinito-
 design.md`, `2026-08-19-auth-reset-blacklist-csrf-design.md`). Tampoco se
 toca el botón "Cancelar asesoría" ni el flujo de agendado nuevo — ninguno de
 los 5 bugs los involucra.
+
+**Hallazgo posterior (revisión final de implementación):** B3/B4 asumen
+que `useEsAsesor()` identifica correctamente el rol de quien mira una
+asesoría. Para un usuario con doble rol (alumno y asesor, caso ya
+contemplado por el backend — deuda 0011, resuelta) abriendo una sesión
+donde participa como alumno, esto etiqueta mal la pantalla y puede
+intentar leer `notas`, que el serializer oculta para quien no es el
+asesor dueño. No alcanzable en el despliegue actual (ningún usuario real
+tiene hoy doble rol simultáneo) — documentado como deuda técnica
+[0022](../../technical-debt/0022-deteccion-de-rol-por-usuario-no-por-sesion.md)
+en vez de resolverse dentro de este sprint.

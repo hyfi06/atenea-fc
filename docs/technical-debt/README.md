@@ -25,6 +25,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0019 — Home arma sus tiles en el cliente, sin catálogo de servicios en el backend](0019-home-sin-catalogo-de-servicios.md)
 - [0020 — CSP del frontend con `unsafe-inline` en `style-src`, sin CSP en el backend](0020-csp-frontend-parcial.md)
 - [0021 — Envío de correo depende de una cuenta de Workspace dedicada y su app password](0021-smtp-cuenta-dedicada-app-password.md)
+- [0022 — Detección de rol por usuario, no por sesión, en pantallas de asesoría](0022-deteccion-de-rol-por-usuario-no-por-sesion.md)
 
 ### Resuelta
 
