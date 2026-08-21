@@ -46,14 +46,41 @@ Tres deudas activas de la app `asesorias`, agrupadas por tocar el mismo modelo y
 - **No toca `hora_inicio`** — eso es un cambio de horario, no una corrección de datos de contacto, y está fuera de alcance de esta deuda.
 - Dispara notificación por correo a los alumnos con sesión afectada (reusar `asesorias/tasks.py`, nueva tarea o extensión de una existente) — el alumno debe enterarse si cambió la liga de Zoom de su sesión ya agendada.
 
+### 4. Bloques de 1 hora y nuevo flujo de agendado del alumno
+
+**Origen:** feedback recibido tras la demo del 21 de agosto — fuera del alcance original de las deudas 0003/0004/0005, pero se agrega aquí porque cae sobre el mismo modelo (`Disponibilidad`) y el plan de implementación asociado todavía no arrancó (Task 1 es justo donde nace la constante de duración de sesión).
+
+**Rejilla de 1 hora (antes 30 min):**
+
+- `DURACION_SESION = datetime.timedelta(hours=1)` en vez de `minutes=30` — un solo valor, porque `Disponibilidad.hora_fin` ya queda parametrizado sobre esa constante en el Task 1 del plan.
+- `Disponibilidad.clean()`: la rejilla pasa de `hora_inicio.minute not in (0, 30)` a `hora_inicio.minute != 0` (solo horas en punto).
+- Sin migración de columnas — `hora_fin` es una `@property` calculada, no una columna; solo cambia la lógica de validación.
+- Datos de la demo del 21 de agosto son descartables (confirmado con el usuario) — se limpian con el comando `limpiar_demo` existente. `backend/accounts/demo_data.py` ya usa horas en punto (10:00, 12:00), así que sigue siendo válido tal cual; se amplía con más bloques (p. ej. dos asesores el mismo día) para que el nuevo drill-down materia→día→bloque tenga contenido que mostrar en la siguiente demo.
+- ADR a actualizar: [0016](../../decisions/0016-asesorias-academicas.md) gana un Changelog nuevo documentando 30→60 min — no es una decisión arquitectónica nueva (es un cambio de parámetro sobre una ya aceptada), así que no amerita ADR propio ni superseder al 0016.
+- Documentación de contrato a actualizar: `docs/development/api-frontend.md` (párrafo de `Disponibilidad` y el ejemplo de `hora_fin`), y el copy de `DialogoNuevoBloque` ("Bloque recurrente de 30 minutos" → "de 1 hora").
+
+**Nuevo flujo de agendado en `/asesorias/nueva` (solo frontend):**
+
+- `OfertaAsesorias` (lista de materias) no cambia — sigue siendo el primer paso.
+- Al hacer clic en una materia, `AgendarAsesoria` deja de pedir primero un asesor: el wizard pasa de 4 pasos (asesor → día → bloque → carrera) a 3 (día → bloque → carrera).
+- Se agrupan directamente los días con asesoría disponible para esa materia (across todos los asesores), reusando `GET /api/asesorias/disponibilidad/buscar/?materia=` **sin** `?asesor=` — el endpoint ya soporta la consulta sin ese filtro y ya devuelve `asesor_nombre`/`formato`/`ubicacion`/`liga_virtual` por slot; el agrupado por día ya existe client-side (`agruparPorDia`). No se toca el backend para esto.
+- Hook nuevo `useDisponibilidadDeMateria(materiaId)`: mismo endpoint, habilitado solo con `materiaId` (sin depender de un `registroId` de asesor).
+- Al elegir un día, las tarjetas de bloques de hora muestran profesor + modalidad (`asesor_nombre`, `formato`/`ubicacion`/`liga_virtual`) — campos que `SlotDisponibilidad` ya trae pero que hoy no se pintan porque el asesor ya estaba elegido de antemano.
+- El paso de confirmación de carrera y el manejo de conflicto 409 al agendar (bloque tomado) no cambian.
+- **No se toca** `useAsesoresDeMateria` / `AsesoresDeMateriaView` (`GET /oferta/{materia_id}/asesores/`) — los sigue usando `AdminOfertaMateria`, la pantalla de consulta del SAE, ajena a este cambio.
+
 ### Testing
 
 - Extender `test_asesoria.py` / `test_api_asesoria.py`: agendar/cancelar rechazado dentro de la ventana de 2hrs, aceptado fuera de ella; `Disponibilidad.desactivar()` sigue funcionando dentro de la ventana (caso borde explícito).
 - Nuevo test para la tarea periódica: `Asesoria` vencida sin marcar pasa a `realizada`/`asistio=False` tras ejecutar la tarea; una `Asesoria` futura o ya marcada no se toca.
 - Nuevo test para el endpoint de resincronización: bulk-update solo afecta `sesiones_futuras()`, no toca sesiones pasadas ni canceladas, no toca `hora_inicio`.
+- Nuevo test de rejilla: `Disponibilidad` con `hora_inicio` en `:30` es rechazada; en `:00` es aceptada; `hora_fin` = `hora_inicio` + 1h.
+- Frontend: reescribir `AgendarAsesoria.test.tsx` para el wizard de 3 pasos (sin paso de asesor, con aserciones de `asesor_nombre`/`formato` en las tarjetas de bloque); actualizar `logica.test.ts` (`horasDelDia`) para 14 filas de 1h en vez de 28 de 30 min.
 
 ### Fuera de alcance
 
 - Recordatorios periódicos por email antes de la sesión (parte original de la deuda 0004, no pedida en este sprint).
 - Límite de sesiones simultáneas / límite de cancelaciones (parte original de la deuda 0003, no pedida — el pedido explícito fue solo la ventana de 2hrs).
 - Cambiar `hora_inicio` de sesiones ya agendadas vía resincronización.
+- Migración de datos reales de producción de la rejilla de 30 min a 1h — en producción todavía no hay datos (confirmado con el usuario); las pruebas se hicieron en staging con datos descartables.
+- Cambiar el paso de confirmación de carrera o el endpoint `oferta/{materia_id}/asesores/` usado por la consulta del SAE.
