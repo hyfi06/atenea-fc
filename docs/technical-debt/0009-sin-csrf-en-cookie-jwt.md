@@ -19,8 +19,7 @@ Si se identifica un endpoint de escritura (`POST`/`PATCH`/`DELETE`) accesible de
 
 Pentest contra staging reprodujo el POST de escritura autenticada (agendar
 una Asesoria) sin token CSRF ni header custom, solo con la cookie —
-aceptado por la API. Sigue activa; `SameSite=Lax` en las cookies JWT
-mitiga el vector de formulario cross-site clásico. Ver auditoría:
+aceptado por la API. Cerrado en 2026-08-19; ver sección 'Cómo se resolvió' abajo. Ver auditoría:
 https://claude.ai/code/artifact/e73411a0-fdae-405e-ab8f-d38b56482f9e
 
 ## Cómo se resolvió (2026-08-19)

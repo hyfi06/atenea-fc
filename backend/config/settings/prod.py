@@ -7,6 +7,12 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+# La cookie csrftoken NO debe ser httpOnly: el SPA tiene que poder leerla con
+# document.cookie para reenviarla como header X-CSRFToken (deuda 0009 /
+# JWT_AUTH_COOKIE_USE_CSRF más abajo). Se fija explícitamente -- mismo criterio
+# que JWT_AUTH_SAMESITE en este archivo -- para que un futuro "endurecimiento"
+# no la vuelva httpOnly y rompa en silencio todas las escrituras en prod.
+CSRF_COOKIE_HTTPONLY = False
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True

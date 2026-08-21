@@ -189,6 +189,7 @@ class ProdSettingsJWTCookieTests(TestCase):
             "        for k in ('JWT_AUTH_HTTPONLY', 'JWT_AUTH_COOKIE', 'JWT_AUTH_REFRESH_COOKIE', 'JWT_AUTH_SECURE', 'JWT_AUTH_SAMESITE', 'JWT_AUTH_COOKIE_USE_CSRF')\n"
             "    },\n"
             "    'AUTH_CLASSES': settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'],\n"
+            "    'CSRF_COOKIE_HTTPONLY': settings.CSRF_COOKIE_HTTPONLY,\n"
             "}))\n"
         )
         result = subprocess.run(
@@ -211,6 +212,7 @@ class ProdSettingsJWTCookieTests(TestCase):
         self.assertEqual(
             output["AUTH_CLASSES"], ["dj_rest_auth.jwt_auth.JWTCookieAuthentication"]
         )
+        self.assertEqual(output["CSRF_COOKIE_HTTPONLY"], False)
 
 
 from dj_rest_auth.app_settings import api_settings as dra_settings

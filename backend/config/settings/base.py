@@ -19,12 +19,18 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"
-# Atenea no tiene auto-registro (`AccountAdapter.is_open_for_signup` -> False),
-# así que el correo de allauth "no existe esa cuenta, regístrate aquí" no aplica:
-# invita a una ruta que no existe y además revienta con NoReverseMatch, porque
-# `allauth.urls` no está incluido en config/urls.py y su plantilla resuelve
-# `reverse("account_signup")`. Apagarlo es también lo que hace indistinguibles
-# las respuestas de "correo desconocido" y "cuenta que solo entra por Google".
+# Defensa en profundidad: dj-rest-auth resuelve el reset con
+# AllAuthPasswordResetForm (dj_rest_auth/forms.py), que sobreescribe save() y
+# manda el correo directo -- nunca pasa por
+# allauth.account.internal.flows.password_reset.request_password_reset, que es
+# el único llamador de send_unknown_account_mail (el único consumidor de este
+# setting). Hoy, con users=[] (correo inexistente o cuenta Google-only), no se
+# manda ni se revienta nada, con o sin este flag. Se deja en False por si algún
+# día se incluye allauth.urls o dj-rest-auth cambia de form: ese correo de
+# "no existe esa cuenta, regístrate aquí" no aplica -- Atenea no tiene
+# auto-registro (`AccountAdapter.is_open_for_signup` -> False) -- y hoy además
+# reventaría con NoReverseMatch porque allauth.urls no está incluido en
+# config/urls.py.
 ACCOUNT_EMAIL_UNKNOWN_ACCOUNTS = False
 ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.SocialAccountAdapter"
