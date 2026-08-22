@@ -206,7 +206,7 @@ Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..regi
 - `POST /api/asesorias/asesorias/` → `400 {"detail": ["No puedes agendar una sesión con menos de 2 horas de anticipación."]}`
 - `POST /api/asesorias/asesorias/{id}/cancelar/` → `400 {"detail": ["No puedes cancelar una sesión con menos de 2 horas de anticipación."]}`
 
-`POST /api/asesorias/disponibilidades/{id}/desactivar/` **no** está sujeto a esta ventana: dar de baja un bloque cancela también las sesiones que arrancan en menos de 2 horas. Ver [ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md) y [deuda técnica 0003](../technical-debt/0003-sin-limites-uso-asesorias.md).
+`POST /api/asesorias/disponibilidades/{id}/desactivar/` **no** está sujeto a esta ventana: dar de baja un bloque cancela también las sesiones que arrancan en menos de 2 horas. Ver [ADR 0030](../decisions/0030-limites-cierre-y-propagacion-asesorias.md) y [deuda técnica 0003](../technical-debt/0003-sin-limites-uso-asesorias.md).
 
 Las tres rutas se acotan al semestre vigente y a asesores con `activo=true`.
 

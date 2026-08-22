@@ -35,7 +35,7 @@
 | `backend/asesorias/tasks.py` | `enviar_notificacion_resincronizacion` |
 | `backend/asesorias/views.py` | Acción `resincronizar` del `DisponibilidadViewSet` |
 | `docs/development/api-frontend.md` | Mensajes de error nuevos + endpoint `resincronizar/` |
-| `docs/decisions/0029-*.md` | ADR nuevo |
+| `docs/decisions/0030-*.md` | ADR nuevo |
 | `docs/technical-debt/0003|0005*.md` + `README.md` | Cierre de deudas |
 | `backend/asesorias/tests/*` | Tests nuevos + ajuste de tests existentes que agendan/cancelan fuera de la ventana |
 | `docs/decisions/0016-asesorias-academicas.md` | Changelog: rejilla de 1h (Task 6) |
@@ -761,7 +761,7 @@ Y justo debajo del párrafo que empieza con `**Ventana agendable:**`, agregar:
 - `POST /api/asesorias/asesorias/` → `400 {"detail": ["No puedes agendar una sesión con menos de 2 horas de anticipación."]}`
 - `POST /api/asesorias/asesorias/{id}/cancelar/` → `400 {"detail": ["No puedes cancelar una sesión con menos de 2 horas de anticipación."]}`
 
-`POST /api/asesorias/disponibilidades/{id}/desactivar/` **no** está sujeto a esta ventana: dar de baja un bloque cancela también las sesiones que arrancan en menos de 2 horas. Ver [ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md) y [deuda técnica 0003](../technical-debt/0003-sin-limites-uso-asesorias.md).
+`POST /api/asesorias/disponibilidades/{id}/desactivar/` **no** está sujeto a esta ventana: dar de baja un bloque cancela también las sesiones que arrancan en menos de 2 horas. Ver [ADR 0030](../decisions/0030-limites-cierre-y-propagacion-asesorias.md) y [deuda técnica 0003](../technical-debt/0003-sin-limites-uso-asesorias.md).
 ```
 
 - [ ] **Step 9: Correr la suite de `asesorias` completa**
@@ -1165,10 +1165,10 @@ EOF
 
 ---
 
-### Task 5: ADR 0029 y cierre de las deudas 0003 y 0005
+### Task 5: ADR 0030 y cierre de las deudas 0003 y 0005
 
 **Files:**
-- Create: `docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md`
+- Create: `docs/decisions/0030-limites-cierre-y-propagacion-asesorias.md`
 - Modify: `docs/technical-debt/0003-sin-limites-uso-asesorias.md`
 - Modify: `docs/technical-debt/0005-editar-disponibilidad-no-propaga.md`
 - Modify: `docs/technical-debt/README.md`
@@ -1178,10 +1178,10 @@ EOF
 
 - [ ] **Step 1: Crear el ADR**
 
-Crear `docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md`:
+Crear `docs/decisions/0030-limites-cierre-y-propagacion-asesorias.md`:
 
 ```markdown
-# 0029 — Ventana de anticipación y resincronización en Asesorías
+# 0030 — Ventana de anticipación y resincronización en Asesorías
 
 **Status:** Accepted
 **Date:** 2026-08-19
@@ -1266,7 +1266,7 @@ Reemplazar el contenido completo de `docs/technical-debt/0003-sin-limites-uso-as
 ```markdown
 # 0003 — Sin límites de uso en Asesorías
 
-**Estado:** Parcialmente resuelta — 2026-08-19 ([ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md))
+**Estado:** Parcialmente resuelta — 2026-08-19 ([ADR 0030](../decisions/0030-limites-cierre-y-propagacion-asesorias.md))
 **Origen:** [ADR 0016](../decisions/0016-asesorias-academicas.md)
 
 ## Qué se simplificó
@@ -1300,7 +1300,7 @@ Reemplazar el contenido completo de `docs/technical-debt/0005-editar-disponibili
 ```markdown
 # 0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas
 
-**Estado:** Resuelta — 2026-08-19 ([ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md))
+**Estado:** Resuelta — 2026-08-19 ([ADR 0030](../decisions/0030-limites-cierre-y-propagacion-asesorias.md))
 **Origen:** [ADR 0016](../decisions/0016-asesorias-academicas.md)
 
 ## Qué se simplificó
@@ -1339,7 +1339,7 @@ por:
 - [0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos](0004-sin-cierre-automatico-recordatorios.md)
 ```
 
-Nota: la fila de 0004 queda **idéntica** — esa deuda no se toca en este sprint (ver ADR 0029, sección Context). Solo desaparece de esta lista porque 0005 se mueve a `### Resuelta` en el paso siguiente, dejando el bloque de tres líneas en dos.
+Nota: la fila de 0004 queda **idéntica** — esa deuda no se toca en este sprint (ver ADR 0030, sección Context). Solo desaparece de esta lista porque 0005 se mueve a `### Resuelta` en el paso siguiente, dejando el bloque de tres líneas en dos.
 
 Y en la sección `### Resuelta`, agregar al final:
 
@@ -1352,7 +1352,7 @@ Y en la sección `### Resuelta`, agregar al final:
 Run (desde la raíz del repo):
 
 ```bash
-grep -rn "0029-limites-cierre-y-propagacion-asesorias.md" docs/ && ls docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md
+grep -rn "0030-limites-cierre-y-propagacion-asesorias.md" docs/ && ls docs/decisions/0030-limites-cierre-y-propagacion-asesorias.md
 ```
 
 Expected: los enlaces aparecen en `docs/development/api-frontend.md` y en los dos ítems de deuda que sí cierra este ADR (0003, 0005), y el archivo del ADR existe.
@@ -1365,11 +1365,11 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md docs/technical-debt/
+git add docs/decisions/0030-limites-cierre-y-propagacion-asesorias.md docs/technical-debt/
 git commit -m "$(cat <<'EOF'
-[docs] registrar ADR 0029 y cerrar las deudas 0003 y 0005
+[docs] registrar ADR 0030 y cerrar las deudas 0003 y 0005
 
-- Agregar ADR 0029 (ventana de 2 horas, resincronización) — el cierre
+- Agregar ADR 0030 (ventana de 2 horas, resincronización) — el cierre
   automático de la deuda 0004 quedó fuera de alcance, ver spec
 - Marcar 0003 como parcialmente resuelta, con lo pendiente anotado
   dentro del mismo ítem
