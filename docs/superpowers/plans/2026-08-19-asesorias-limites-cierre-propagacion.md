@@ -2,28 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Cerrar las deudas técnicas 0003 (parcial), 0004 (parcial) y 0005 de la app `asesorias`: ventana mínima de 2 horas para agendar/cancelar, cierre automático de sesiones vencidas vía Celery Beat, y endpoint de resincronización del snapshot de `Disponibilidad` hacia sus sesiones futuras.
+**Goal:** Cerrar las deudas técnicas 0003 (parcial), 0004 (parcial) y 0005 de la app `asesorias`: ventana mínima de 2 horas para agendar/cancelar, cierre automático de sesiones vencidas vía Celery Beat, y endpoint de resincronización del snapshot de `Disponibilidad` hacia sus sesiones futuras. **Addendum post-demo (Tasks 8–10, 2026-08-21):** bloques de `Disponibilidad` de 1 hora en vez de 30 min, y el wizard de agendado del alumno en `/asesorias/nueva` deja de pedir asesor primero (pasa a materia → día → bloque).
 
-**Architecture:** Toda la regla de negocio vive en `asesorias/models.py` (`Asesoria.clean()`, `Asesoria.cancelar()`, `Disponibilidad.resincronizar_sesiones_futuras()`); las vistas solo traducen `ValidationError` → 400, siguiendo el patrón ya presente en `asesorias/views.py`. El cierre automático es una `@shared_task` nueva en `asesorias/tasks.py` disparada por un contenedor `celery-beat` nuevo con `django-celery-beat` como scheduler. Sin cambios de esquema en modelos propios (solo las migraciones que trae `django_celery_beat`).
+**Architecture:** Toda la regla de negocio vive en `asesorias/models.py` (`Asesoria.clean()`, `Asesoria.cancelar()`, `Disponibilidad.resincronizar_sesiones_futuras()`); las vistas solo traducen `ValidationError` → 400, siguiendo el patrón ya presente en `asesorias/views.py`. El cierre automático es una `@shared_task` nueva en `asesorias/tasks.py` disparada por un contenedor `celery-beat` nuevo con `django-celery-beat` como scheduler. Sin cambios de esquema en modelos propios (solo las migraciones que trae `django_celery_beat`). El addendum (Tasks 8–10) reusa el mismo endpoint de búsqueda de disponibilidad sin su filtro opcional de asesor — no agrega superficie de API nueva — y toca `frontend/` únicamente en `features/asesorias`.
 
-**Tech Stack:** Django 6 + DRF, Celery + Redis, `django-celery-beat`, PostgreSQL 16, Docker Compose, `uv` para dependencias.
+**Tech Stack:** Django 6 + DRF, Celery + Redis, `django-celery-beat`, PostgreSQL 16, Docker Compose, `uv` para dependencias (backend); React + TypeScript + Vite, TanStack Query, Vitest (frontend, Tasks 9–10).
 
 **Spec:** `docs/superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md`
 
 ## Global Constraints
 
-- 100% backend. **No se toca `frontend/`.** Los contratos nuevos se documentan en `docs/development/api-frontend.md` para que un plan de frontend futuro los consuma.
-- Comando de tests: desde `backend/`, `uv run manage.py test <ruta> -v 2`. Requiere Postgres. Sin Postgres local: `docker compose -f docker-compose.dev.yml run --rm backend python manage.py test <ruta> -v 2` (desde la raíz del repo).
+- **Tasks 1–7: 100% backend**, tal como se diseñaron el 2026-08-19. **Tasks 8–10 son un addendum post-demo (2026-08-21, ver spec sección 4)** y sí tocan `frontend/` — la restricción original "no se toca frontend" solo aplicaba al alcance de las deudas 0003/0004/0005. Los contratos de las Tasks 1–7 se documentan en `docs/development/api-frontend.md`.
+- Comando de tests backend: desde `backend/`, `uv run manage.py test <ruta> -v 2`. Requiere Postgres. Sin Postgres local: `docker compose -f docker-compose.dev.yml run --rm backend python manage.py test <ruta> -v 2` (desde la raíz del repo).
+- Comando de tests frontend (Tasks 9–10): desde `frontend/`, `npm test` (Vitest). Lint: `npm run lint` (oxlint). Build: `npm run build` (`tsc -b && vite build`).
 - Idioma del código, docstrings, comentarios y mensajes de error: **español**. Encabezados de ADR en inglés (`Context`/`Decision`/`Consequences`/`Alternatives considered`), cuerpo en español — igual que `docs/decisions/0028-*.md`.
 - Formato de commit: `[type][scope] resumen` + lista de cambios + `Signed-off-by`. Ver `docs/development/commit-conventions.md`.
 - Errores de negocio del modelo se propagan como `{"detail": ["mensaje"]}` (lista), convención ya vigente.
 - **Valores fijados por este plan** (el spec los dejaba abiertos):
   - Ventana mínima de anticipación: **2 horas** — `VENTANA_MINIMA_ANTICIPACION = datetime.timedelta(hours=2)`.
-  - Duración de sesión usada para el cierre automático: **30 minutos** — `DURACION_SESION = datetime.timedelta(minutes=30)`. El cierre solo toca sesiones que **ya terminaron** (`inicio + 30 min <= ahora`), no las que apenas arrancaron.
+  - Duración de sesión / bloque: **1 hora** (ajustado por el addendum de la Task 8 — antes 30 min) — `DURACION_SESION = datetime.timedelta(hours=1)`. El mismo valor fija tanto `Disponibilidad.hora_fin` como el margen del cierre automático: el cierre solo toca sesiones que **ya terminaron** (`inicio + 1h <= ahora`), no las que apenas arrancaron.
+  - Rejilla de `Disponibilidad.hora_inicio`: **solo horas en punto** (ajustado por la Task 8 — antes `:00`/`:30`); `hora_inicio.minute != 0` es inválido.
   - Frecuencia de `cerrar_sesiones_vencidas`: **cada 15 minutos** — `crontab(minute="*/15")`.
   - Parámetro de bypass en `cancelar()`: **keyword-only `forzar: bool = False`**, en español como el resto de la firma (`usuario`, `motivo`).
   - Notificación de resincronización: **tarea nueva** `enviar_notificacion_resincronizacion(asesoria_id)` en `asesorias/tasks.py` (no se extiende `enviar_notificacion_cancelacion`: distinto asunto, distinto cuerpo, distinto disparador).
   - Deuda 0003 y 0004 quedan **parcialmente resueltas** (no se crean deudas nuevas para lo pendiente); deuda 0005 queda **resuelta**.
+  - `/asesorias/nueva` (Task 10): el wizard de agendado pasa de 4 pasos (asesor → día → bloque → carrera) a 3 (día → bloque → carrera); no se toca `useAsesoresDeMateria`/`AsesoresDeMateriaView`, que sigue usando `AdminOfertaMateria` (consulta SAE).
 
 ## Archivos tocados
 
@@ -40,6 +43,12 @@
 | `docs/decisions/0029-*.md` | ADR nuevo |
 | `docs/technical-debt/0003|0004|0005*.md` + `README.md` | Cierre de deudas |
 | `backend/asesorias/tests/*` | Tests nuevos + ajuste de tests existentes que agendan/cancelan fuera de la ventana |
+| `docs/decisions/0016-asesorias-academicas.md` | Changelog: rejilla de 1h (Task 8) |
+| `backend/accounts/demo_data.py` + `backend/accounts/tests/test_sembrar_demo.py` | Segundo bloque por asesor (Task 8) |
+| `frontend/src/features/asesorias/logica.ts` + `logica.test.ts` | `horasDelDia()` a 14 filas de 1h (Task 9) |
+| `frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx` | Copy "1 hora" (Task 9) |
+| `frontend/src/features/asesorias/api.ts` | `useDisponibilidadDeMateria` (Task 10) |
+| `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx` + `.test.tsx` | Wizard de 3 pasos, tarjetas con profesor/modalidad (Task 10) |
 
 ---
 
@@ -184,7 +193,8 @@ ESTADOS_ASESORIA = [("agendada", "Agendada"), ("cancelada", "Cancelada"), ("real
 # Duración de un bloque de asesoría. Fija la rejilla de `Disponibilidad.hora_fin`
 # y el margen del cierre automático (`asesorias.tasks.cerrar_sesiones_vencidas`):
 # una sesión solo se cierra cuando ya terminó, no cuando apenas arrancó.
-DURACION_SESION = datetime.timedelta(minutes=30)
+# 1 hora (no 30 min): ajustado por feedback post-demo, ver Task 8.
+DURACION_SESION = datetime.timedelta(hours=1)
 
 # Deuda 0003: ni agendar ni cancelar se permiten a menos de 2 horas del inicio.
 # Agendar de último minuto no le da al asesor tiempo de enterarse; cancelar de
@@ -1731,8 +1741,9 @@ programadas". Este es ese momento.
    agrega un estado "vencida": el dato que la SAE necesita es de asistencia, y
    `asistio=False` ya lo expresa. Lo hace la tarea
    `asesorias.tasks.cerrar_sesiones_vencidas`.
-4. **El corte del cierre es `inicio + DURACION_SESION <= ahora`** (30 minutos),
-   no `inicio <= ahora`: una sesión que apenas arrancó sigue en curso y el asesor
+4. **El corte del cierre es `inicio + DURACION_SESION <= ahora`** (1 hora — ver
+   [ADR 0016](0016-asesorias-academicas.md), Changelog 2026-08-21), no
+   `inicio <= ahora`: una sesión que apenas arrancó sigue en curso y el asesor
    todavía puede marcar asistencia. `DURACION_SESION` es la misma constante que
    define `Disponibilidad.hora_fin`.
 5. **Celery Beat con `django-celery-beat` (`DatabaseScheduler`)**, en un
@@ -1858,7 +1869,7 @@ Cuando el volumen de sesiones "huérfanas" (agendadas, vencidas, sin marcar) sea
 El **cierre automático** existe desde el 2026-08-19. Se resolvieron los dos bloqueos que registraba esta deuda:
 
 - **Celery Beat:** contenedor propio (`celery-beat` en `docker-compose.dev.yml`/`.prod.yml`, `atenea-beat` en el repo `services`), con `django-celery-beat` como `DatabaseScheduler`.
-- **Decisión de producto:** una sesión vencida sin marcar pasa a `realizada` con `asistio=False`, reusando `marcar_asistencia(False)`. Lo hace `asesorias.tasks.cerrar_sesiones_vencidas`, programada cada 15 minutos, y solo alcanza sesiones que ya **terminaron** (`inicio + 30 min <= ahora`), no las que apenas arrancaron.
+- **Decisión de producto:** una sesión vencida sin marcar pasa a `realizada` con `asistio=False`, reusando `marcar_asistencia(False)`. Lo hace `asesorias.tasks.cerrar_sesiones_vencidas`, programada cada 15 minutos, y solo alcanza sesiones que ya **terminaron** (`inicio + 1h <= ahora`), no las que apenas arrancaron.
 
 ## Qué sigue pendiente
 
@@ -1951,6 +1962,888 @@ EOF
 
 ---
 
+### Task 8: Rejilla de `Disponibilidad` a bloques de 1 hora (addendum post-demo)
+
+**Files:**
+- Modify: `backend/asesorias/models.py`
+- Modify: `backend/asesorias/tests/test_disponibilidad.py`
+- Modify: `docs/decisions/0016-asesorias-academicas.md`
+- Modify: `docs/development/api-frontend.md`
+- Modify: `backend/accounts/demo_data.py`
+- Modify: `backend/accounts/tests/test_sembrar_demo.py`
+
+**Interfaces:**
+- Consumes: `DURACION_SESION = datetime.timedelta(hours=1)` (Task 1, ya ajustado arriba).
+- Produces: `Disponibilidad.clean()` rechaza cualquier `hora_inicio` que no caiga en una hora en punto.
+
+- [ ] **Step 1: Escribir el test que falla**
+
+En `backend/asesorias/tests/test_disponibilidad.py`, dentro de `DisponibilidadTests`, agregar este método justo después de `test_hora_fuera_de_rejilla_falla`:
+
+```python
+    def test_media_hora_ya_no_cae_en_la_rejilla(self):
+        """Feedback post-demo (2026-08-21): la rejilla pasa de 30 min a 1h."""
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 30),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+        with self.assertRaises(ValidationError):
+            disp.clean()
+```
+
+- [ ] **Step 2: Correr el test y verificar que falla**
+
+Run: `uv run manage.py test asesorias.tests.test_disponibilidad.DisponibilidadTests.test_media_hora_ya_no_cae_en_la_rejilla -v 2`
+Expected: FAIL — `10:30` todavía es válido con la rejilla actual (`ValidationError not raised`).
+
+- [ ] **Step 3: Implementar el cambio de rejilla**
+
+En `backend/asesorias/models.py`, dentro de `Disponibilidad`, reemplazar:
+
+```python
+    def clean(self):
+        if self.hora_inicio.minute not in (0, 30) or self.hora_inicio.second != 0:
+            raise ValidationError("hora_inicio debe caer en la rejilla de 30 minutos.")
+```
+
+por:
+
+```python
+    def clean(self):
+        if self.hora_inicio.minute != 0 or self.hora_inicio.second != 0:
+            raise ValidationError("hora_inicio debe caer en la rejilla de 1 hora.")
+```
+
+- [ ] **Step 4: Arreglar los dos tests existentes que asumían la rejilla de 30 min**
+
+En `backend/asesorias/tests/test_disponibilidad.py`, dentro de `DisponibilidadTests`, reemplazar `test_bloque_valido_presencial`:
+
+```python
+    def test_bloque_valido_presencial(self):
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
+            formato="presencial", ubicacion="Salón 3",
+        )
+        disp.clean()  # no lanza
+        disp.save()
+        self.assertEqual(disp.hora_fin, datetime.time(10, 30))
+        disp.delete()
+```
+
+por:
+
+```python
+    def test_bloque_valido_presencial(self):
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 0),
+            formato="presencial", ubicacion="Salón 3",
+        )
+        disp.clean()  # no lanza
+        disp.save()
+        self.assertEqual(disp.hora_fin, datetime.time(11, 0))
+        disp.delete()
+```
+
+Y reemplazar `test_bloque_valido_virtual` (usaba `10:30` como ejemplo de hora válida; con la rejilla de 1h ya no lo es):
+
+```python
+    def test_bloque_valido_virtual(self):
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 30),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+        disp.clean()  # no lanza
+```
+
+por:
+
+```python
+    def test_bloque_valido_virtual(self):
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(11, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+        disp.clean()  # no lanza
+```
+
+- [ ] **Step 5: Correr la suite de `test_disponibilidad.py` y verificar que todo pasa**
+
+Run: `uv run manage.py test asesorias.tests.test_disponibilidad -v 2`
+Expected: PASS.
+
+- [ ] **Step 6: Ampliar el guion de demo con un segundo bloque por asesor**
+
+En `backend/accounts/demo_data.py`, reemplazar las `disponibilidades` de `DEMOTRAB1`:
+
+```python
+        "disponibilidades": [
+            {"dia_semana": 0, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-lunes"},
+            {"dia_semana": 2, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-miercoles"},
+        ],
+```
+
+por:
+
+```python
+        "disponibilidades": [
+            {"dia_semana": 0, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-lunes"},
+            {"dia_semana": 0, "hora_inicio": datetime.time(14, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-lunes-tarde"},
+            {"dia_semana": 2, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-miercoles"},
+        ],
+```
+
+Y las de `DEMOTRAB2`:
+
+```python
+        "disponibilidades": [
+            {"dia_semana": 1, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+            {"dia_semana": 3, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+        ],
+```
+
+por:
+
+```python
+        "disponibilidades": [
+            {"dia_semana": 1, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+            {"dia_semana": 1, "hora_inicio": datetime.time(16, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+            {"dia_semana": 3, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+        ],
+```
+
+> Un bloque nuevo por asesor, mismo día distinta hora, para que el paso "elige un bloque" del wizard nuevo (Task 10) tenga más de una tarjeta que mostrar. Dos asesores compartiendo día **y** materia requeriría que `sembrar_demo.py` asignara la misma materia a dos académicos de la misma área — hoy asigna una materia por área automáticamente — así que queda fuera de este ajuste; los índices `"disponibilidad": 0` y `1` que usa `ASESORIAS_DEMO` para las 6 asesorías siguen apuntando a los mismos dos bloques de siempre, sin cambios.
+
+- [ ] **Step 7: Ajustar las aserciones de `test_sembrar_demo.py` al nuevo conteo**
+
+En `backend/accounts/tests/test_sembrar_demo.py`, dentro de `test_crea_dos_asesores_activos_y_uno_pendiente`, reemplazar:
+
+```python
+            self.assertEqual(asesor.registros.get().disponibilidades.count(), 2)
+```
+
+por:
+
+```python
+            self.assertEqual(asesor.registros.get().disponibilidades.count(), 3)
+```
+
+Y dentro de `test_es_idempotente`, reemplazar:
+
+```python
+        self.assertEqual(Disponibilidad.objects.count(), 4)
+```
+
+por:
+
+```python
+        self.assertEqual(Disponibilidad.objects.count(), 6)
+```
+
+- [ ] **Step 8: Correr la suite de demo y verificar que pasa**
+
+Run: `uv run manage.py test accounts.tests.test_sembrar_demo accounts.tests.test_limpiar_demo -v 2`
+Expected: PASS.
+
+- [ ] **Step 9: Actualizar el contrato de `Disponibilidad` en `api-frontend.md`**
+
+En `docs/development/api-frontend.md`, reemplazar:
+
+```markdown
+`Disponibilidad` es un slot fijo de 30 minutos, no un rango — `dia_semana` (0=Lunes…6=Domingo), `hora_inicio` debe caer en la rejilla `:00`/`:30`, `formato` (`presencial`/`virtual`) determina si `ubicacion` o `liga_virtual` es obligatorio. Validaciones fallidas → `400 {"detail": ["..."]}`.
+```
+
+por:
+
+```markdown
+`Disponibilidad` es un slot fijo de 1 hora, no un rango — `dia_semana` (0=Lunes…6=Domingo), `hora_inicio` debe caer en la rejilla de horas en punto (`:00`; antes de 2026-08-21 aceptaba también `:30`), `formato` (`presencial`/`virtual`) determina si `ubicacion` o `liga_virtual` es obligatorio. Validaciones fallidas → `400 {"detail": ["..."]}`.
+```
+
+Y en el ejemplo JSON de `GET /api/asesorias/disponibilidad/buscar/`, reemplazar:
+
+```json
+  "hora_inicio": "10:00:00",
+  "hora_fin": "10:30:00",
+```
+
+por:
+
+```json
+  "hora_inicio": "10:00:00",
+  "hora_fin": "11:00:00",
+```
+
+- [ ] **Step 10: Changelog en el ADR 0016**
+
+En `docs/decisions/0016-asesorias-academicas.md`, al final de la sección `## Changelog`, agregar:
+
+```markdown
+- **2026-08-21** — La rejilla de `Disponibilidad.hora_inicio` pasa de bloques de 30 minutos a bloques de 1 hora: `hora_inicio.minute != 0` es inválido (antes `not in (0, 30)`). `DURACION_SESION` — la constante que fija tanto `hora_fin` como el margen del cierre automático (ver [ADR 0029](0029-limites-cierre-y-propagacion-asesorias.md)) — pasa de `timedelta(minutes=30)` a `timedelta(hours=1)`. Motivo: feedback de la demo del 21 de agosto — media hora no correspondía a la duración real de una asesoría. Sin migración de columnas: `hora_fin` es una `@property` calculada, no una columna de base de datos, y el anti-doble-booking (`UniqueConstraint(disponibilidad, fecha)`, ver Consequences arriba) no depende del tamaño del bloque. Detalle en la [sección 4 del spec de límites/cierre/propagación](../superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md#4-bloques-de-1-hora-y-nuevo-flujo-de-agendado-del-alumno).
+```
+
+- [ ] **Step 11: Correr la suite completa del backend**
+
+Run: `uv run manage.py test -v 1`
+Expected: PASS.
+
+- [ ] **Step 12: Commit**
+
+```bash
+git add backend/asesorias/models.py backend/asesorias/tests/test_disponibilidad.py backend/accounts/demo_data.py backend/accounts/tests/test_sembrar_demo.py docs/decisions/0016-asesorias-academicas.md docs/development/api-frontend.md
+git commit -m "$(cat <<'EOF'
+[feat][backend] cambiar la rejilla de Disponibilidad de 30 min a 1 hora
+
+- Disponibilidad.clean() ahora solo acepta horas en punto (antes :00/:30)
+- Ampliar backend/accounts/demo_data.py con un segundo bloque por asesor
+  (mismo día, distinta hora) para el nuevo wizard de agendado (Task 10)
+- Changelog en ADR 0016 y contrato actualizado en api-frontend.md
+
+Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
+EOF
+)"
+```
+
+---
+
+### Task 9: Grid de "Mi horario" a bloques de 1 hora (frontend, asesor)
+
+**Files:**
+- Modify: `frontend/src/features/asesorias/logica.ts`
+- Modify: `frontend/src/features/asesorias/logica.test.ts`
+- Modify: `frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx`
+
+**Interfaces:**
+- Consumes: nada de tasks previos (independiente del backend — ya envía/recibe horas en punto).
+- Produces: `horasDelDia(): string[]` con 14 elementos en vez de 28.
+
+- [ ] **Step 1: Escribir los tests que fallan**
+
+En `frontend/src/features/asesorias/logica.test.ts`, reemplazar el bloque `describe('horasDelDia', ...)`:
+
+```typescript
+describe('horasDelDia', () => {
+  it('produce los 28 slots de media hora de 07:00 a 20:30', () => {
+    const horas = horasDelDia()
+    expect(horas).toHaveLength(28)
+    expect(horas[0]).toBe('07:00:00')
+    expect(horas[1]).toBe('07:30:00')
+    expect(horas.at(-1)).toBe('20:30:00')
+  })
+})
+```
+
+por:
+
+```typescript
+describe('horasDelDia', () => {
+  it('produce las 14 horas en punto de 07:00 a 20:00', () => {
+    const horas = horasDelDia()
+    expect(horas).toHaveLength(14)
+    expect(horas[0]).toBe('07:00:00')
+    expect(horas[1]).toBe('08:00:00')
+    expect(horas.at(-1)).toBe('20:00:00')
+  })
+})
+```
+
+Y dentro de `describe('slotsDelDia', ...)`, reemplazar:
+
+```typescript
+  it('devuelve un slot por cada media hora del día', () => {
+    expect(slotsDelDia(0, [])).toHaveLength(28)
+  })
+```
+
+por:
+
+```typescript
+  it('devuelve un slot por cada hora del día', () => {
+    expect(slotsDelDia(0, [])).toHaveLength(14)
+  })
+```
+
+- [ ] **Step 2: Correr los tests y verificar que fallan**
+
+Run (desde `frontend/`): `npm test -- logica.test.ts`
+Expected: FAIL — `horasDelDia()` sigue devolviendo 28 elementos.
+
+- [ ] **Step 3: Implementar el cambio de rejilla**
+
+En `frontend/src/features/asesorias/logica.ts`, reemplazar:
+
+```typescript
+/** Los 28 slots de 30 minutos que cubre un día de asesorías: 07:00–20:30. */
+export function horasDelDia(): string[] {
+  const horas: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    horas.push(`${String(h).padStart(2, "0")}:00:00`);
+    horas.push(`${String(h).padStart(2, "0")}:30:00`);
+  }
+  return horas;
+}
+```
+
+por:
+
+```typescript
+/** Las 14 horas en punto que cubre un día de asesorías: 07:00–20:00
+ *  (bloques de 1h, así que el último cubre hasta las 21:00). */
+export function horasDelDia(): string[] {
+  const horas: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    horas.push(`${String(h).padStart(2, "0")}:00:00`);
+  }
+  return horas;
+}
+```
+
+- [ ] **Step 4: Correr los tests y verificar que pasan**
+
+Run (desde `frontend/`): `npm test -- logica.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Actualizar el copy de `DialogoNuevoBloque`**
+
+En `frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx`, reemplazar:
+
+```tsx
+      descripcion="Bloque recurrente de 30 minutos cada semana."
+```
+
+por:
+
+```tsx
+      descripcion="Bloque recurrente de 1 hora cada semana."
+```
+
+- [ ] **Step 6: Correr la suite frontend completa**
+
+Run (desde `frontend/`): `npm test`
+Expected: PASS. (`DialogoNuevoBloque` no tiene test propio que fije el copy anterior — verificar con `grep -rn "30 minutos" frontend/src` que no queda ninguna referencia.)
+
+- [ ] **Step 7: Lint y build**
+
+Run (desde `frontend/`): `npm run lint && npm run build`
+Expected: sin errores.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add frontend/src/features/asesorias/logica.ts frontend/src/features/asesorias/logica.test.ts frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx
+git commit -m "$(cat <<'EOF'
+[feat][frontend] llevar la rejilla de "Mi horario" a bloques de 1 hora
+
+- horasDelDia() pasa de 28 filas de 30 min a 14 filas de 1h (07:00-20:00)
+- Actualizar el copy de DialogoNuevoBloque
+
+Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
+EOF
+)"
+```
+
+---
+
+### Task 10: Nuevo flujo de agendado del alumno en `/asesorias/nueva`
+
+**Files:**
+- Modify: `frontend/src/features/asesorias/api.ts`
+- Modify: `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx`
+- Modify: `frontend/src/features/asesorias/screens/AgendarAsesoria.test.tsx`
+- Modify: `docs/development/api-frontend.md`
+
+**Interfaces:**
+- Consumes: `GET /api/asesorias/disponibilidad/buscar/?materia=` (ya existente, ya acepta `?asesor=` opcional), `agruparPorDia` (ya existente en `logica.ts`).
+- Produces: `useDisponibilidadDeMateria(materiaId: number | null)`; `AgendarAsesoria` con wizard de 3 pasos (`dia` → `bloque` → `carrera`).
+
+- [ ] **Step 1: Escribir los tests que fallan**
+
+En `frontend/src/features/asesorias/screens/AgendarAsesoria.test.tsx`, reemplazar el archivo completo:
+
+```typescript
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AgendarAsesoria } from './AgendarAsesoria'
+import * as api from '../api'
+import * as auth from '../../../auth/AuthContext'
+import * as catalogo from '../../catalogo/api'
+import { ApiError } from '../../../api/client'
+import type { SlotDisponibilidad, InscripcionAlumno } from '../../../api/types'
+
+const SLOTS: SlotDisponibilidad[] = [
+  {
+    registro_id: 7, asesor_nombre: 'Ana López', disponibilidad_id: 41, fecha: '2026-08-10',
+    hora_inicio: '10:00:00', hora_fin: '11:00:00', formato: 'virtual', ubicacion: '', liga_virtual: 'https://x',
+  },
+]
+
+const HISTORIAL_UNA: InscripcionAlumno[] = [
+  { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+]
+
+function mockComun(
+  mutateImpl: ReturnType<typeof vi.fn>,
+  historial: InscripcionAlumno[] = HISTORIAL_UNA,
+) {
+  vi.spyOn(api, 'useDisponibilidadDeMateria').mockReturnValue({
+    data: SLOTS, isPending: false,
+  } as ReturnType<typeof api.useDisponibilidadDeMateria>)
+  vi.spyOn(api, 'useAgendarAsesoria').mockReturnValue({
+    mutate: mutateImpl, isPending: false,
+  } as unknown as ReturnType<typeof api.useAgendarAsesoria>)
+  vi.spyOn(auth, 'useAuth').mockReturnValue({
+    user: { perfil_alumno: { id: 1, numero_cuenta: '312345678', historial } },
+    status: 'authenticated',
+  } as unknown as ReturnType<typeof auth.useAuth>)
+  vi.spyOn(catalogo, 'useMapaCarreras').mockReturnValue(
+    new Map([
+      [3, { id: 3, nombre: 'Actuaría' } as never],
+      [6, { id: 6, nombre: 'Matemáticas' } as never],
+    ]),
+  )
+  vi.spyOn(catalogo, 'useMapaMaterias').mockReturnValue(new Map([[12, { id: 12, nombre: 'Álgebra' } as never]]))
+}
+
+function montar(entrada = '/asesorias/nueva/12') {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[entrada]}>
+        <Routes>
+          <Route path="/asesorias/nueva/:materiaId" element={<AgendarAsesoria />} />
+          <Route path="/asesorias" element={<p>lista de asesorías</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  return queryClient
+}
+
+function avanzarHastaConfirmar() {
+  fireEvent.click(screen.getByText(/10 de agosto/i))
+  fireEvent.click(screen.getByText('10:00–11:00'))
+  // Botón que abre el diálogo (etiqueta distinta a la acción del diálogo).
+  fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+}
+
+describe('AgendarAsesoria', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('arranca directo en el paso de día, sin pedir asesor primero', () => {
+    mockComun(vi.fn())
+    montar()
+    expect(screen.getByText('Elige un día')).toBeInTheDocument()
+    expect(screen.queryByText('Elige un asesor')).not.toBeInTheDocument()
+  })
+
+  it('la tarjeta del bloque muestra profesor y modalidad', () => {
+    mockComun(vi.fn())
+    montar()
+    fireEvent.click(screen.getByText(/10 de agosto/i))
+    expect(screen.getByText('Ana López')).toBeInTheDocument()
+    expect(screen.getByText('Virtual')).toBeInTheDocument()
+  })
+
+  it('confirmar dispara el POST con el payload correcto', () => {
+    const mutate = vi.fn()
+    mockComun(mutate)
+    montar()
+    avanzarHastaConfirmar()
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' })) // botón del diálogo
+    expect(mutate).toHaveBeenCalledWith(
+      { disponibilidad: 41, fecha: '2026-08-10', materia: 12, carrera: 3 },
+      expect.anything(),
+    )
+  })
+
+  it('un 409 regresa al paso de día', async () => {
+    const mutate = vi.fn((_payload, { onError }) => onError(new ApiError(409, { detail: 'tomado' })))
+    mockComun(mutate)
+    montar()
+    avanzarHastaConfirmar()
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(await screen.findByText('Elige un día')).toBeInTheDocument()
+    expect(screen.getByText(/ya fue tomado/i)).toBeInTheDocument()
+  })
+
+  it('un 409 invalida la búsqueda de disponibilidad para forzar el refetch', () => {
+    const mutate = vi.fn((_payload, { onError }) => onError(new ApiError(409, { detail: 'tomado' })))
+    mockComun(mutate)
+    const queryClient = montar()
+    const invalidar = vi.spyOn(queryClient, 'invalidateQueries')
+    avanzarHastaConfirmar()
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(invalidar).toHaveBeenCalledWith({ queryKey: ['disponibilidad'] })
+  })
+
+  it('un usuario sin perfil de alumno no puede agendar', () => {
+    mockComun(vi.fn())
+    vi.spyOn(auth, 'useAuth').mockReturnValue({
+      user: { perfil_alumno: null },
+      status: 'authenticated',
+    } as unknown as ReturnType<typeof auth.useAuth>)
+    montar()
+    expect(screen.getByText(/sólo los alumnos pueden agendar/i)).toBeInTheDocument()
+    expect(screen.queryByText('Elige un día')).not.toBeInTheDocument()
+  })
+})
+
+describe('AgendarAsesoria — selección de carrera', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  function avanzarHastaCarrera() {
+    fireEvent.click(screen.getByText(/10 de agosto/i))
+    fireEvent.click(screen.getByText('10:00–11:00'))
+  }
+
+  it('con una sola inscripción deja la carrera preseleccionada', () => {
+    mockComun(vi.fn())
+    montar()
+    avanzarHastaCarrera()
+    expect((screen.getByLabelText('Carrera') as HTMLSelectElement).value).toBe('3')
+  })
+
+  it('con dos inscripciones ofrece ambas y no preselecciona ninguna', () => {
+    mockComun(vi.fn(), [
+      { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+      { carrera: 6, carrera_nombre: 'Matemáticas', generacion: 2025 },
+    ])
+    montar()
+    avanzarHastaCarrera()
+    const select = screen.getByLabelText('Carrera') as HTMLSelectElement
+    expect(select.value).toBe('')
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      'Elige una carrera', 'Actuaría', 'Matemáticas',
+    ])
+  })
+
+  it('con dos inscripciones el POST manda la que se eligió', () => {
+    const mutate = vi.fn()
+    mockComun(mutate, [
+      { carrera: 3, carrera_nombre: 'Actuaría', generacion: 2023 },
+      { carrera: 6, carrera_nombre: 'Matemáticas', generacion: 2025 },
+    ])
+    montar()
+    avanzarHastaCarrera()
+    fireEvent.change(screen.getByLabelText('Carrera'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ carrera: 6 }),
+      expect.anything(),
+    )
+  })
+})
+```
+
+- [ ] **Step 2: Correr los tests y verificar que fallan**
+
+Run (desde `frontend/`): `npm test -- AgendarAsesoria.test.tsx`
+Expected: FAIL — `api.useDisponibilidadDeMateria` no existe todavía, y `AgendarAsesoria` sigue pidiendo un asesor primero.
+
+- [ ] **Step 3: Agregar el hook `useDisponibilidadDeMateria`**
+
+En `frontend/src/features/asesorias/api.ts`, insertar esta función justo después de `useDisponibilidadDeAsesor`:
+
+```typescript
+/**
+ * Días y bloques disponibles de una materia, a través de todos los
+ * asesores que la imparten (sin elegir asesor primero). Mismo endpoint
+ * que `useDisponibilidadDeAsesor` sin `?asesor=` — ya devuelve
+ * `asesor_nombre`/`formato` por slot, así que la tarjeta de cada bloque
+ * puede mostrarlos sin una consulta aparte.
+ */
+export function useDisponibilidadDeMateria(materiaId: number | null) {
+  return useQuery({
+    queryKey: ['disponibilidad', materiaId, null],
+    queryFn: () =>
+      apiGet<SlotDisponibilidad[]>(`/api/asesorias/disponibilidad/buscar/?materia=${materiaId}`),
+    enabled: materiaId !== null,
+  })
+}
+```
+
+- [ ] **Step 4: Reescribir el wizard de `AgendarAsesoria`**
+
+En `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx`, reemplazar el archivo completo:
+
+```tsx
+import { useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { useDisponibilidadDeMateria, useAgendarAsesoria } from '../api'
+import { agruparPorDia } from '../logica'
+import { useAuth } from '../../../auth/AuthContext'
+import { useMapaCarreras, useMapaMaterias } from '../../catalogo/api'
+import { Dialogo } from '../../../components/ui/Dialogo'
+import { Skeleton } from '../../../components/ui/Skeleton'
+import { primerMensajeDeError } from '../../../api/errores'
+import { ApiError } from '../../../api/client'
+import type { SlotDisponibilidad } from '../../../api/types'
+
+const FORMATEADOR_DIA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+
+export function AgendarAsesoria() {
+  const { materiaId } = useParams<{ materiaId: string }>()
+  const idMateria = Number(materiaId)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  const mapaCarreras = useMapaCarreras()
+  const mapaMaterias = useMapaMaterias()
+
+  const { data: slots = [], isPending: cargandoSlots } = useDisponibilidadDeMateria(
+    Number.isInteger(idMateria) ? idMateria : null,
+  )
+  const dias = useMemo(() => agruparPorDia(slots), [slots])
+
+  const [fecha, setFecha] = useState<string | null>(null)
+  const [slot, setSlot] = useState<SlotDisponibilidad | null>(null)
+  const historial = user?.perfil_alumno?.historial ?? []
+  // Con una sola inscripción no hay nada que preguntar: se preselecciona.
+  // Con dos o más, `carrera` arranca en null y el backend exige el campo.
+  const [carrera, setCarrera] = useState<number | null>(
+    historial.length === 1 ? historial[0].carrera : null,
+  )
+  const [confirmando, setConfirmando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const agendar = useAgendarAsesoria()
+
+  const paso = fecha === null ? 'dia' : slot === null ? 'bloque' : 'carrera'
+
+  function volver() {
+    setError(null)
+    if (slot !== null) return setSlot(null)
+    if (fecha !== null) return setFecha(null)
+    navigate('/asesorias')
+  }
+
+  function confirmar() {
+    if (slot === null || carrera === null || fecha === null) return
+    agendar.mutate(
+      { disponibilidad: slot.disponibilidad_id, fecha, materia: idMateria, carrera },
+      {
+        onSuccess: (asesoria) => {
+          setConfirmando(false)
+          navigate('/asesorias', { state: { nuevaAsesoriaId: asesoria.id } })
+        },
+        onError: (err) => {
+          setConfirmando(false)
+          if (err instanceof ApiError && err.status === 409) {
+            // El bloque tomado sigue en la caché de disponibilidad (y `num_asesores`
+            // en la oferta pudo cambiar); invalidar ambos fuerza el refetch al
+            // regresar al paso de día y evita reofrecer el bloque ya ocupado.
+            queryClient.invalidateQueries({ queryKey: ['disponibilidad'] })
+            queryClient.invalidateQueries({ queryKey: ['oferta'] })
+            setError('Ese horario ya fue tomado. Elige otro día.')
+            setSlot(null)
+            setFecha(null)
+          } else {
+            setError(primerMensajeDeError(err))
+          }
+        },
+      },
+    )
+  }
+
+  const slotsDelDia = dias.find((d) => d.fecha === fecha)?.slots ?? []
+
+  if (!Number.isInteger(idMateria)) {
+    return (
+      <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+        <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">← Volver a Asesorías</button>
+        <p className="text-sm text-on-surface-variant">Materia inválida.</p>
+      </main>
+    )
+  }
+
+  if (historial.length === 0) {
+    return (
+      <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+        <button type="button" onClick={() => navigate('/asesorias')} className="foco-visible w-fit min-h-11 text-sm text-primary">← Volver a Asesorías</button>
+        <p className="text-sm text-on-surface-variant">Sólo los alumnos pueden agendar asesorías.</p>
+      </main>
+    )
+  }
+
+  return (
+    <main className="flex min-h-svh flex-col gap-4 px-6 py-6">
+      <button type="button" onClick={volver} className="foco-visible w-fit min-h-11 text-sm text-primary">← Atrás</button>
+      <h1 className="text-lg font-semibold text-on-background">
+        {mapaMaterias.get(idMateria)?.nombre ?? `Materia #${idMateria}`}
+      </h1>
+
+      {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
+
+      {paso === 'dia' && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium text-on-surface">Elige un día</h2>
+          {cargandoSlots ? (
+            <Skeleton className="h-14" />
+          ) : dias.length === 0 ? (
+            <p className="text-sm text-on-surface-variant">Esta materia no tiene horarios en las próximas dos semanas.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {dias.map((d, indice) => (
+                <li key={d.fecha} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
+                  <button
+                    type="button"
+                    onClick={() => setFecha(d.fecha)}
+                    className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
+                  >
+                    <span className="text-sm text-on-surface">
+                      {FORMATEADOR_DIA.format(new Date(`${d.fecha}T00:00:00`))}
+                    </span>
+                    <span className="text-xs text-on-surface-variant">
+                      {d.slots.length} bloque{d.slots.length === 1 ? '' : 's'}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {paso === 'bloque' && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium text-on-surface">Elige un bloque</h2>
+          <ul className="flex flex-col gap-2">
+            {slotsDelDia.map((s) => (
+              <li key={s.disponibilidad_id}>
+                <button
+                  type="button"
+                  onClick={() => setSlot(s)}
+                  className="fila-interactiva foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg bg-surface-container px-4 py-3 text-left"
+                >
+                  <span className="flex w-full items-center justify-between text-sm text-on-surface">
+                    <span>{s.hora_inicio.slice(0, 5)}–{s.hora_fin.slice(0, 5)}</span>
+                    <span className="text-xs text-on-surface-variant">
+                      {s.formato === 'virtual' ? 'Virtual' : s.ubicacion || 'Presencial'}
+                    </span>
+                  </span>
+                  <span className="text-xs text-on-surface-variant">{s.asesor_nombre}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {paso === 'carrera' && slot !== null && fecha !== null && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-on-surface">Confirma tu asesoría</h2>
+          <dl className="grid grid-cols-2 gap-y-1 text-sm text-on-surface-variant">
+            <dt>Día</dt>
+            <dd>{FORMATEADOR_DIA.format(new Date(`${fecha}T00:00:00`))}</dd>
+            <dt>Hora</dt>
+            <dd>{slot.hora_inicio.slice(0, 5)}</dd>
+            <dt>Asesor</dt>
+            <dd>{slot.asesor_nombre}</dd>
+          </dl>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="carrera-agendar" className="text-xs text-on-surface-variant">Carrera</label>
+            <select
+              id="carrera-agendar"
+              value={carrera ?? ''}
+              onChange={(e) => setCarrera(e.target.value === '' ? null : Number(e.target.value))}
+              className="foco-visible min-h-11 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
+            >
+              {historial.length > 1 && <option value="">Elige una carrera</option>}
+              {historial.map((inscripcion) => (
+                <option key={inscripcion.carrera} value={inscripcion.carrera}>
+                  {mapaCarreras.get(inscripcion.carrera)?.nombre ?? inscripcion.carrera_nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setConfirmando(true)}
+            disabled={carrera === null}
+            className="foco-visible flex min-h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-on-primary disabled:opacity-60"
+          >
+            Continuar
+          </button>
+
+          <Dialogo
+            abierto={confirmando}
+            titulo="Confirmar asesoría"
+            descripcion={`${FORMATEADOR_DIA.format(new Date(`${fecha}T00:00:00`))} · ${slot.hora_inicio.slice(0, 5)}`}
+            onCerrar={() => setConfirmando(false)}
+            acciones={[{ etiqueta: 'Agendar', cargando: agendar.isPending, onClick: confirmar }]}
+          />
+        </section>
+      )}
+    </main>
+  )
+}
+```
+
+Cambios frente a la versión anterior: se quita el paso `asesor` (y la función `BotonAsesor`, que solo ese paso usaba), `useAsesoresDeMateria`/`useDisponibilidadDeAsesor` se reemplazan por `useDisponibilidadDeMateria`, y la tarjeta de bloque gana una segunda línea con `s.asesor_nombre`.
+
+- [ ] **Step 5: Correr los tests y verificar que pasan**
+
+Run (desde `frontend/`): `npm test -- AgendarAsesoria.test.tsx`
+Expected: PASS.
+
+- [ ] **Step 6: Documentar `?asesor=` como opcional en `api-frontend.md`**
+
+El endpoint ya soportaba `?asesor=` sin estar documentado; ahora que el wizard lo omite a propósito (Task 10) vale la pena dejarlo explícito. En `docs/development/api-frontend.md`, reemplazar:
+
+```markdown
+**`GET /api/asesorias/disponibilidad/buscar/`** — `EsAlumno`. Query params opcionales, combinados con AND: `?materia=<id>`, `?carrera=<id>`, `?formato=presencial|virtual`. Devuelve slots libres ya expandidos por fecha dentro de la ventana agendable:
+```
+
+por:
+
+```markdown
+**`GET /api/asesorias/disponibilidad/buscar/`** — `EsAlumno`. Query params opcionales, combinados con AND: `?materia=<id>`, `?carrera=<id>`, `?formato=presencial|virtual`, `?asesor=<registro_id>`. Sin `?asesor=` devuelve bloques de todos los asesores que imparten la materia (cada resultado ya trae `asesor_nombre`) — es lo que usa el wizard de agendado en `/asesorias/nueva` desde el 2026-08-21 para no pedir asesor antes de mostrar los días disponibles. Devuelve slots libres ya expandidos por fecha dentro de la ventana agendable:
+```
+
+- [ ] **Step 7: Correr la suite frontend completa**
+
+Run (desde `frontend/`): `npm test`
+Expected: PASS.
+
+- [ ] **Step 8: Lint y build**
+
+Run (desde `frontend/`): `npm run lint && npm run build`
+Expected: sin errores. (`oxlint` debe señalar si queda algo sin usar — confirmar que `useAsesoresDeMateria`/`useDisponibilidadDeAsesor`/`AsesorDisponible` ya no se importan en `AgendarAsesoria.tsx`; siguen usándose en `AdminOfertaMateria.tsx`, así que no se tocan en `api.ts`.)
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add frontend/src/features/asesorias/api.ts frontend/src/features/asesorias/screens/AgendarAsesoria.tsx frontend/src/features/asesorias/screens/AgendarAsesoria.test.tsx docs/development/api-frontend.md
+git commit -m "$(cat <<'EOF'
+[feat][frontend] agendar sin elegir asesor primero: materia -> día -> bloque
+
+- Nuevo hook useDisponibilidadDeMateria (mismo endpoint sin ?asesor=)
+- AgendarAsesoria pasa de 4 pasos (asesor/día/bloque/carrera) a 3
+- La tarjeta de bloque muestra profesor y modalidad
+- Documentar ?asesor= como opcional en api-frontend.md
+- useAsesoresDeMateria/AsesoresDeMateriaView no se tocan: los sigue
+  usando AdminOfertaMateria (consulta SAE)
+
+Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
+EOF
+)"
+```
+
+---
+
 ## Verificación final
 
 - [ ] Desde `backend/`: `uv run manage.py test -v 1` → PASS.
@@ -1959,4 +2852,7 @@ EOF
 - [ ] Desde la raíz: `docker compose -f docker-compose.dev.yml config -q` → exit 0.
 - [ ] Desde la raíz: `docker compose -f docker-compose.prod.yml config -q` → exit 0.
 - [ ] Desde la raíz: `docker compose -f docker-compose.dev.yml up -d` y luego `docker compose -f docker-compose.dev.yml logs celery-beat` → el schedule lista `cerrar-sesiones-vencidas`.
-- [ ] `git log --oneline` muestra 7 commits, uno por task.
+- [ ] Desde `frontend/`: `npm test` → PASS.
+- [ ] Desde `frontend/`: `npm run lint` → sin errores.
+- [ ] Desde `frontend/`: `npm run build` → sin errores.
+- [ ] `git log --oneline` muestra 10 commits, uno por task (Tasks 1–7 del alcance original + Tasks 8–10 del addendum post-demo).
