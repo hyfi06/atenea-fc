@@ -143,8 +143,12 @@ class Disponibilidad(models.Model):
             canceladas = 0
             if cancelar_sesiones:
                 for asesoria in list(self.sesiones_futuras()):
+                    # forzar=True: la baja de un horario por parte del asesor
+                    # debe poder saltarse la ventana de anticipación.
                     asesoria.cancelar(
-                        usuario=usuario, motivo=motivo or self.MOTIVO_BAJA_DE_HORARIO
+                        usuario=usuario,
+                        motivo=motivo or self.MOTIVO_BAJA_DE_HORARIO,
+                        forzar=True,
                     )
                     canceladas += 1
             self.activa = False
@@ -220,9 +224,19 @@ class Asesoria(models.Model):
         self.notas = texto
         self.save()
 
-    def cancelar(self, usuario, motivo=""):
+    def cancelar(self, usuario, motivo="", *, forzar=False):
+        """Cancela la sesión y notifica por correo a ambas partes.
+
+        `forzar=True` salta la ventana mínima de anticipación (deuda 0003). Lo
+        usa `Disponibilidad.desactivar()`: ahí no es el alumno cancelando de
+        último minuto, es el asesor invalidando el bloque completo, y
+        bloquearlo dejaría al asesor sin forma de dar de baja su horario. La
+        regla vive solo aquí; ningún otro punto la duplica.
+        """
         if self.estado != "agendada":
             raise ValidationError("Solo se puede cancelar una sesión agendada.")
+        if not forzar and timezone.now() > self.momento_inicio - VENTANA_MINIMA_ANTICIPACION:
+            raise ValidationError(MENSAJE_CANCELAR_FUERA_DE_VENTANA)
         self.estado = "cancelada"
         self.cancelado_por = usuario
         self.motivo_cancelacion = motivo

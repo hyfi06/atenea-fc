@@ -189,3 +189,57 @@ class DesactivarDisponibilidadTests(SesionesFuturasTests):
 
         futura.refresh_from_db()
         self.assertEqual(futura.motivo_cancelacion, "El asesor dio de baja este horario.")
+
+
+class DesactivarDentroDeLaVentanaTests(SesionesFuturasTests):
+    """Caso borde explícito del spec: la baja de un bloque por parte del asesor
+    cancela también las sesiones que arrancan en menos de 2 horas — no es el
+    alumno cancelando de último minuto, es el asesor invalidando el bloque."""
+
+    def _bloque_que_arranca_en_menos_de_dos_horas(self):
+        """Bloque cuya hora en punto cae entre 30 y 90 minutos en el futuro.
+
+        `ahora + 90 min` truncado a la hora en punto da una separación de
+        `60 - minuto` (si el minuto es < 30) o `120 - minuto` (si es >= 30):
+        siempre > 30 min, así que entra en `sesiones_futuras()` sin carrera con
+        el reloj, y siempre < 120 min, así que cae dentro de la ventana mínima.
+
+        Vive en un registro aparte (otro semestre) para no chocar con el
+        UniqueConstraint (registro, dia_semana, hora_inicio) del fixture base.
+        """
+        registro = RegistroAsesor.objects.create(asesor=self.asesor, semestre="20262")
+        pronto = timezone.localtime() + datetime.timedelta(minutes=90)
+        hora = datetime.time(pronto.hour, 0)
+        disponibilidad = Disponibilidad.objects.create(
+            registro=registro, dia_semana=pronto.weekday(), hora_inicio=hora,
+            formato="virtual", liga_virtual="https://meet.example.com/pronto",
+        )
+        asesoria = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=pronto.date(), hora_inicio=hora,
+            formato="virtual", liga_virtual="https://meet.example.com/pronto",
+        )
+        return disponibilidad, asesoria
+
+    def test_la_sesion_esta_dentro_de_la_ventana_y_es_futura(self):
+        """Guarda del propio fixture: si esto falla, los dos tests de abajo no
+        prueban lo que dicen probar."""
+        disponibilidad, asesoria = self._bloque_que_arranca_en_menos_de_dos_horas()
+
+        self.assertEqual(list(disponibilidad.sesiones_futuras()), [asesoria])
+        with self.assertRaises(ValidationError):
+            asesoria.cancelar(usuario=self.asesor_user)
+
+    def test_desactivar_cancela_aunque_falten_menos_de_dos_horas(self):
+        disponibilidad, asesoria = self._bloque_que_arranca_en_menos_de_dos_horas()
+
+        canceladas = disponibilidad.desactivar(
+            usuario=self.asesor_user, cancelar_sesiones=True, motivo="Me enfermé.",
+        )
+
+        self.assertEqual(canceladas, 1)
+        asesoria.refresh_from_db()
+        self.assertEqual(asesoria.estado, "cancelada")
+        self.assertEqual(asesoria.motivo_cancelacion, "Me enfermé.")
+        disponibilidad.refresh_from_db()
+        self.assertFalse(disponibilidad.activa)

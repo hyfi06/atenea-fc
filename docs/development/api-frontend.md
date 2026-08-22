@@ -201,6 +201,13 @@ Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..regi
 
 **Ventana agendable:** hoy hasta el domingo que cierra la semana siguiente (semana en curso + la próxima). Regla fija en código (`asesorias/servicios.py`), no hay modelo de calendario académico — ver [deuda técnica 0001](../technical-debt/0001-sin-modelo-calendario-academico.md).
 
+**Ventana mínima de anticipación (2 horas):** ni agendar ni cancelar se permiten a menos de 2 horas del inicio de la sesión. Los mensajes son distintos y el SPA puede mostrarlos tal cual:
+
+- `POST /api/asesorias/asesorias/` → `400 {"detail": ["No puedes agendar una sesión con menos de 2 horas de anticipación."]}`
+- `POST /api/asesorias/asesorias/{id}/cancelar/` → `400 {"detail": ["No puedes cancelar una sesión con menos de 2 horas de anticipación."]}`
+
+`POST /api/asesorias/disponibilidades/{id}/desactivar/` **no** está sujeto a esta ventana: dar de baja un bloque cancela también las sesiones que arrancan en menos de 2 horas. Ver [ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md) y [deuda técnica 0003](../technical-debt/0003-sin-limites-uso-asesorias.md).
+
 Las tres rutas se acotan al semestre vigente y a asesores con `activo=true`.
 
 **`POST /api/asesorias/asesorias/`** — `EsAlumno`. Body: `{disponibilidad, materia, fecha}` — son los **únicos** campos que el cliente escribe; todo lo demás (`alumno`, `carrera`, `hora_inicio`, `formato`, `ubicacion`, `liga_virtual`) se copia server-side desde la disponibilidad y el perfil del alumno al momento de crear, y queda congelado aunque la disponibilidad cambie después.
@@ -214,7 +221,7 @@ Otros `400` posibles en creación: `"La fecha no coincide con el día de la disp
 | `GET` | `/api/asesorias/asesorias/` | requerida | |
 | `POST` | `/api/asesorias/asesorias/` | `EsAlumno` | ver arriba, puede dar `409` |
 | `GET` | `/api/asesorias/asesorias/{id}/` | requerida | |
-| `POST` | `/api/asesorias/asesorias/{id}/cancelar/` | `EsAlumnoOAsesorAcademico` + dueño | `{motivo?}` — el alumno o el asesor dueño de la sesión pueden cancelarla |
+| `POST` | `/api/asesorias/asesorias/{id}/cancelar/` | `EsAlumnoOAsesorAcademico` + dueño | `{motivo?}` — el alumno o el asesor dueño de la sesión pueden cancelarla. `400 {"detail": ["No puedes cancelar una sesión con menos de 2 horas de anticipación."]}` dentro de la ventana mínima (ver abajo) |
 | `POST` | `/api/asesorias/asesorias/{id}/marcar_asistencia/` | `EsAsesorAcademico` + dueño | `{asistio: bool}` — falla si es antes de que ocurra la sesión |
 | `POST` | `/api/asesorias/asesorias/{id}/notas/` | `EsAsesorAcademico` + dueño | `{texto}` — falla si `asistio` no es `true` |
 | `GET` | `/api/asesorias/asesorias/?semestre=20262` | requerida | filtra el listado por `disponibilidad__registro__semestre`. Permisivo: un semestre desconocido devuelve `[]`, no `400` |

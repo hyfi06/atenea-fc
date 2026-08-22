@@ -200,9 +200,18 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
     def setUp(self):
         super().setUp()
         self.lunes_pasado = self.proximo_lunes - datetime.timedelta(days=7 * 5)
+        # Sesión pasada: sirve para marcar asistencia y guardar notas.
         self.asesoria = Asesoria.objects.create(
             alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
             carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        # Sesión futura: cancelar una sesión pasada ahora choca con la ventana
+        # mínima de anticipación (deuda 0003), así que los tests de cancelación
+        # usan esta.
+        self.asesoria_futura = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
 
@@ -246,13 +255,15 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
 
     def test_alumno_cancela_y_libera_el_slot(self):
         self.client.force_authenticate(user=self.alumno_user)
-        response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria_futura.id}/cancelar/", {}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["estado"], "cancelada")
 
         segunda = Asesoria.objects.create(
             alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         self.assertIsNotNone(segunda.id)
@@ -264,13 +275,15 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
 
     def test_asesor_dueño_cancela_y_libera_el_slot(self):
         self.client.force_authenticate(user=self.asesor_user)
-        response = self.client.post(f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/", {})
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria_futura.id}/cancelar/", {}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["estado"], "cancelada")
 
         segunda = Asesoria.objects.create(
             alumno=self.otro_alumno, disponibilidad=self.disponibilidad, materia=self.materia,
-            carrera=self.carrera, fecha=self.lunes_pasado, hora_inicio=self.disponibilidad.hora_inicio,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
             formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
         )
         self.assertIsNotNone(segunda.id)
@@ -286,7 +299,7 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
     def test_cancelacion_expone_motivo_y_rol_de_quien_cancelo(self):
         self.client.force_authenticate(user=self.alumno_user)
         response = self.client.post(
-            f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/",
+            f"/api/asesorias/asesorias/{self.asesoria_futura.id}/cancelar/",
             {"motivo": "Se empalmó con un examen."},
         )
 
@@ -296,10 +309,10 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
         self.assertEqual(response.data["cancelado_por_rol"], "alumno")
 
     def test_el_asesor_ve_el_motivo_de_una_cancelacion_del_alumno(self):
-        self.asesoria.cancelar(usuario=self.alumno_user, motivo="Ya no lo necesito.")
+        self.asesoria_futura.cancelar(usuario=self.alumno_user, motivo="Ya no lo necesito.")
 
         self.client.force_authenticate(user=self.asesor_user)
-        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria.id}/")
+        response = self.client.get(f"/api/asesorias/asesorias/{self.asesoria_futura.id}/")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["motivo_cancelacion"], "Ya no lo necesito.")
@@ -308,7 +321,7 @@ class CicloDeVidaAsesoriaApiTests(AsesoriaApiTestsBase):
     def test_cancelacion_del_asesor_reporta_rol_asesor(self):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.post(
-            f"/api/asesorias/asesorias/{self.asesoria.id}/cancelar/",
+            f"/api/asesorias/asesorias/{self.asesoria_futura.id}/cancelar/",
             {"motivo": "Junta académica."},
         )
 
@@ -717,3 +730,43 @@ class AgendarDentroDeLaVentanaApiTests(AsesoriaApiTestsBase):
         })
 
         self.assertEqual(response.status_code, 201)
+
+
+class CancelarDentroDeLaVentanaApiTests(AsesoriaApiTestsBase):
+    """Deuda 0003: el POST de cancelar devuelve 400 dentro de la ventana."""
+
+    def setUp(self):
+        super().setUp()
+        hoy = timezone.localdate()
+        self.disponibilidad_hoy = Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=hoy.weekday(),
+            hora_inicio=datetime.time(0, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/hoy",
+        )
+        self.asesoria_hoy = Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad_hoy, materia=self.materia,
+            carrera=self.carrera, fecha=hoy, hora_inicio=datetime.time(0, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/hoy",
+        )
+
+    def test_alumno_no_puede_cancelar_dentro_de_la_ventana(self):
+        self.client.force_authenticate(user=self.alumno_user)
+
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria_hoy.id}/cancelar/", {}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "No puedes cancelar una sesión con menos de 2 horas de anticipación.",
+            response.data["detail"],
+        )
+
+    def test_asesor_tampoco_puede_cancelar_dentro_de_la_ventana(self):
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/asesorias/{self.asesoria_hoy.id}/cancelar/", {}
+        )
+
+        self.assertEqual(response.status_code, 400)

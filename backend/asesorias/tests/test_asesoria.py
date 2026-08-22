@@ -205,3 +205,45 @@ class VentanaAnticipacionAgendarTests(AsesoriaTestsBase):
         self.assertEqual(asesoria.momento_inicio.date(), self.proximo_lunes)
         self.assertEqual(asesoria.momento_inicio.hour, 10)
         self.assertIsNotNone(asesoria.momento_inicio.tzinfo)
+
+
+class VentanaAnticipacionCancelarTests(AsesoriaTestsBase):
+    """Deuda 0003: no se puede cancelar con menos de 2 horas de anticipación."""
+
+    def _asesoria_de_hoy_a_medianoche(self):
+        hoy = timezone.localdate()
+        disponibilidad = Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=hoy.weekday(),
+            hora_inicio=datetime.time(0, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/hoy",
+        )
+        return self._crear_asesoria(
+            hoy, disponibilidad=disponibilidad, hora_inicio=datetime.time(0, 0),
+            liga_virtual="https://meet.example.com/hoy",
+        )
+
+    def test_cancelar_dentro_de_la_ventana_falla(self):
+        asesoria = self._asesoria_de_hoy_a_medianoche()
+        with self.assertRaises(ValidationError) as ctx:
+            asesoria.cancelar(usuario=self.alumno.user)
+        self.assertIn(
+            "No puedes cancelar una sesión con menos de 2 horas de anticipación.",
+            ctx.exception.messages,
+        )
+        asesoria.refresh_from_db()
+        self.assertEqual(asesoria.estado, "agendada")
+        asesoria.delete()
+
+    def test_cancelar_dentro_de_la_ventana_con_forzar_pasa(self):
+        asesoria = self._asesoria_de_hoy_a_medianoche()
+        asesoria.cancelar(usuario=self.alumno.user, forzar=True)
+        asesoria.refresh_from_db()
+        self.assertEqual(asesoria.estado, "cancelada")
+        asesoria.delete()
+
+    def test_cancelar_fuera_de_la_ventana_pasa(self):
+        asesoria = self._crear_asesoria(self.proximo_lunes)
+        asesoria.cancelar(usuario=self.alumno.user)
+        asesoria.refresh_from_db()
+        self.assertEqual(asesoria.estado, "cancelada")
+        asesoria.delete()
