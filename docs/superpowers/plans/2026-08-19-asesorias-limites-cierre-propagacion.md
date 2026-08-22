@@ -1,54 +1,49 @@
-# Asesorías: límite de 2hrs, cierre automático y propagación de Disponibilidad — Implementation Plan
+# Asesorías: límite de 2hrs y propagación de Disponibilidad — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Cerrar las deudas técnicas 0003 (parcial), 0004 (parcial) y 0005 de la app `asesorias`: ventana mínima de 2 horas para agendar/cancelar, cierre automático de sesiones vencidas vía Celery Beat, y endpoint de resincronización del snapshot de `Disponibilidad` hacia sus sesiones futuras. **Addendum post-demo (Tasks 8–10, 2026-08-21):** bloques de `Disponibilidad` de 1 hora en vez de 30 min, y el wizard de agendado del alumno en `/asesorias/nueva` deja de pedir asesor primero (pasa a materia → día → bloque).
+**Goal:** Cerrar las deudas técnicas 0003 (parcial) y 0005 de la app `asesorias`: ventana mínima de 2 horas para agendar/cancelar, y endpoint de resincronización del snapshot de `Disponibilidad` hacia sus sesiones futuras. **Cierre automático de sesiones vencidas (deuda 0004) queda fuera de alcance** — decisión posterior a la exploración inicial, ver spec. **Addendum post-demo (Tasks 6–8, 2026-08-21):** bloques de `Disponibilidad` de 1 hora en vez de 30 min, y el wizard de agendado del alumno en `/asesorias/nueva` deja de pedir asesor primero (pasa a materia → día → bloque).
 
-**Architecture:** Toda la regla de negocio vive en `asesorias/models.py` (`Asesoria.clean()`, `Asesoria.cancelar()`, `Disponibilidad.resincronizar_sesiones_futuras()`); las vistas solo traducen `ValidationError` → 400, siguiendo el patrón ya presente en `asesorias/views.py`. El cierre automático es una `@shared_task` nueva en `asesorias/tasks.py` disparada por un contenedor `celery-beat` nuevo con `django-celery-beat` como scheduler. Sin cambios de esquema en modelos propios (solo las migraciones que trae `django_celery_beat`). El addendum (Tasks 8–10) reusa el mismo endpoint de búsqueda de disponibilidad sin su filtro opcional de asesor — no agrega superficie de API nueva — y toca `frontend/` únicamente en `features/asesorias`.
+**Architecture:** Toda la regla de negocio vive en `asesorias/models.py` (`Asesoria.clean()`, `Asesoria.cancelar()`, `Disponibilidad.resincronizar_sesiones_futuras()`); las vistas solo traducen `ValidationError` → 400, siguiendo el patrón ya presente en `asesorias/views.py`. Sin cambios de esquema en modelos propios. El addendum (Tasks 6–8) reusa el mismo endpoint de búsqueda de disponibilidad sin su filtro opcional de asesor — no agrega superficie de API nueva — y toca `frontend/` únicamente en `features/asesorias`.
 
-**Tech Stack:** Django 6 + DRF, Celery + Redis, `django-celery-beat`, PostgreSQL 16, Docker Compose, `uv` para dependencias (backend); React + TypeScript + Vite, TanStack Query, Vitest (frontend, Tasks 9–10).
+**Tech Stack:** Django 6 + DRF, Celery + Redis, PostgreSQL 16, Docker Compose, `uv` para dependencias (backend); React + TypeScript + Vite, TanStack Query, Vitest (frontend, Tasks 7–8).
 
 **Spec:** `docs/superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md`
 
 ## Global Constraints
 
-- **Tasks 1–7: 100% backend**, tal como se diseñaron el 2026-08-19. **Tasks 8–10 son un addendum post-demo (2026-08-21, ver spec sección 4)** y sí tocan `frontend/` — la restricción original "no se toca frontend" solo aplicaba al alcance de las deudas 0003/0004/0005. Los contratos de las Tasks 1–7 se documentan en `docs/development/api-frontend.md`.
+- **Tasks 1–5: 100% backend**, tal como se diseñaron el 2026-08-19 (ajustado: el cierre automático de la deuda 0004 quedó fuera de alcance, ver spec — las Tasks originales de esa pieza se eliminaron de este plan en vez de renumerarse como "canceladas"). **Tasks 6–8 son un addendum post-demo (2026-08-21, ver spec sección 3)** y sí tocan `frontend/` — la restricción original "no se toca frontend" solo aplicaba al alcance de las deudas 0003/0005. Los contratos de las Tasks 1–5 se documentan en `docs/development/api-frontend.md`.
 - Comando de tests backend: desde `backend/`, `uv run manage.py test <ruta> -v 2`. Requiere Postgres. Sin Postgres local: `docker compose -f docker-compose.dev.yml run --rm backend python manage.py test <ruta> -v 2` (desde la raíz del repo).
-- Comando de tests frontend (Tasks 9–10): desde `frontend/`, `npm test` (Vitest). Lint: `npm run lint` (oxlint). Build: `npm run build` (`tsc -b && vite build`).
+- Comando de tests frontend (Tasks 7–8): desde `frontend/`, `npm test` (Vitest). Lint: `npm run lint` (oxlint). Build: `npm run build` (`tsc -b && vite build`).
 - Idioma del código, docstrings, comentarios y mensajes de error: **español**. Encabezados de ADR en inglés (`Context`/`Decision`/`Consequences`/`Alternatives considered`), cuerpo en español — igual que `docs/decisions/0028-*.md`.
 - Formato de commit: `[type][scope] resumen` + lista de cambios + `Signed-off-by`. Ver `docs/development/commit-conventions.md`.
 - Errores de negocio del modelo se propagan como `{"detail": ["mensaje"]}` (lista), convención ya vigente.
 - **Valores fijados por este plan** (el spec los dejaba abiertos):
   - Ventana mínima de anticipación: **2 horas** — `VENTANA_MINIMA_ANTICIPACION = datetime.timedelta(hours=2)`.
-  - Duración de sesión / bloque: **1 hora** (ajustado por el addendum de la Task 8 — antes 30 min) — `DURACION_SESION = datetime.timedelta(hours=1)`. El mismo valor fija tanto `Disponibilidad.hora_fin` como el margen del cierre automático: el cierre solo toca sesiones que **ya terminaron** (`inicio + 1h <= ahora`), no las que apenas arrancaron.
-  - Rejilla de `Disponibilidad.hora_inicio`: **solo horas en punto** (ajustado por la Task 8 — antes `:00`/`:30`); `hora_inicio.minute != 0` es inválido.
-  - Frecuencia de `cerrar_sesiones_vencidas`: **cada 15 minutos** — `crontab(minute="*/15")`.
+  - Duración de sesión / bloque: **1 hora** (ajustado por el addendum de la Task 6 — antes 30 min) — `DURACION_SESION = datetime.timedelta(hours=1)`. Fija `Disponibilidad.hora_fin`.
+  - Rejilla de `Disponibilidad.hora_inicio`: **solo horas en punto** (ajustado por la Task 6 — antes `:00`/`:30`); `hora_inicio.minute != 0` es inválido.
   - Parámetro de bypass en `cancelar()`: **keyword-only `forzar: bool = False`**, en español como el resto de la firma (`usuario`, `motivo`).
   - Notificación de resincronización: **tarea nueva** `enviar_notificacion_resincronizacion(asesoria_id)` en `asesorias/tasks.py` (no se extiende `enviar_notificacion_cancelacion`: distinto asunto, distinto cuerpo, distinto disparador).
-  - Deuda 0003 y 0004 quedan **parcialmente resueltas** (no se crean deudas nuevas para lo pendiente); deuda 0005 queda **resuelta**.
-  - `/asesorias/nueva` (Task 10): el wizard de agendado pasa de 4 pasos (asesor → día → bloque → carrera) a 3 (día → bloque → carrera); no se toca `useAsesoresDeMateria`/`AsesoresDeMateriaView`, que sigue usando `AdminOfertaMateria` (consulta SAE).
+  - Deuda 0003 queda **parcialmente resuelta** (no se crean deudas nuevas para lo pendiente); deuda 0004 queda **sin tocar** (cierre automático fuera de alcance, ver spec); deuda 0005 queda **resuelta**.
+  - `/asesorias/nueva` (Task 8): el wizard de agendado pasa de 4 pasos (asesor → día → bloque → carrera) a 3 (día → bloque → carrera); no se toca `useAsesoresDeMateria`/`AsesoresDeMateriaView`, que sigue usando `AdminOfertaMateria` (consulta SAE).
 
 ## Archivos tocados
 
 | Archivo | Responsabilidad |
 |---|---|
 | `backend/asesorias/models.py` | Constantes de ventana/duración, `Asesoria.momento_inicio`, validación en `clean()` y `cancelar(forzar=)`, `Disponibilidad.resincronizar_sesiones_futuras()` |
-| `backend/asesorias/tasks.py` | `cerrar_sesiones_vencidas`, `enviar_notificacion_resincronizacion` |
+| `backend/asesorias/tasks.py` | `enviar_notificacion_resincronizacion` |
 | `backend/asesorias/views.py` | Acción `resincronizar` del `DisponibilidadViewSet` |
-| `backend/config/settings/base.py` | `django_celery_beat` en `THIRD_PARTY_APPS`, `CELERY_BEAT_SCHEDULE` |
-| `backend/pyproject.toml` / `uv.lock` | Dependencia `django-celery-beat` |
-| `docker-compose.dev.yml` / `docker-compose.prod.yml` | Servicio `celery-beat` |
-| `docs/development/despliegue-produccion.md` | Servicio `atenea-beat` en el repo `services` |
 | `docs/development/api-frontend.md` | Mensajes de error nuevos + endpoint `resincronizar/` |
 | `docs/decisions/0029-*.md` | ADR nuevo |
-| `docs/technical-debt/0003|0004|0005*.md` + `README.md` | Cierre de deudas |
+| `docs/technical-debt/0003|0005*.md` + `README.md` | Cierre de deudas |
 | `backend/asesorias/tests/*` | Tests nuevos + ajuste de tests existentes que agendan/cancelan fuera de la ventana |
-| `docs/decisions/0016-asesorias-academicas.md` | Changelog: rejilla de 1h (Task 8) |
-| `backend/accounts/demo_data.py` + `backend/accounts/tests/test_sembrar_demo.py` | Segundo bloque por asesor (Task 8) |
-| `frontend/src/features/asesorias/logica.ts` + `logica.test.ts` | `horasDelDia()` a 14 filas de 1h (Task 9) |
-| `frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx` | Copy "1 hora" (Task 9) |
-| `frontend/src/features/asesorias/api.ts` | `useDisponibilidadDeMateria` (Task 10) |
-| `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx` + `.test.tsx` | Wizard de 3 pasos, tarjetas con profesor/modalidad (Task 10) |
+| `docs/decisions/0016-asesorias-academicas.md` | Changelog: rejilla de 1h (Task 6) |
+| `backend/accounts/demo_data.py` + `backend/accounts/tests/test_sembrar_demo.py` | Segundo bloque por asesor (Task 6) |
+| `frontend/src/features/asesorias/logica.ts` + `logica.test.ts` | `horasDelDia()` a 14 filas de 1h (Task 7) |
+| `frontend/src/features/asesorias/components/DialogoNuevoBloque.tsx` | Copy "1 hora" (Task 7) |
+| `frontend/src/features/asesorias/api.ts` | `useDisponibilidadDeMateria` (Task 8) |
+| `frontend/src/features/asesorias/screens/AgendarAsesoria.tsx` + `.test.tsx` | Wizard de 3 pasos, tarjetas con profesor/modalidad (Task 8) |
 
 ---
 
@@ -190,10 +185,8 @@ DIAS_SEMANA = [
 FORMATOS = [("presencial", "Presencial"), ("virtual", "Virtual")]
 ESTADOS_ASESORIA = [("agendada", "Agendada"), ("cancelada", "Cancelada"), ("realizada", "Realizada")]
 
-# Duración de un bloque de asesoría. Fija la rejilla de `Disponibilidad.hora_fin`
-# y el margen del cierre automático (`asesorias.tasks.cerrar_sesiones_vencidas`):
-# una sesión solo se cierra cuando ya terminó, no cuando apenas arrancó.
-# 1 hora (no 30 min): ajustado por feedback post-demo, ver Task 8.
+# Duración de un bloque de asesoría. Fija la rejilla de `Disponibilidad.hora_fin`.
+# 1 hora (no 30 min): ajustado por feedback post-demo, ver Task 6.
 DURACION_SESION = datetime.timedelta(hours=1)
 
 # Deuda 0003: ni agendar ni cancelar se permiten a menos de 2 horas del inicio.
@@ -255,7 +248,7 @@ por:
         """Instante aware en que arranca la sesión (fecha + hora_inicio).
 
         Fuente única para toda comparación contra el reloj: la ventana de
-        anticipación, marcar asistencia y el cierre automático.
+        anticipación y marcar asistencia.
         """
         return timezone.make_aware(datetime.datetime.combine(self.fecha, self.hora_inicio))
 
@@ -796,514 +789,7 @@ EOF
 
 ---
 
-### Task 3: Tarea `cerrar_sesiones_vencidas`
-
-**Files:**
-- Modify: `backend/asesorias/tasks.py`
-- Create: `backend/asesorias/tests/test_cierre_automatico.py`
-
-**Interfaces:**
-- Consumes: `DURACION_SESION` y `Asesoria.marcar_asistencia()` (Task 1).
-- Produces: `asesorias.tasks.cerrar_sesiones_vencidas() -> int` (número de sesiones cerradas). Nombre registrado en Celery: `"asesorias.tasks.cerrar_sesiones_vencidas"`.
-
-- [ ] **Step 1: Escribir el test que falla**
-
-Crear `backend/asesorias/tests/test_cierre_automatico.py`:
-
-```python
-import datetime
-
-from django.test import TestCase
-from django.utils import timezone
-
-from accounts.models import PerfilAcademico, User
-from accounts.tests.factories import crear_alumno
-from asesorias.models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
-from asesorias.tasks import cerrar_sesiones_vencidas
-from carreras.models import Area, Carrera
-from materias.models import Materia
-
-
-class CerrarSesionesVencidasTests(TestCase):
-    """Deuda 0004: una sesión agendada cuya hora ya pasó sin que el asesor
-    marque asistencia se cierra sola como `realizada` con `asistio=False`."""
-
-    def setUp(self):
-        self.area = Area.objects.create(nombre="Area cierre")
-        self.carrera = Carrera.objects.create(clave=811, nombre="Carrera Cierre", area=self.area)
-        self.materia = Materia.objects.create(
-            clave="1811", nombre="Álgebra Cierre", carrera=self.carrera, nivel=1, plan=2006,
-            habilitada_asesorias=True,
-        )
-        self.asesor_user = User.objects.create_user(email="asesor.cierre@ciencias.unam.mx", password="x")
-        PerfilAcademico.objects.create(user=self.asesor_user, numero_trabajador="12399")
-        self.asesor = PerfilAsesorAcademico.objects.create(user=self.asesor_user, area=self.area)
-        self.alumno_user = User.objects.create_user(email="alumno.cierre@ciencias.unam.mx", password="x")
-        self.alumno = crear_alumno(
-            user=self.alumno_user, numero_cuenta="312399999", carrera=self.carrera, generacion=2023,
-        )
-        self.contador_bloques = 0
-
-    def _crear_asesoria(self, fecha, hora, estado="agendada", asistio=None):
-        """Cada sesión vive en su propio registro/bloque: los UniqueConstraint
-        (asesor, semestre) y (registro, dia_semana, hora_inicio) impiden
-        reusarlos. Las claves de semestre "90001", "90002"… son ficticias a
-        propósito: aquí solo sirven para desambiguar registros."""
-        self.contador_bloques += 1
-        registro = RegistroAsesor.objects.create(
-            asesor=self.asesor, semestre=f"9000{self.contador_bloques}",
-        )
-        disponibilidad = Disponibilidad.objects.create(
-            registro=registro, dia_semana=fecha.weekday(), hora_inicio=hora,
-            formato="virtual", liga_virtual="https://meet.example.com/c",
-        )
-        return Asesoria.objects.create(
-            alumno=self.alumno, disponibilidad=disponibilidad, materia=self.materia,
-            carrera=self.carrera, fecha=fecha, hora_inicio=hora,
-            formato="virtual", liga_virtual="https://meet.example.com/c",
-            estado=estado, asistio=asistio,
-        )
-
-    def test_una_sesion_de_ayer_sin_marcar_se_cierra_como_no_asistida(self):
-        ayer = timezone.localdate() - datetime.timedelta(days=1)
-        asesoria = self._crear_asesoria(ayer, datetime.time(10, 0))
-
-        cerradas = cerrar_sesiones_vencidas()
-
-        self.assertEqual(cerradas, 1)
-        asesoria.refresh_from_db()
-        self.assertEqual(asesoria.estado, "realizada")
-        self.assertIs(asesoria.asistio, False)
-
-    def test_una_sesion_futura_no_se_toca(self):
-        manana = timezone.localdate() + datetime.timedelta(days=1)
-        asesoria = self._crear_asesoria(manana, datetime.time(10, 0))
-
-        cerradas = cerrar_sesiones_vencidas()
-
-        self.assertEqual(cerradas, 0)
-        asesoria.refresh_from_db()
-        self.assertEqual(asesoria.estado, "agendada")
-        self.assertIsNone(asesoria.asistio)
-
-    def test_una_sesion_que_apenas_empezo_no_se_toca(self):
-        """Margen de DURACION_SESION: el asesor todavía está en la sesión."""
-        hace_diez_minutos = timezone.localtime() - datetime.timedelta(minutes=10)
-        asesoria = self._crear_asesoria(
-            hace_diez_minutos.date(), hace_diez_minutos.time().replace(microsecond=0),
-        )
-
-        cerradas = cerrar_sesiones_vencidas()
-
-        self.assertEqual(cerradas, 0)
-        asesoria.refresh_from_db()
-        self.assertEqual(asesoria.estado, "agendada")
-
-    def test_una_sesion_ya_marcada_no_se_toca(self):
-        ayer = timezone.localdate() - datetime.timedelta(days=1)
-        asesoria = self._crear_asesoria(
-            ayer, datetime.time(11, 0), estado="realizada", asistio=True,
-        )
-
-        cerradas = cerrar_sesiones_vencidas()
-
-        self.assertEqual(cerradas, 0)
-        asesoria.refresh_from_db()
-        self.assertIs(asesoria.asistio, True)
-
-    def test_una_sesion_cancelada_no_se_toca(self):
-        ayer = timezone.localdate() - datetime.timedelta(days=1)
-        asesoria = self._crear_asesoria(ayer, datetime.time(12, 0), estado="cancelada")
-
-        cerradas = cerrar_sesiones_vencidas()
-
-        self.assertEqual(cerradas, 0)
-        asesoria.refresh_from_db()
-        self.assertEqual(asesoria.estado, "cancelada")
-        self.assertIsNone(asesoria.asistio)
-```
-
-- [ ] **Step 2: Correr el test y verificar que falla**
-
-Run: `uv run manage.py test asesorias.tests.test_cierre_automatico -v 2`
-Expected: FAIL — `ImportError: cannot import name 'cerrar_sesiones_vencidas' from 'asesorias.tasks'`.
-
-- [ ] **Step 3: Implementar la tarea**
-
-En `backend/asesorias/tasks.py`, reemplazar la cabecera de imports:
-
-```python
-from celery import shared_task
-from django.core.mail import send_mail
-```
-
-por:
-
-```python
-from celery import shared_task
-from django.core.mail import send_mail
-from django.db.models import Q
-from django.utils import timezone
-```
-
-Y agregar al final del archivo:
-
-```python
-@shared_task
-def cerrar_sesiones_vencidas():
-    """Cierra las sesiones agendadas que ya terminaron sin que el asesor
-    marcara asistencia: quedan `realizada` con `asistio=False` (deuda 0004).
-
-    El corte es `inicio + DURACION_SESION <= ahora`, no `inicio <= ahora`: una
-    sesión que apenas arrancó sigue en curso y el asesor todavía puede marcar
-    asistencia. El criterio es el complemento exacto de
-    `Disponibilidad.sesiones_futuras()`, desplazado por ese margen.
-
-    La corre Celery Beat cada 15 minutos (`CELERY_BEAT_SCHEDULE`). Devuelve
-    cuántas cerró, para que el resultado quede en los logs del worker.
-    """
-    from asesorias.models import DURACION_SESION, Asesoria
-
-    limite = timezone.localtime() - DURACION_SESION
-    vencidas = Asesoria.objects.filter(estado="agendada").filter(
-        Q(fecha__lt=limite.date())
-        | Q(fecha=limite.date(), hora_inicio__lte=limite.time())
-    )
-    cerradas = 0
-    for asesoria in vencidas:
-        asesoria.marcar_asistencia(False)
-        cerradas += 1
-    return cerradas
-```
-
-- [ ] **Step 4: Correr el test y verificar que pasa**
-
-Run: `uv run manage.py test asesorias.tests.test_cierre_automatico -v 2`
-Expected: PASS (5 tests).
-
-- [ ] **Step 5: Correr la suite de `asesorias` completa**
-
-Run: `uv run manage.py test asesorias -v 2`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add backend/asesorias/tasks.py backend/asesorias/tests/test_cierre_automatico.py
-git commit -m "$(cat <<'EOF'
-[feat][backend] cerrar automáticamente las sesiones vencidas sin marcar
-
-- Agregar la tarea cerrar_sesiones_vencidas a asesorias/tasks.py
-- Cerrar como realizada/asistio=False solo las sesiones que ya terminaron
-  (inicio + DURACION_SESION), no las que apenas arrancaron
-
-Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
-EOF
-)"
-```
-
----
-
-### Task 4: Infraestructura de Celery Beat (`django-celery-beat`, schedule, contenedores, runbook)
-
-**Files:**
-- Modify: `backend/pyproject.toml`, `backend/uv.lock` (los actualiza `uv add`)
-- Modify: `backend/config/settings/base.py`
-- Modify: `docker-compose.dev.yml`
-- Modify: `docker-compose.prod.yml`
-- Modify: `docs/development/despliegue-produccion.md`
-
-**Interfaces:**
-- Consumes: `asesorias.tasks.cerrar_sesiones_vencidas` (Task 3).
-- Produces: `settings.CELERY_BEAT_SCHEDULE["cerrar-sesiones-vencidas"]`; servicio de compose `celery-beat`.
-
-- [ ] **Step 1: Agregar la dependencia**
-
-Desde `backend/`:
-
-```bash
-uv add django-celery-beat
-```
-
-Actualiza `pyproject.toml` (nueva entrada en `dependencies`) y `uv.lock`. No fijar la versión a mano — `uv` resuelve la compatible con Django 6.
-
-Si `uv` no encuentra ninguna versión compatible con `django>=6.0.7`, instalar desde el repositorio upstream en vez de bajar la versión de Django:
-
-```bash
-uv add "django-celery-beat @ git+https://github.com/celery/django-celery-beat@main"
-```
-
-y anotarlo en el ADR del Task 7 (sección `Consequences`) como dependencia pinneada a `main`.
-
-- [ ] **Step 2: Registrar la app y el schedule en settings**
-
-En `backend/config/settings/base.py`, reemplazar el bloque de imports:
-
-```python
-from datetime import timedelta
-from pathlib import Path
-
-import environ
-import sys
-```
-
-por:
-
-```python
-from datetime import timedelta
-from pathlib import Path
-
-import environ
-import sys
-from celery.schedules import crontab
-```
-
-Reemplazar `THIRD_PARTY_APPS`:
-
-```python
-THIRD_PARTY_APPS = [
-    "rest_framework",
-    "corsheaders",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-    "dj_rest_auth",
-]
-```
-
-por:
-
-```python
-THIRD_PARTY_APPS = [
-    "rest_framework",
-    "corsheaders",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-    "dj_rest_auth",
-    # Scheduler de Celery Beat respaldado por la base de datos: el contenedor
-    # celery-beat no necesita un volumen para su archivo de estado, y la SAE
-    # puede ajustar la frecuencia desde el admin sin redeploy (ADR 0029).
-    "django_celery_beat",
-]
-```
-
-Y reemplazar el bloque final de Celery:
-
-```python
-CELERY_BROKER_URL = env("REDIS_URL")
-CELERY_RESULT_BACKEND = env("REDIS_URL")
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TASK_ALWAYS_EAGER = "test" in sys.argv
-CELERY_TASK_EAGER_PROPAGATES = True
-```
-
-por:
-
-```python
-CELERY_BROKER_URL = env("REDIS_URL")
-CELERY_RESULT_BACKEND = env("REDIS_URL")
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TASK_ALWAYS_EAGER = "test" in sys.argv
-CELERY_TASK_EAGER_PROPAGATES = True
-
-# Cada 15 minutos: el cierre de sesiones vencidas no es sensible al segundo
-# (una sesión "huérfana" puede esperar un cuarto de hora) y a esa frecuencia el
-# barrido es una sola consulta indexada por estado (ADR 0029, deuda 0004).
-# DatabaseScheduler siembra esta entrada en la base al arrancar beat.
-CELERY_BEAT_SCHEDULE = {
-    "cerrar-sesiones-vencidas": {
-        "task": "asesorias.tasks.cerrar_sesiones_vencidas",
-        "schedule": crontab(minute="*/15"),
-    },
-}
-```
-
-- [ ] **Step 3: Verificar settings y migraciones**
-
-Run: `uv run manage.py check`
-Expected: `System check identified no issues`.
-
-Run: `uv run manage.py makemigrations --check --dry-run`
-Expected: `No changes detected`.
-
-Run: `uv run manage.py migrate`
-Expected: aplica las migraciones de `django_celery_beat` (`Applying django_celery_beat.0001_initial... OK`, etc.).
-
-Sin Postgres local, desde la raíz del repo: `docker compose -f docker-compose.dev.yml run --rm backend python manage.py migrate`.
-
-- [ ] **Step 4: Agregar el servicio `celery-beat` a `docker-compose.dev.yml`**
-
-En `docker-compose.dev.yml`, insertar este servicio entre `celery-worker` y `frontend`:
-
-```yaml
-  celery-beat:
-    build:
-      context: ./backend
-    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    volumes:
-      - ./backend:/app
-    env_file:
-      - ./backend/.env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
-      DATABASE_URL: postgres://atenea:atenea@postgres:5432/atenea
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-```
-
-- [ ] **Step 5: Agregar el servicio `celery-beat` a `docker-compose.prod.yml`**
-
-En `docker-compose.prod.yml`, insertar este servicio entre `celery-worker` y `frontend`:
-
-```yaml
-  celery-beat:
-    build:
-      context: ./backend
-    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    env_file:
-      - ./backend/.env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
-```
-
-- [ ] **Step 6: Verificar que ambos compose parsean**
-
-Run (desde la raíz del repo): `docker compose -f docker-compose.dev.yml config -q && docker compose -f docker-compose.prod.yml config -q`
-Expected: sin salida y exit 0.
-
-- [ ] **Step 7: Documentar el contenedor en el runbook de producción**
-
-En `docs/development/despliegue-produccion.md`:
-
-**(a)** En el diagrama de topología, reemplazar la línea:
-
-```
-                                                   atenea-worker (Celery) ── atenea-redis
-```
-
-por:
-
-```
-                                    atenea-worker + atenea-beat (Celery) ── atenea-redis
-```
-
-**(b)** En la sección `## 2. Servicios en services/docker-compose.yml`, reemplazar el encabezado:
-
-```markdown
-Agregar tres servicios sobre `sae-network` (`atenea-db` y `atenea-redis` ya existen):
-```
-
-por:
-
-```markdown
-Agregar cuatro servicios sobre `sae-network` (`atenea-db` y `atenea-redis` ya existen):
-```
-
-**(c)** En esa misma sección, insertar este bloque YAML entre `atenea-worker` y `atenea-frontend`:
-
-```yaml
-  atenea-beat:
-    image: ghcr.io/hyfi06/atenea-backend:latest   # misma imagen
-    # Scheduler en base de datos (django-celery-beat, ADR 0029): sin volumen de
-    # estado. NO pasa por migrate (ver entrypoint) — migra atenea-backend.
-    command: >
-      celery -A config beat -l info
-      --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-      - DJANGO_SECRET_KEY=${ATENEA_SECRET_KEY}
-      - DJANGO_ALLOWED_HOSTS=atenea.unam.dev
-      - DATABASE_URL=postgres://atenea:${ATENEA_DB_PASSWORD}@atenea-db:5432/atenea
-      - REDIS_URL=redis://atenea-redis:6379/0
-      - FRONTEND_URL=https://atenea.unam.dev
-      - GOOGLE_OAUTH_CLIENT_ID=${ATENEA_GOOGLE_CLIENT_ID}
-      - GOOGLE_OAUTH_CLIENT_SECRET=${ATENEA_GOOGLE_CLIENT_SECRET}
-    networks: [sae-network]
-    depends_on: [atenea-db, atenea-redis]
-```
-
-> `atenea-beat` **no** necesita las variables de correo: solo encola tareas, no envía correo. Quien envía es `atenea-worker`.
-> Debe correr **una sola réplica**: dos schedulers duplicarían cada ejecución programada.
-
-**(d)** En el bloque de restart policies de esa misma sección, reemplazar:
-
-```yaml
-  atenea-backend:
-    restart: unless-stopped
-  atenea-worker:
-    restart: unless-stopped
-  atenea-frontend:
-    restart: unless-stopped
-```
-
-por:
-
-```yaml
-  atenea-backend:
-    restart: unless-stopped
-  atenea-worker:
-    restart: unless-stopped
-  atenea-beat:
-    restart: unless-stopped
-  atenea-frontend:
-    restart: unless-stopped
-```
-
-**(e)** En la sección `## 6. Primer despliegue`, reemplazar:
-
-```bash
-make logs svc=atenea-worker    # debe decir "ready."
-```
-
-por:
-
-```bash
-make logs svc=atenea-worker    # debe decir "ready."
-make logs svc=atenea-beat      # debe listar "cerrar-sesiones-vencidas" en el schedule
-```
-
-**(f)** En la sección `## 8. Verificación`, agregar como último bullet:
-
-```markdown
-- `make logs svc=atenea-beat` muestra `Scheduler: Sending due task cerrar-sesiones-vencidas` a más tardar 15 minutos después del arranque.
-```
-
-- [ ] **Step 8: Correr la suite completa del backend**
-
-Run: `uv run manage.py test -v 1`
-Expected: PASS (las tablas de `django_celery_beat` se crean en la base de test sin intervención).
-
-- [ ] **Step 9: Commit**
-
-```bash
-git add backend/pyproject.toml backend/uv.lock backend/config/settings/base.py docker-compose.dev.yml docker-compose.prod.yml docs/development/despliegue-produccion.md
-git commit -m "$(cat <<'EOF'
-[feat][backend] agregar Celery Beat para la tarea de cierre de sesiones vencidas
-
-- Agregar la dependencia django-celery-beat y registrarla en THIRD_PARTY_APPS
-- Programar cerrar_sesiones_vencidas cada 15 minutos en CELERY_BEAT_SCHEDULE
-- Agregar el servicio celery-beat a docker-compose.dev.yml y .prod.yml
-- Documentar el contenedor atenea-beat en el runbook de despliegue
-
-Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
-EOF
-)"
-```
-
----
-
-### Task 5: `Disponibilidad.resincronizar_sesiones_futuras()` + notificación por correo
+### Task 3: `Disponibilidad.resincronizar_sesiones_futuras()` + notificación por correo
 
 **Files:**
 - Modify: `backend/asesorias/models.py`
@@ -1520,7 +1006,7 @@ EOF
 
 ---
 
-### Task 6: Endpoint `POST /api/asesorias/disponibilidades/{id}/resincronizar/`
+### Task 4: Endpoint `POST /api/asesorias/disponibilidades/{id}/resincronizar/`
 
 **Files:**
 - Modify: `backend/asesorias/views.py`
@@ -1528,7 +1014,7 @@ EOF
 - Test: `backend/asesorias/tests/test_api_disponibilidad.py`
 
 **Interfaces:**
-- Consumes: `Disponibilidad.resincronizar_sesiones_futuras()` (Task 5); `SesionFuturaSerializer` y `DisponibilidadViewSet` (ya existentes).
+- Consumes: `Disponibilidad.resincronizar_sesiones_futuras()` (Task 3); `SesionFuturaSerializer` y `DisponibilidadViewSet` (ya existentes).
 - Produces: `POST /api/asesorias/disponibilidades/{id}/resincronizar/` → `200 {"sesiones_actualizadas": int, "sesiones": [{id, fecha, hora_inicio, alumno_nombre, materia_nombre}]}`.
 
 - [ ] **Step 1: Escribir el test que falla**
@@ -1679,49 +1165,46 @@ EOF
 
 ---
 
-### Task 7: ADR 0029 y cierre de las deudas 0003, 0004 y 0005
+### Task 5: ADR 0029 y cierre de las deudas 0003 y 0005
 
 **Files:**
 - Create: `docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md`
 - Modify: `docs/technical-debt/0003-sin-limites-uso-asesorias.md`
-- Modify: `docs/technical-debt/0004-sin-cierre-automatico-recordatorios.md`
 - Modify: `docs/technical-debt/0005-editar-disponibilidad-no-propaga.md`
 - Modify: `docs/technical-debt/README.md`
 
 **Interfaces:**
-- Consumes: todo lo implementado en Tasks 1–6. No produce código.
+- Consumes: todo lo implementado en Tasks 1–4. No produce código.
 
 - [ ] **Step 1: Crear el ADR**
 
 Crear `docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md`:
 
 ```markdown
-# 0029 — Ventana de anticipación, cierre automático y resincronización en Asesorías
+# 0029 — Ventana de anticipación y resincronización en Asesorías
 
 **Status:** Accepted
 **Date:** 2026-08-19
 
 ## Context
 
-Tres deudas técnicas de la app `asesorias` comparten modelo (`Asesoria`,
-`Disponibilidad`) e infraestructura (Celery), y se atacan juntas:
+Dos deudas técnicas de la app `asesorias` comparten modelo (`Asesoria`,
+`Disponibilidad`) y se atacan juntas:
 
 - [0003](../technical-debt/0003-sin-limites-uso-asesorias.md) — sin límites de
   uso: un alumno podía agendar o cancelar hasta el segundo anterior a la sesión,
   dejando al asesor sin margen para enterarse.
-- [0004](../technical-debt/0004-sin-cierre-automatico-recordatorios.md) — una
-  sesión `agendada` cuya hora pasó sin que el asesor marcara asistencia se
-  quedaba así indefinidamente. La deuda señalaba dos bloqueos: faltaba Celery
-  Beat, y faltaba la decisión de producto sobre qué hacer con una sesión
-  abandonada.
 - [0005](../technical-debt/0005-editar-disponibilidad-no-propaga.md) — `Asesoria`
   congela un snapshot de `formato`/`ubicacion`/`liga_virtual` al agendar, y
   corregir un typo en la `Disponibilidad` (una liga de Zoom mal escrita) no
   llegaba a las sesiones ya agendadas.
 
-El proyecto ya tenía `celery-worker` pero nunca un proceso `beat`, aunque el
-[ADR 0004](0004-docker-topology.md) lo preveía "solo cuando existan tareas
-programadas". Este es ese momento.
+La exploración inicial de este plan agrupaba una tercera deuda —
+[0004](../technical-debt/0004-sin-cierre-automatico-recordatorios.md), cierre
+automático de sesiones vencidas vía Celery Beat — por compartir el mismo
+modelo. Se decidió dejarla fuera de este sprint antes de arrancar la
+implementación (ver el spec de este plan); la deuda 0004 sigue Activa, sin
+cambios.
 
 ## Decision
 
@@ -1736,22 +1219,7 @@ programadas". Este es ese momento.
    cancelando de último minuto: es el asesor invalidando el bloque completo, y
    bloquearlo lo dejaría sin forma de darlo de baja. La regla vive en un solo
    lugar (`cancelar()`) y el bypass es explícito y testeado, no accidental.
-3. **Una sesión vencida se cierra como `realizada` con `asistio=False`**,
-   reusando `marcar_asistencia(False)`, que ya modela esa transición. No se
-   agrega un estado "vencida": el dato que la SAE necesita es de asistencia, y
-   `asistio=False` ya lo expresa. Lo hace la tarea
-   `asesorias.tasks.cerrar_sesiones_vencidas`.
-4. **El corte del cierre es `inicio + DURACION_SESION <= ahora`** (1 hora — ver
-   [ADR 0016](0016-asesorias-academicas.md), Changelog 2026-08-21), no
-   `inicio <= ahora`: una sesión que apenas arrancó sigue en curso y el asesor
-   todavía puede marcar asistencia. `DURACION_SESION` es la misma constante que
-   define `Disponibilidad.hora_fin`.
-5. **Celery Beat con `django-celery-beat` (`DatabaseScheduler`)**, en un
-   contenedor propio (`celery-beat` en dev/prod, `atenea-beat` en `services/`).
-   Frecuencia: `crontab(minute="*/15")`. El scheduler en base de datos evita un
-   volumen de estado para el contenedor y deja la frecuencia ajustable desde el
-   admin sin redeploy. Debe correr **una sola réplica**.
-6. **`POST /api/asesorias/disponibilidades/{id}/resincronizar/`** copia
+3. **`POST /api/asesorias/disponibilidades/{id}/resincronizar/`** copia
    `formato`, `ubicacion` y `liga_virtual` actuales del bloque a todas las
    sesiones de `sesiones_futuras()` y encola
    `enviar_notificacion_resincronizacion` por cada una. **No** toca
@@ -1765,19 +1233,9 @@ programadas". Este es ese momento.
   ofrecer los botones de agendar/cancelar dentro de la ventana. El contrato está
   en [`api-frontend.md`](../development/api-frontend.md); la UI queda fuera del
   alcance de este ADR.
-- Una tercera imagen-proceso corre en producción (misma imagen que backend y
-  worker, distinto `command`). El runbook
-  ([`despliegue-produccion.md`](../development/despliegue-produccion.md)) lo
-  documenta junto con la verificación de logs.
-- `django_celery_beat` agrega tablas propias (`migrate` obligatorio antes de
-  arrancar `beat`). Migra `atenea-backend`; `atenea-beat` pasa `command:` y por
-  tanto no migra (ver `docker-entrypoint.sh`).
-- Los reportes de asistencia de la SAE dejan de depender de que el asesor marque
-  manualmente: una sesión vencida sin marcar aparece como no asistida a más
-  tardar 15 minutos después de terminar. Si un asesor marca tarde, ya no puede —
-  `marcar_asistencia()` solo aplica sobre `estado == "agendada"` en la práctica,
-  porque el cierre ya la movió a `realizada`.
-- Las deudas 0003 y 0004 quedan **parcialmente** resueltas; 0005 queda resuelta.
+- La deuda 0003 queda **parcialmente** resuelta; la 0005 queda **resuelta**. La
+  deuda 0004 (cierre automático, recordatorios periódicos) se evaluó y quedó
+  fuera de este sprint — sigue Activa, sin ninguna pieza resuelta.
 
 ## Alternatives considered
 
@@ -1788,13 +1246,6 @@ programadas". Este es ese momento.
 - **Un flag global tipo `saltar_validaciones` en vez de `forzar` en
   `cancelar()`:** más ancho de lo necesario y difícil de auditar. `forzar` es
   keyword-only, con un único call site.
-- **Estado nuevo `vencida` en `ESTADOS_ASESORIA`:** obligaría a tocar todos los
-  filtros, serializers y pantallas que hoy discriminan por estado, para un dato
-  que `realizada` + `asistio=False` ya expresa.
-- **Celery Beat con el scheduler de archivo (`celerybeat-schedule`) en vez de
-  `django-celery-beat`:** una dependencia menos, pero exige un volumen
-  persistente para el contenedor y deja la frecuencia solo cambiable por
-  redeploy.
 - **Acción de `django.contrib.admin` en `DisponibilidadAdmin` para
   resincronizar:** el resto del área administrativa del proyecto usa vistas DRF
   dedicadas, no admin actions, y además el dueño natural de la operación es el
@@ -1842,41 +1293,7 @@ La **restricción de tiempo mínimo** existe desde el 2026-08-19: ni agendar ni 
 Ambos siguen esperando la misma señal de revisión de arriba: evidencia de abuso real en producción.
 ```
 
-- [ ] **Step 3: Actualizar la deuda 0004**
-
-Reemplazar el contenido completo de `docs/technical-debt/0004-sin-cierre-automatico-recordatorios.md` por:
-
-```markdown
-# 0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos
-
-**Estado:** Parcialmente resuelta — 2026-08-19 ([ADR 0029](../decisions/0029-limites-cierre-y-propagacion-asesorias.md))
-**Origen:** [ADR 0016](../decisions/0016-asesorias-academicas.md)
-
-## Qué se simplificó
-
-Una `Asesoria` en estado `agendada` cuya fecha ya pasó sin que el asesor marque asistencia se queda así indefinidamente — no hay tarea Celery Beat que la cierre. Tampoco hay recordatorio por email antes de la sesión, solo confirmación al agendar y notificación al cancelar.
-
-## Por qué era razonable
-
-Requiere Celery Beat (no solo tareas async puntuales) y una decisión de producto sobre qué hacer con una sesión "abandonada" (¿marcarla como no-asistida automáticamente? ¿dejarla pendiente?) que no estaba resuelta al diseñar el MVP.
-
-## Señal de revisión
-
-Cuando el volumen de sesiones "huérfanas" (agendadas, vencidas, sin marcar) sea alto en los reportes que use la SAE, o cuando se necesite el dato de asistencia agregado sin depender de que el asesor la marque manualmente.
-
-## Cómo se resolvió (parcialmente)
-
-El **cierre automático** existe desde el 2026-08-19. Se resolvieron los dos bloqueos que registraba esta deuda:
-
-- **Celery Beat:** contenedor propio (`celery-beat` en `docker-compose.dev.yml`/`.prod.yml`, `atenea-beat` en el repo `services`), con `django-celery-beat` como `DatabaseScheduler`.
-- **Decisión de producto:** una sesión vencida sin marcar pasa a `realizada` con `asistio=False`, reusando `marcar_asistencia(False)`. Lo hace `asesorias.tasks.cerrar_sesiones_vencidas`, programada cada 15 minutos, y solo alcanza sesiones que ya **terminaron** (`inicio + 1h <= ahora`), no las que apenas arrancaron.
-
-## Qué sigue pendiente
-
-- **Recordatorios periódicos por email antes de la sesión** — siguen sin existir. `asesorias/tasks.py` solo manda confirmación al agendar, aviso al cancelar y aviso al resincronizar. Con Celery Beat ya en su lugar, el bloqueo de infraestructura desapareció: lo único pendiente es la decisión de producto sobre cuántos recordatorios y con cuánta anticipación. No se abrió un ítem de deuda nuevo para esto; se sigue rastreando aquí.
-```
-
-- [ ] **Step 4: Actualizar la deuda 0005**
+- [ ] **Step 3: Actualizar la deuda 0005**
 
 Reemplazar el contenido completo de `docs/technical-debt/0005-editar-disponibilidad-no-propaga.md` por:
 
@@ -1905,7 +1322,7 @@ Exactamente por la vía que anticipaba la señal de revisión, con el dueño aju
 El modelo de snapshot **no cambió**: la propagación sigue siendo una acción explícita del asesor, no un efecto automático del `PATCH`. `hora_inicio` queda fuera a propósito — mover la hora de una sesión ya agendada es otra operación.
 ```
 
-- [ ] **Step 5: Actualizar el índice de deuda técnica**
+- [ ] **Step 4: Actualizar el índice de deuda técnica**
 
 En `docs/technical-debt/README.md`, dentro de la sección `### Activa`, reemplazar estas tres líneas:
 
@@ -1919,8 +1336,10 @@ por:
 
 ```markdown
 - [0003 — Sin límites de uso en Asesorías](0003-sin-limites-uso-asesorias.md) — parcialmente resuelta 2026-08-19 (ventana de 2 horas lista; faltan límite de sesiones simultáneas y de cancelaciones)
-- [0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos](0004-sin-cierre-automatico-recordatorios.md) — parcialmente resuelta 2026-08-19 (cierre automático listo; faltan los recordatorios periódicos)
+- [0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos](0004-sin-cierre-automatico-recordatorios.md)
 ```
+
+Nota: la fila de 0004 queda **idéntica** — esa deuda no se toca en este sprint (ver ADR 0029, sección Context). Solo desaparece de esta lista porque 0005 se mueve a `### Resuelta` en el paso siguiente, dejando el bloque de tres líneas en dos.
 
 Y en la sección `### Resuelta`, agregar al final:
 
@@ -1928,7 +1347,7 @@ Y en la sección `### Resuelta`, agregar al final:
 - [0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas](0005-editar-disponibilidad-no-propaga.md) — resuelta 2026-08-19
 ```
 
-- [ ] **Step 6: Verificar que no quedaron enlaces rotos**
+- [ ] **Step 5: Verificar que no quedaron enlaces rotos**
 
 Run (desde la raíz del repo):
 
@@ -1936,22 +1355,23 @@ Run (desde la raíz del repo):
 grep -rn "0029-limites-cierre-y-propagacion-asesorias.md" docs/ && ls docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md
 ```
 
-Expected: los enlaces aparecen en `docs/development/api-frontend.md` y en los tres ítems de deuda, y el archivo del ADR existe.
+Expected: los enlaces aparecen en `docs/development/api-frontend.md` y en los dos ítems de deuda que sí cierra este ADR (0003, 0005), y el archivo del ADR existe.
 
-- [ ] **Step 7: Correr la suite completa del backend una última vez**
+- [ ] **Step 6: Correr la suite completa del backend una última vez**
 
 Run (desde `backend/`): `uv run manage.py test -v 1`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add docs/decisions/0029-limites-cierre-y-propagacion-asesorias.md docs/technical-debt/
 git commit -m "$(cat <<'EOF'
-[docs] registrar ADR 0029 y cerrar las deudas 0003, 0004 y 0005
+[docs] registrar ADR 0029 y cerrar las deudas 0003 y 0005
 
-- Agregar ADR 0029 (ventana de 2 horas, cierre automático, resincronización)
-- Marcar 0003 y 0004 como parcialmente resueltas, con lo pendiente anotado
+- Agregar ADR 0029 (ventana de 2 horas, resincronización) — el cierre
+  automático de la deuda 0004 quedó fuera de alcance, ver spec
+- Marcar 0003 como parcialmente resuelta, con lo pendiente anotado
   dentro del mismo ítem
 - Marcar 0005 como resuelta y moverla en el índice
 
@@ -1962,7 +1382,7 @@ EOF
 
 ---
 
-### Task 8: Rejilla de `Disponibilidad` a bloques de 1 hora (addendum post-demo)
+### Task 6: Rejilla de `Disponibilidad` a bloques de 1 hora (addendum post-demo)
 
 **Files:**
 - Modify: `backend/asesorias/models.py`
@@ -2121,7 +1541,7 @@ por:
         ],
 ```
 
-> Un bloque nuevo por asesor, mismo día distinta hora, para que el paso "elige un bloque" del wizard nuevo (Task 10) tenga más de una tarjeta que mostrar. Dos asesores compartiendo día **y** materia requeriría que `sembrar_demo.py` asignara la misma materia a dos académicos de la misma área — hoy asigna una materia por área automáticamente — así que queda fuera de este ajuste; los índices `"disponibilidad": 0` y `1` que usa `ASESORIAS_DEMO` para las 6 asesorías siguen apuntando a los mismos dos bloques de siempre, sin cambios.
+> Un bloque nuevo por asesor, mismo día distinta hora, para que el paso "elige un bloque" del wizard nuevo (Task 8) tenga más de una tarjeta que mostrar. Dos asesores compartiendo día **y** materia requeriría que `sembrar_demo.py` asignara la misma materia a dos académicos de la misma área — hoy asigna una materia por área automáticamente — así que queda fuera de este ajuste; los índices `"disponibilidad": 0` y `1` que usa `ASESORIAS_DEMO` para las 6 asesorías siguen apuntando a los mismos dos bloques de siempre, sin cambios.
 
 - [ ] **Step 7: Ajustar las aserciones de `test_sembrar_demo.py` al nuevo conteo**
 
@@ -2187,7 +1607,7 @@ por:
 En `docs/decisions/0016-asesorias-academicas.md`, al final de la sección `## Changelog`, agregar:
 
 ```markdown
-- **2026-08-21** — La rejilla de `Disponibilidad.hora_inicio` pasa de bloques de 30 minutos a bloques de 1 hora: `hora_inicio.minute != 0` es inválido (antes `not in (0, 30)`). `DURACION_SESION` — la constante que fija tanto `hora_fin` como el margen del cierre automático (ver [ADR 0029](0029-limites-cierre-y-propagacion-asesorias.md)) — pasa de `timedelta(minutes=30)` a `timedelta(hours=1)`. Motivo: feedback de la demo del 21 de agosto — media hora no correspondía a la duración real de una asesoría. Sin migración de columnas: `hora_fin` es una `@property` calculada, no una columna de base de datos, y el anti-doble-booking (`UniqueConstraint(disponibilidad, fecha)`, ver Consequences arriba) no depende del tamaño del bloque. Detalle en la [sección 4 del spec de límites/cierre/propagación](../superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md#4-bloques-de-1-hora-y-nuevo-flujo-de-agendado-del-alumno).
+- **2026-08-21** — La rejilla de `Disponibilidad.hora_inicio` pasa de bloques de 30 minutos a bloques de 1 hora: `hora_inicio.minute != 0` es inválido (antes `not in (0, 30)`). `DURACION_SESION` — la constante que fija `hora_fin` — pasa de `timedelta(minutes=30)` a `timedelta(hours=1)`. Motivo: feedback de la demo del 21 de agosto — media hora no correspondía a la duración real de una asesoría. Sin migración de columnas: `hora_fin` es una `@property` calculada, no una columna de base de datos, y el anti-doble-booking (`UniqueConstraint(disponibilidad, fecha)`, ver Consequences arriba) no depende del tamaño del bloque. Detalle en la [sección 3 del spec de límites y propagación](../superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md#3-bloques-de-1-hora-y-nuevo-flujo-de-agendado-del-alumno).
 ```
 
 - [ ] **Step 11: Correr la suite completa del backend**
@@ -2204,7 +1624,7 @@ git commit -m "$(cat <<'EOF'
 
 - Disponibilidad.clean() ahora solo acepta horas en punto (antes :00/:30)
 - Ampliar backend/accounts/demo_data.py con un segundo bloque por asesor
-  (mismo día, distinta hora) para el nuevo wizard de agendado (Task 10)
+  (mismo día, distinta hora) para el nuevo wizard de agendado (Task 8)
 - Changelog en ADR 0016 y contrato actualizado en api-frontend.md
 
 Signed-off-by: Héctor Olvera Vital <yogsototh@gmail.com>
@@ -2214,7 +1634,7 @@ EOF
 
 ---
 
-### Task 9: Grid de "Mi horario" a bloques de 1 hora (frontend, asesor)
+### Task 7: Grid de "Mi horario" a bloques de 1 hora (frontend, asesor)
 
 **Files:**
 - Modify: `frontend/src/features/asesorias/logica.ts`
@@ -2352,7 +1772,7 @@ EOF
 
 ---
 
-### Task 10: Nuevo flujo de agendado del alumno en `/asesorias/nueva`
+### Task 8: Nuevo flujo de agendado del alumno en `/asesorias/nueva`
 
 **Files:**
 - Modify: `frontend/src/features/asesorias/api.ts`
@@ -2801,7 +2221,7 @@ Expected: PASS.
 
 - [ ] **Step 6: Documentar `?asesor=` como opcional en `api-frontend.md`**
 
-El endpoint ya soportaba `?asesor=` sin estar documentado; ahora que el wizard lo omite a propósito (Task 10) vale la pena dejarlo explícito. En `docs/development/api-frontend.md`, reemplazar:
+El endpoint ya soportaba `?asesor=` sin estar documentado; ahora que el wizard lo omite a propósito (Task 8) vale la pena dejarlo explícito. En `docs/development/api-frontend.md`, reemplazar:
 
 ```markdown
 **`GET /api/asesorias/disponibilidad/buscar/`** — `EsAlumno`. Query params opcionales, combinados con AND: `?materia=<id>`, `?carrera=<id>`, `?formato=presencial|virtual`. Devuelve slots libres ya expandidos por fecha dentro de la ventana agendable:
@@ -2849,10 +2269,7 @@ EOF
 - [ ] Desde `backend/`: `uv run manage.py test -v 1` → PASS.
 - [ ] Desde `backend/`: `uv run manage.py check` → sin issues.
 - [ ] Desde `backend/`: `uv run manage.py makemigrations --check --dry-run` → `No changes detected`.
-- [ ] Desde la raíz: `docker compose -f docker-compose.dev.yml config -q` → exit 0.
-- [ ] Desde la raíz: `docker compose -f docker-compose.prod.yml config -q` → exit 0.
-- [ ] Desde la raíz: `docker compose -f docker-compose.dev.yml up -d` y luego `docker compose -f docker-compose.dev.yml logs celery-beat` → el schedule lista `cerrar-sesiones-vencidas`.
 - [ ] Desde `frontend/`: `npm test` → PASS.
 - [ ] Desde `frontend/`: `npm run lint` → sin errores.
 - [ ] Desde `frontend/`: `npm run build` → sin errores.
-- [ ] `git log --oneline` muestra 10 commits, uno por task (Tasks 1–7 del alcance original + Tasks 8–10 del addendum post-demo).
+- [ ] `git log --oneline` muestra 8 commits, uno por task (Tasks 1–5 del alcance original + Tasks 6–8 del addendum post-demo).
