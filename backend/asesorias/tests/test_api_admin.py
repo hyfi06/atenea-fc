@@ -475,7 +475,7 @@ class AdminAsesorDetalleApiTests(APITestCase):
                 "id": self.disp_vigente.id,
                 "dia_semana": 1,
                 "hora_inicio": "10:00:00",
-                "hora_fin": "10:30:00",
+                "hora_fin": "11:00:00",
                 "formato": "presencial",
                 "ubicacion": "Salón 4",
                 "liga_virtual": "",
