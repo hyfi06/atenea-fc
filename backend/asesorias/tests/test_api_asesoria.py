@@ -631,12 +631,13 @@ class AgendarConHistorialTests(APITestCase):
         asesor = PerfilAsesorAcademico.objects.create(user=asesor_user, area=self.area)
         registro = RegistroAsesor.objects.create(asesor=asesor, semestre=semestre_vigente())
         registro.materias.add(self.materia)
-        hoy = datetime.date.today()
+        # Mañana, no hoy: con la ventana mínima de anticipación (deuda 0003)
+        # agendar para hoy a las 09:00 falla si la suite corre después de las 07:00.
+        self.fecha = datetime.date.today() + datetime.timedelta(days=1)
         self.disponibilidad = Disponibilidad.objects.create(
-            registro=registro, dia_semana=hoy.weekday(), hora_inicio=datetime.time(9, 0),
+            registro=registro, dia_semana=self.fecha.weekday(), hora_inicio=datetime.time(9, 0),
             formato="virtual", liga_virtual="https://zoom.us/j/1",
         )
-        self.fecha = hoy
 
         self.user = User.objects.create_user(email="alumno.ha@ciencias.unam.mx", password="x")
         self.perfil = crear_alumno(self.user, "312000055", carrera=self.carrera_a, generacion=2023)
@@ -682,3 +683,37 @@ class AgendarConHistorialTests(APITestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("carrera", response.data)
+
+
+class AgendarDentroDeLaVentanaApiTests(AsesoriaApiTestsBase):
+    """Deuda 0003: el POST de agendar devuelve 400 dentro de la ventana."""
+
+    def test_agendar_hoy_a_medianoche_devuelve_400(self):
+        hoy = timezone.localdate()
+        disponibilidad = Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=hoy.weekday(),
+            hora_inicio=datetime.time(0, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/hoy",
+        )
+        self.client.force_authenticate(user=self.alumno_user)
+
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(hoy),
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "No puedes agendar una sesión con menos de 2 horas de anticipación.",
+            response.data["detail"],
+        )
+
+    def test_agendar_fuera_de_la_ventana_sigue_devolviendo_201(self):
+        self.client.force_authenticate(user=self.alumno_user)
+
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes),
+        })
+
+        self.assertEqual(response.status_code, 201)

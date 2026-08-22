@@ -64,7 +64,7 @@ class DisponibilidadSerializer(serializers.ModelSerializer):
         try:
             instance.clean()
         except DjangoValidationError as exc:
-            raise serializers.ValidationError(exc.messages)
+            raise serializers.ValidationError({"detail": exc.messages})
         return attrs
 
     def create(self, validated_data):
@@ -187,7 +187,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         try:
             instance.clean()
         except DjangoValidationError as exc:
-            raise serializers.ValidationError(exc.messages)
+            raise serializers.ValidationError({"detail": exc.messages})
         attrs["carrera"] = carrera
         attrs["hora_inicio"] = disponibilidad.hora_inicio
         attrs["formato"] = disponibilidad.formato

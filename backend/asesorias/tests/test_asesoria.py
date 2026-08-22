@@ -155,3 +155,53 @@ class AsesoriaCicloDeVidaTests(AsesoriaTestsBase):
         with self.assertRaises(ValidationError):
             asesoria.cancelar(usuario=self.alumno.user)
         asesoria.delete()
+
+
+class VentanaAnticipacionAgendarTests(AsesoriaTestsBase):
+    """Deuda 0003: no se puede agendar con menos de 2 horas de anticipación."""
+
+    def _disponibilidad_de_hoy_a_medianoche(self):
+        """Bloque de hoy a las 00:00 — su inicio siempre quedó en el pasado,
+        así el test no depende de la hora a la que corra la suite."""
+        hoy = timezone.localdate()
+        return hoy, Disponibilidad.objects.create(
+            registro=self.registro, dia_semana=hoy.weekday(),
+            hora_inicio=datetime.time(0, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/hoy",
+        )
+
+    def test_agendar_dentro_de_la_ventana_falla(self):
+        hoy, disponibilidad = self._disponibilidad_de_hoy_a_medianoche()
+        asesoria = Asesoria(
+            alumno=self.alumno, disponibilidad=disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=hoy, hora_inicio=disponibilidad.hora_inicio,
+            formato=disponibilidad.formato, liga_virtual=disponibilidad.liga_virtual,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            asesoria.clean()
+        self.assertIn(
+            "No puedes agendar una sesión con menos de 2 horas de anticipación.",
+            ctx.exception.messages,
+        )
+
+    def test_agendar_fuera_de_la_ventana_pasa(self):
+        asesoria = Asesoria(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes,
+            hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato,
+            liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        asesoria.clean()  # no lanza
+
+    def test_momento_inicio_combina_fecha_y_hora(self):
+        asesoria = Asesoria(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes,
+            hora_inicio=datetime.time(10, 0),
+            formato=self.disponibilidad.formato,
+            liga_virtual=self.disponibilidad.liga_virtual,
+        )
+        self.assertEqual(asesoria.momento_inicio.date(), self.proximo_lunes)
+        self.assertEqual(asesoria.momento_inicio.hour, 10)
+        self.assertIsNotNone(asesoria.momento_inicio.tzinfo)

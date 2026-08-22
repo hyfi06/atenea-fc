@@ -12,6 +12,23 @@ DIAS_SEMANA = [
 FORMATOS = [("presencial", "Presencial"), ("virtual", "Virtual")]
 ESTADOS_ASESORIA = [("agendada", "Agendada"), ("cancelada", "Cancelada"), ("realizada", "Realizada")]
 
+# Duración de un bloque de asesoría. Fija la rejilla de `Disponibilidad.hora_fin`.
+# 1 hora (no 30 min): ajustado por feedback post-demo, ver Task 6.
+DURACION_SESION = datetime.timedelta(hours=1)
+
+# Deuda 0003: ni agendar ni cancelar se permiten a menos de 2 horas del inicio.
+# Agendar de último minuto no le da al asesor tiempo de enterarse; cancelar de
+# último minuto lo deja plantado. `Disponibilidad.desactivar()` se salta la
+# ventana a propósito (ver `Asesoria.cancelar(forzar=...)`).
+VENTANA_MINIMA_ANTICIPACION = datetime.timedelta(hours=2)
+
+MENSAJE_AGENDAR_FUERA_DE_VENTANA = (
+    "No puedes agendar una sesión con menos de 2 horas de anticipación."
+)
+MENSAJE_CANCELAR_FUERA_DE_VENTANA = (
+    "No puedes cancelar una sesión con menos de 2 horas de anticipación."
+)
+
 
 class PerfilAsesorAcademico(models.Model):
     user = models.OneToOneField(
@@ -91,7 +108,7 @@ class Disponibilidad(models.Model):
     @property
     def hora_fin(self):
         inicio = datetime.datetime.combine(datetime.date.min, self.hora_inicio)
-        return (inicio + datetime.timedelta(minutes=30)).time()
+        return (inicio + DURACION_SESION).time()
 
     def sesiones_futuras(self):
         """Sesiones agendadas sobre este bloque que todavía no comienzan.
@@ -171,16 +188,27 @@ class Asesoria(models.Model):
             ),
         ]
 
+    @property
+    def momento_inicio(self):
+        """Instante aware en que arranca la sesión (fecha + hora_inicio).
+
+        Fuente única para toda comparación contra el reloj: la ventana de
+        anticipación y marcar asistencia.
+        """
+        return timezone.make_aware(datetime.datetime.combine(self.fecha, self.hora_inicio))
+
     def clean(self):
         if self.fecha.weekday() != self.disponibilidad.dia_semana:
             raise ValidationError("La fecha no coincide con el día de la disponibilidad.")
         inicio, fin = ventana_agendable()
         if not (inicio <= self.fecha <= fin):
             raise ValidationError("La fecha está fuera de la ventana agendable (semana en curso y la siguiente).")
+        # La ventana agendable es de granularidad fecha; esto agrega la de hora.
+        if timezone.now() > self.momento_inicio - VENTANA_MINIMA_ANTICIPACION:
+            raise ValidationError(MENSAJE_AGENDAR_FUERA_DE_VENTANA)
 
     def marcar_asistencia(self, asistio: bool):
-        inicio = timezone.make_aware(datetime.datetime.combine(self.fecha, self.hora_inicio))
-        if timezone.now() < inicio:
+        if timezone.now() < self.momento_inicio:
             raise ValidationError("No se puede marcar asistencia antes de que ocurra la sesión.")
         self.asistio = asistio
         self.estado = "realizada"
