@@ -11,9 +11,8 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 ### Activa
 
 - [0001 — Sin modelo de calendario/periodo académico real](0001-sin-modelo-calendario-academico.md)
-- [0003 — Sin límites de uso en Asesorías](0003-sin-limites-uso-asesorias.md)
+- [0003 — Sin límites de uso en Asesorías](0003-sin-limites-uso-asesorias.md) — parcialmente resuelta 2026-08-19 (ventana de 2 horas lista; faltan límite de sesiones simultáneas y de cancelaciones)
 - [0004 — Sin cierre automático de sesiones vencidas ni recordatorios periódicos](0004-sin-cierre-automatico-recordatorios.md)
-- [0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas](0005-editar-disponibilidad-no-propaga.md)
 - [0006 — Sin paginación en los endpoints de listado](0006-sin-paginacion-listados.md)
 - [0014 — Alta de `PerfilSAE` solo por admin](0014-alta-perfil-sae-solo-admin.md)
 - [0015 — Estáticos por WhiteNoise; media en MinIO/S3 pendiente](0015-estaticos-whitenoise-media-pendiente.md)
@@ -37,3 +36,4 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0013 — Agendar no valida que la materia pertenezca al registro del asesor](0013-agendar-sin-validar-materia-del-registro.md) — resuelta 2026-08-18
 - [0007 — Logout no invalida el refresh token en el servidor](0007-logout-sin-invalidacion-refresh-token.md) — resuelta 2026-08-19
 - [0009 — Sin protección CSRF explícita en el transporte de JWT por cookie](0009-sin-csrf-en-cookie-jwt.md) — resuelta 2026-08-19
+- [0005 — Editar una `Disponibilidad` no se propaga a sesiones ya agendadas](0005-editar-disponibilidad-no-propaga.md) — resuelta 2026-08-19
