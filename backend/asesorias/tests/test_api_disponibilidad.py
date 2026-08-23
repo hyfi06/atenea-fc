@@ -265,3 +265,80 @@ class DesactivarDisponibilidadApiTests(SesionesFuturasApiTests):
 
         self.assertEqual(response.status_code, 403)
 
+
+class ResincronizarApiTests(SesionesFuturasApiTests):
+    """Deuda 0005: el asesor dueño corrige su bloque y propaga el cambio a las
+    sesiones ya agendadas que aún no ocurren."""
+
+    def test_asesor_dueno_resincroniza_y_recibe_el_resumen(self):
+        futura = self._crear_asesoria_futura(7)
+        self.disponibilidad.liga_virtual = "https://meet.example.com/CORREGIDA"
+        self.disponibilidad.save()
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/resincronizar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["sesiones_actualizadas"], 1)
+        self.assertEqual(response.data["sesiones"][0]["id"], futura.id)
+        futura.refresh_from_db()
+        self.assertEqual(futura.liga_virtual, "https://meet.example.com/CORREGIDA")
+
+    def test_no_toca_la_hora_de_inicio(self):
+        futura = self._crear_asesoria_futura(7)
+        hora_original = futura.hora_inicio
+        self.disponibilidad.hora_inicio = datetime.time(15, 30)
+        self.disponibilidad.save()
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/resincronizar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        futura.refresh_from_db()
+        self.assertEqual(futura.hora_inicio, hora_original)
+
+    def test_bloque_sin_sesiones_futuras_devuelve_cero(self):
+        self.client.force_authenticate(user=self.asesor_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/resincronizar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {"sesiones_actualizadas": 0, "sesiones": []})
+
+    def test_resincronizar_bloque_ajeno_devuelve_403(self):
+        # Nombre distinto al `test_bloque_ajeno_devuelve_403` de la clase padre:
+        # repetirlo lo sobrescribiría y se perdería la cobertura de
+        # `sesiones-futuras/`.
+        self.client.force_authenticate(user=self.otro_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/resincronizar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_alumno_no_puede_resincronizar(self):
+        self.client.force_authenticate(user=self.alumno_user)
+
+        response = self.client.post(
+            f"/api/asesorias/disponibilidades/{self.disponibilidad.id}/resincronizar/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+

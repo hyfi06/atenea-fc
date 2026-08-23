@@ -99,6 +99,23 @@ class DisponibilidadViewSet(ModelViewSet):
             "sesiones_canceladas": canceladas,
         })
 
+    @action(detail=True, methods=["post"])
+    def resincronizar(self, request, pk=None):
+        """Propaga formato/ubicacion/liga_virtual del bloque a sus sesiones
+        futuras (deuda 0005).
+
+        Vive en el viewset del asesor y no en un `Admin*View` con
+        `EsMiembroSAE`: es el asesor corrigiendo un dato suyo, no una
+        intervención administrativa. `get_object()` ya aplica
+        `EsDuenoDelRegistro`, así que un bloque ajeno da 403.
+        """
+        disponibilidad = self.get_object()
+        sesiones = disponibilidad.resincronizar_sesiones_futuras()
+        return Response({
+            "sesiones_actualizadas": len(sesiones),
+            "sesiones": SesionFuturaSerializer(sesiones, many=True).data,
+        })
+
 class BuscarDisponibilidadView(APIView):
     permission_classes = [EsAlumnoOMiembroSAE]
 

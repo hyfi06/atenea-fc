@@ -176,6 +176,7 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 | `GET`/`PATCH`/`DELETE` | `/api/asesorias/disponibilidades/{id}/` | sin `PUT` |
 | `GET` | `/api/asesorias/disponibilidades/{id}/sesiones-futuras/` | `{"total": n, "sesiones": [{id, fecha, hora_inicio, alumno_nombre, materia_nombre}]}` — sesiones agendadas que aún no comienzan sobre ese bloque |
 | `POST` | `/api/asesorias/disponibilidades/{id}/desactivar/` | `{cancelar_sesiones?: bool = false, motivo?: string}` → `{"disponibilidad": {...}, "sesiones_canceladas": n}`. Con `cancelar_sesiones=true` cancela todas las sesiones futuras y desactiva el bloque en una sola transacción; el motivo por defecto es `"El asesor dio de baja este horario."` |
+| `POST` | `/api/asesorias/disponibilidades/{id}/resincronizar/` | body vacío → `{"sesiones_actualizadas": n, "sesiones": [{id, fecha, hora_inicio, alumno_nombre, materia_nombre}]}`. Copia `formato`, `ubicacion` y `liga_virtual` **actuales** del bloque a todas sus sesiones futuras y notifica por correo a los alumnos afectados. **No** toca `fecha` ni `hora_inicio`. Solo el asesor dueño (`403` si el bloque es ajeno) — ver [deuda técnica 0005](../technical-debt/0005-editar-disponibilidad-no-propaga.md) |
 
 `RegistroAsesor` no acepta `PUT`/`DELETE` en ningún caso; `materias` es de solo lectura en el serializer excepto vía la acción `materias/`, que puede fallar con `400 {"detail": ["La materia no está habilitada para asesorías."]}` o `{"detail": ["La materia no se imparte en este semestre."]}`.
 
