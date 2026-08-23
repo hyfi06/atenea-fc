@@ -7,15 +7,12 @@ import * as api from '../api'
 import * as auth from '../../../auth/AuthContext'
 import * as catalogo from '../../catalogo/api'
 import { ApiError } from '../../../api/client'
-import type { AsesorDisponible, SlotDisponibilidad, InscripcionAlumno } from '../../../api/types'
+import type { SlotDisponibilidad, InscripcionAlumno } from '../../../api/types'
 
-const ASESORES: AsesorDisponible[] = [
-  { registro_id: 7, asesor_nombre: 'Ana López', area_nombre: 'Matemáticas', formatos: ['virtual'] },
-]
 const SLOTS: SlotDisponibilidad[] = [
   {
     registro_id: 7, asesor_nombre: 'Ana López', disponibilidad_id: 41, fecha: '2026-08-10',
-    hora_inicio: '10:00:00', hora_fin: '10:30:00', formato: 'virtual', ubicacion: '', liga_virtual: 'https://x',
+    hora_inicio: '10:00:00', hora_fin: '11:00:00', formato: 'virtual', ubicacion: '', liga_virtual: 'https://x',
   },
 ]
 
@@ -27,12 +24,9 @@ function mockComun(
   mutateImpl: ReturnType<typeof vi.fn>,
   historial: InscripcionAlumno[] = HISTORIAL_UNA,
 ) {
-  vi.spyOn(api, 'useAsesoresDeMateria').mockReturnValue({
-    data: ASESORES, isPending: false,
-  } as ReturnType<typeof api.useAsesoresDeMateria>)
-  vi.spyOn(api, 'useDisponibilidadDeAsesor').mockReturnValue({
+  vi.spyOn(api, 'useDisponibilidadDeMateria').mockReturnValue({
     data: SLOTS, isPending: false,
-  } as ReturnType<typeof api.useDisponibilidadDeAsesor>)
+  } as ReturnType<typeof api.useDisponibilidadDeMateria>)
   vi.spyOn(api, 'useAgendarAsesoria').mockReturnValue({
     mutate: mutateImpl, isPending: false,
   } as unknown as ReturnType<typeof api.useAgendarAsesoria>)
@@ -65,9 +59,8 @@ function montar(entrada = '/asesorias/nueva/12') {
 }
 
 function avanzarHastaConfirmar() {
-  fireEvent.click(screen.getByText('Ana López'))
   fireEvent.click(screen.getByText(/10 de agosto/i))
-  fireEvent.click(screen.getByText('10:00–10:30'))
+  fireEvent.click(screen.getByText('10:00–11:00'))
   // Botón que abre el diálogo (etiqueta distinta a la acción del diálogo).
   fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 }
@@ -75,11 +68,19 @@ function avanzarHastaConfirmar() {
 describe('AgendarAsesoria', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('elegir asesor avanza al paso de día', () => {
+  it('arranca directo en el paso de día, sin pedir asesor primero', () => {
     mockComun(vi.fn())
     montar()
-    fireEvent.click(screen.getByText('Ana López'))
     expect(screen.getByText('Elige un día')).toBeInTheDocument()
+    expect(screen.queryByText('Elige un asesor')).not.toBeInTheDocument()
+  })
+
+  it('la tarjeta del bloque muestra profesor y modalidad', () => {
+    mockComun(vi.fn())
+    montar()
+    fireEvent.click(screen.getByText(/10 de agosto/i))
+    expect(screen.getByText('Ana López')).toBeInTheDocument()
+    expect(screen.getByText('Virtual')).toBeInTheDocument()
   })
 
   it('confirmar dispara el POST con el payload correcto', () => {
@@ -122,7 +123,7 @@ describe('AgendarAsesoria', () => {
     } as unknown as ReturnType<typeof auth.useAuth>)
     montar()
     expect(screen.getByText(/sólo los alumnos pueden agendar/i)).toBeInTheDocument()
-    expect(screen.queryByText('Ana López')).not.toBeInTheDocument()
+    expect(screen.queryByText('Elige un día')).not.toBeInTheDocument()
   })
 })
 
@@ -130,9 +131,8 @@ describe('AgendarAsesoria — selección de carrera', () => {
   afterEach(() => vi.restoreAllMocks())
 
   function avanzarHastaCarrera() {
-    fireEvent.click(screen.getByText('Ana López'))
     fireEvent.click(screen.getByText(/10 de agosto/i))
-    fireEvent.click(screen.getByText('10:00–10:30'))
+    fireEvent.click(screen.getByText('10:00–11:00'))
   }
 
   it('con una sola inscripción deja la carrera preseleccionada', () => {

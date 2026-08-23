@@ -206,6 +206,22 @@ export function useDisponibilidadDeAsesor(materiaId: number | null, registroId: 
   })
 }
 
+/**
+ * Días y bloques disponibles de una materia, a través de todos los
+ * asesores que la imparten (sin elegir asesor primero). Mismo endpoint
+ * que `useDisponibilidadDeAsesor` sin `?asesor=` — ya devuelve
+ * `asesor_nombre`/`formato` por slot, así que la tarjeta de cada bloque
+ * puede mostrarlos sin una consulta aparte.
+ */
+export function useDisponibilidadDeMateria(materiaId: number | null) {
+  return useQuery({
+    queryKey: ['disponibilidad', materiaId, null],
+    queryFn: () =>
+      apiGet<SlotDisponibilidad[]>(`/api/asesorias/disponibilidad/buscar/?materia=${materiaId}`),
+    enabled: materiaId !== null,
+  })
+}
+
 export interface PayloadAgendar {
   disponibilidad: number
   fecha: string

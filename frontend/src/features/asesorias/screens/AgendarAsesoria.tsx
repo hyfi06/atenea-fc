@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAsesoresDeMateria, useDisponibilidadDeAsesor, useAgendarAsesoria } from '../api'
+import { useDisponibilidadDeMateria, useAgendarAsesoria } from '../api'
 import { agruparPorDia } from '../logica'
 import { useAuth } from '../../../auth/AuthContext'
 import { useMapaCarreras, useMapaMaterias } from '../../catalogo/api'
@@ -9,7 +9,7 @@ import { Dialogo } from '../../../components/ui/Dialogo'
 import { Skeleton } from '../../../components/ui/Skeleton'
 import { primerMensajeDeError } from '../../../api/errores'
 import { ApiError } from '../../../api/client'
-import type { AsesorDisponible, SlotDisponibilidad } from '../../../api/types'
+import type { SlotDisponibilidad } from '../../../api/types'
 
 const FORMATEADOR_DIA = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -22,11 +22,8 @@ export function AgendarAsesoria() {
   const mapaCarreras = useMapaCarreras()
   const mapaMaterias = useMapaMaterias()
 
-  const { data: asesores = [], isPending: cargandoAsesores } = useAsesoresDeMateria(idMateria)
-  const [registroId, setRegistroId] = useState<number | null>(null)
-  const { data: slots = [], isPending: cargandoSlots } = useDisponibilidadDeAsesor(
-    registroId !== null ? idMateria : null,
-    registroId,
+  const { data: slots = [], isPending: cargandoSlots } = useDisponibilidadDeMateria(
+    Number.isInteger(idMateria) ? idMateria : null,
   )
   const dias = useMemo(() => agruparPorDia(slots), [slots])
 
@@ -42,13 +39,12 @@ export function AgendarAsesoria() {
   const [error, setError] = useState<string | null>(null)
   const agendar = useAgendarAsesoria()
 
-  const paso = registroId === null ? 'asesor' : fecha === null ? 'dia' : slot === null ? 'bloque' : 'carrera'
+  const paso = fecha === null ? 'dia' : slot === null ? 'bloque' : 'carrera'
 
   function volver() {
     setError(null)
     if (slot !== null) return setSlot(null)
     if (fecha !== null) return setFecha(null)
-    if (registroId !== null) return setRegistroId(null)
     navigate('/asesorias')
   }
 
@@ -109,32 +105,13 @@ export function AgendarAsesoria() {
 
       {error && <p role="alert" className="entrada-lista text-xs text-error">{error}</p>}
 
-      {paso === 'asesor' && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-on-surface">Elige un asesor</h2>
-          {cargandoAsesores ? (
-            <Skeleton className="h-14" />
-          ) : asesores.length === 0 ? (
-            <p className="text-sm text-on-surface-variant">Esta materia no tiene asesores disponibles.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {asesores.map((a, indice) => (
-                <li key={a.registro_id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
-                  <BotonAsesor asesor={a} onClick={() => setRegistroId(a.registro_id)} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
       {paso === 'dia' && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-on-surface">Elige un día</h2>
           {cargandoSlots ? (
             <Skeleton className="h-14" />
           ) : dias.length === 0 ? (
-            <p className="text-sm text-on-surface-variant">Este asesor no tiene horarios en las próximas dos semanas.</p>
+            <p className="text-sm text-on-surface-variant">Esta materia no tiene horarios en las próximas dos semanas.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {dias.map((d, indice) => (
@@ -167,14 +144,15 @@ export function AgendarAsesoria() {
                 <button
                   type="button"
                   onClick={() => setSlot(s)}
-                  className="fila-interactiva foco-visible flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container px-4 py-3 text-left"
+                  className="fila-interactiva foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg bg-surface-container px-4 py-3 text-left"
                 >
-                  <span className="text-sm text-on-surface">
-                    {s.hora_inicio.slice(0, 5)}–{s.hora_fin.slice(0, 5)}
+                  <span className="flex w-full items-center justify-between text-sm text-on-surface">
+                    <span>{s.hora_inicio.slice(0, 5)}–{s.hora_fin.slice(0, 5)}</span>
+                    <span className="text-xs text-on-surface-variant">
+                      {s.formato === 'virtual' ? 'Virtual' : s.ubicacion || 'Presencial'}
+                    </span>
                   </span>
-                  <span className="text-xs text-on-surface-variant">
-                    {s.formato === 'virtual' ? 'Virtual' : s.ubicacion || 'Presencial'}
-                  </span>
+                  <span className="text-xs text-on-surface-variant">{s.asesor_nombre}</span>
                 </button>
               </li>
             ))}
@@ -230,20 +208,5 @@ export function AgendarAsesoria() {
         </section>
       )}
     </main>
-  )
-}
-
-function BotonAsesor({ asesor, onClick }: { asesor: AsesorDisponible; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="fila-interactiva foco-visible flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg bg-surface-container px-4 py-3 text-left"
-    >
-      <span className="text-sm font-medium text-on-surface">{asesor.asesor_nombre}</span>
-      <span className="text-xs text-on-surface-variant">
-        {asesor.area_nombre} · {asesor.formatos.map((f) => (f === 'virtual' ? 'Virtual' : 'Presencial')).join(' / ')}
-      </span>
-    </button>
   )
 }

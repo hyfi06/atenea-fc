@@ -186,7 +186,7 @@ Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..regi
 
 ### Rutas — vista de alumno (búsqueda y booking)
 
-**`GET /api/asesorias/disponibilidad/buscar/`** — `EsAlumno`. Query params opcionales, combinados con AND: `?materia=<id>`, `?carrera=<id>`, `?formato=presencial|virtual`. Devuelve slots libres ya expandidos por fecha dentro de la ventana agendable:
+**`GET /api/asesorias/disponibilidad/buscar/`** — `EsAlumno`. Query params opcionales, combinados con AND: `?materia=<id>`, `?carrera=<id>`, `?formato=presencial|virtual`, `?asesor=<registro_id>`. Sin `?asesor=` devuelve bloques de todos los asesores que imparten la materia (cada resultado ya trae `asesor_nombre`) — es lo que usa el wizard de agendado en `/asesorias/nueva` desde el 2026-08-21 para no pedir asesor antes de mostrar los días disponibles. Devuelve slots libres ya expandidos por fecha dentro de la ventana agendable:
 
 ```json
 [{
