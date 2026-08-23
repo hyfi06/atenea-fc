@@ -36,12 +36,12 @@ class DisponibilidadTests(TestCase):
         )
         disp.clean()  # no lanza
         disp.save()
-        self.assertEqual(disp.hora_fin, datetime.time(10, 30))
+        self.assertEqual(disp.hora_fin, datetime.time(11, 0))
         disp.delete()
 
     def test_bloque_valido_virtual(self):
         disp = Disponibilidad(
-            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 30),
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(11, 0),
             formato="virtual", liga_virtual="https://meet.example.com/x",
         )
         disp.clean()  # no lanza
@@ -49,6 +49,15 @@ class DisponibilidadTests(TestCase):
     def test_hora_fuera_de_rejilla_falla(self):
         disp = Disponibilidad(
             registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 15),
+            formato="virtual", liga_virtual="https://meet.example.com/x",
+        )
+        with self.assertRaises(ValidationError):
+            disp.clean()
+
+    def test_media_hora_ya_no_cae_en_la_rejilla(self):
+        """Feedback post-demo (2026-08-21): la rejilla pasa de 30 min a 1h."""
+        disp = Disponibilidad(
+            registro=self.registro, dia_semana=0, hora_inicio=datetime.time(10, 30),
             formato="virtual", liga_virtual="https://meet.example.com/x",
         )
         with self.assertRaises(ValidationError):

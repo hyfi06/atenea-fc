@@ -182,7 +182,7 @@ Denegado → `403` con un mensaje descriptivo (p. ej. `"Se requiere un perfil de
 
 Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..registro_asesores_fin` del `PeriodoAcademico` de ese semestre; fuera de ahí devuelve `400`. Consultar `/api/academico/periodo-vigente/` antes de ofrecer el alta.
 
-`Disponibilidad` es un slot fijo de 30 minutos, no un rango — `dia_semana` (0=Lunes…6=Domingo), `hora_inicio` debe caer en la rejilla `:00`/`:30`, `formato` (`presencial`/`virtual`) determina si `ubicacion` o `liga_virtual` es obligatorio. Validaciones fallidas → `400 {"detail": ["..."]}`.
+`Disponibilidad` es un slot fijo de 1 hora, no un rango — `dia_semana` (0=Lunes…6=Domingo), `hora_inicio` debe caer en la rejilla de horas en punto (`:00`; antes de 2026-08-21 aceptaba también `:30`), `formato` (`presencial`/`virtual`) determina si `ubicacion` o `liga_virtual` es obligatorio. Validaciones fallidas → `400 {"detail": ["..."]}`.
 
 ### Rutas — vista de alumno (búsqueda y booking)
 
@@ -193,7 +193,7 @@ Solo acepta el semestre vigente y solo dentro de `registro_asesores_inicio..regi
   "disponibilidad_id": 12,
   "fecha": "2026-08-03",
   "hora_inicio": "10:00:00",
-  "hora_fin": "10:30:00",
+  "hora_fin": "11:00:00",
   "formato": "virtual",
   "ubicacion": "",
   "liga_virtual": "https://..."

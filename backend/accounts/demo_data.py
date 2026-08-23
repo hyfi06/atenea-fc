@@ -58,6 +58,8 @@ ASESORES_DEMO = [
         "disponibilidades": [
             {"dia_semana": 0, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
              "liga_virtual": "https://meet.atenea.demo/diego-lunes"},
+            {"dia_semana": 0, "hora_inicio": datetime.time(14, 0), "formato": "virtual",
+             "liga_virtual": "https://meet.atenea.demo/diego-lunes-tarde"},
             {"dia_semana": 2, "hora_inicio": datetime.time(10, 0), "formato": "virtual",
              "liga_virtual": "https://meet.atenea.demo/diego-miercoles"},
         ],
@@ -68,6 +70,8 @@ ASESORES_DEMO = [
         "activo": True, "pendiente": False,
         "disponibilidades": [
             {"dia_semana": 1, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
+             "ubicacion": "Salón 105, Edificio Principal"},
+            {"dia_semana": 1, "hora_inicio": datetime.time(16, 0), "formato": "presencial",
              "ubicacion": "Salón 105, Edificio Principal"},
             {"dia_semana": 3, "hora_inicio": datetime.time(12, 0), "formato": "presencial",
              "ubicacion": "Salón 105, Edificio Principal"},

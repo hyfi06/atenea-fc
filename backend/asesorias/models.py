@@ -98,8 +98,8 @@ class Disponibilidad(models.Model):
         ]
 
     def clean(self):
-        if self.hora_inicio.minute not in (0, 30) or self.hora_inicio.second != 0:
-            raise ValidationError("hora_inicio debe caer en la rejilla de 30 minutos.")
+        if self.hora_inicio.minute != 0 or self.hora_inicio.second != 0:
+            raise ValidationError("hora_inicio debe caer en la rejilla de 1 hora.")
         if self.formato == "presencial" and not self.ubicacion:
             raise ValidationError("Falta ubicación para una disponibilidad presencial.")
         if self.formato == "virtual" and not self.liga_virtual:

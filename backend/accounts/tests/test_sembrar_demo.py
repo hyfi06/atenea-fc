@@ -57,7 +57,7 @@ class SembrarDemoTests(SembrarDemoTestsBase):
         self.assertEqual(activos.count(), 2)
         for asesor in activos:
             self.assertTrue(asesor.activo)
-            self.assertEqual(asesor.registros.get().disponibilidades.count(), 2)
+            self.assertEqual(asesor.registros.get().disponibilidades.count(), 3)
 
         pendiente = PerfilAsesorAcademico.objects.get(
             user__perfil_academico__numero_trabajador="DEMOTRAB3"
@@ -102,7 +102,7 @@ class SembrarDemoTests(SembrarDemoTestsBase):
         self.assertEqual(PerfilAlumno.objects.filter(
             numero_cuenta__in=[a["numero_cuenta"] for a in ALUMNOS_DEMO]).count(), 3)
         self.assertEqual(Asesoria.objects.count(), 6)
-        self.assertEqual(Disponibilidad.objects.count(), 4)
+        self.assertEqual(Disponibilidad.objects.count(), 6)
         self.assertEqual(
             User.objects.filter(email=EMAIL_ALUMNO_DEMO_LOGIN).count(), 1
         )
