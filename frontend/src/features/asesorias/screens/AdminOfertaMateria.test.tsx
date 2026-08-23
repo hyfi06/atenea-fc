@@ -13,7 +13,7 @@ const ASESORES: AsesorDisponible[] = [
 const SLOTS: SlotDisponibilidad[] = [
   {
     registro_id: 7, asesor_nombre: 'Ana López', disponibilidad_id: 41, fecha: '2026-08-10',
-    hora_inicio: '10:00:00', hora_fin: '10:30:00', formato: 'virtual', ubicacion: '', liga_virtual: 'https://x',
+    hora_inicio: '10:00:00', hora_fin: '11:00:00', formato: 'virtual', ubicacion: '', liga_virtual: 'https://x',
   },
 ]
 
@@ -51,7 +51,7 @@ describe('AdminOfertaMateria', () => {
     montar()
     fireEvent.click(screen.getByRole('button', { name: /Ana López/ }))
     expect(screen.getByText('Disponibilidad')).toBeInTheDocument()
-    expect(screen.getByText(/10:00–10:30/)).toBeInTheDocument()
+    expect(screen.getByText(/10:00–11:00/)).toBeInTheDocument()
   })
 
   it('no ofrece agendar ni selector de carrera', () => {
@@ -65,7 +65,7 @@ describe('AdminOfertaMateria', () => {
   it('los bloques de disponibilidad no son interactivos', () => {
     montar()
     fireEvent.click(screen.getByRole('button', { name: /Ana López/ }))
-    expect(screen.queryByRole('button', { name: /10:00–10:30/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /10:00–11:00/ })).not.toBeInTheDocument()
   })
 
   it('vuelve a la oferta', () => {

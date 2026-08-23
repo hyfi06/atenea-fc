@@ -83,7 +83,7 @@ export interface SlotHorario {
 }
 
 /**
- * Las 28 filas de un día para la pantalla "Mi horario".
+ * Las 14 filas de un día para la pantalla "Mi horario".
  *
  * Distingue tres situaciones que la UI colapsa en dos chips: sin
  * disponibilidad, con una inactiva (se puede reactivar) y con una activa.

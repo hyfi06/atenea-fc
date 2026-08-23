@@ -33,4 +33,4 @@ El frontend de asesorías cubría sólo el lado asesor ([spec de asesor](../supe
 
 ## Changelog
 
-- (sin enmiendas)
+- **2026-08-21** — El wizard de agendado del alumno en `/asesorias/nueva` deja de pedir asesor primero: pasa de 4 pasos (asesor → día → bloque → carrera) a 3 (día → bloque → carrera). Motivo: feedback de la demo del 21 de agosto. Detalle en la [sección 3 del spec de límites y propagación](../superpowers/specs/2026-08-19-asesorias-limites-cierre-propagacion-design.md#3-bloques-de-1-hora-y-nuevo-flujo-de-agendado-del-alumno) y en [ADR 0030](0030-limites-cierre-y-propagacion-asesorias.md).

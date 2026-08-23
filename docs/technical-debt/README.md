@@ -25,6 +25,8 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0022 — Detección de rol por usuario, no por sesión, en pantallas de asesoría](0022-deteccion-de-rol-por-usuario-no-por-sesion.md)
 - [0023 — El correo de recuperación usa el template default de allauth](0023-correo-de-reset-con-template-default.md)
 - [0024 — Las tablas del blacklist de tokens crecen sin purga](0024-blacklist-sin-purga-de-tokens-vencidos.md)
+- [0025 — El endpoint de resincronización de `Disponibilidad` no tiene botón en el SPA](0025-resincronizar-sin-boton-en-spa.md)
+- [0026 — El wizard de agendado ofrece bloques que la ventana mínima de 2 horas ya rechazaría](0026-wizard-no-filtra-ventana-minima.md)
 
 ### Resuelta
 

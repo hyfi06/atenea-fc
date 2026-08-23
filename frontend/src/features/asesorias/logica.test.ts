@@ -149,7 +149,7 @@ describe('diaSemanaHoy', () => {
 function slot(overrides: Partial<SlotDisponibilidad>): SlotDisponibilidad {
   return {
     registro_id: 7, asesor_nombre: 'Ana', disponibilidad_id: 1,
-    fecha: '2026-08-10', hora_inicio: '10:00:00', hora_fin: '10:30:00',
+    fecha: '2026-08-10', hora_inicio: '10:00:00', hora_fin: '11:00:00',
     formato: 'virtual', ubicacion: '', liga_virtual: 'https://x', ...overrides,
   }
 }

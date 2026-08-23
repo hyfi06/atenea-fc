@@ -20,3 +20,5 @@ Si se vuelve un problema operativo recurrente, la opción más simple es un endp
 Exactamente por la vía que anticipaba la señal de revisión, con el dueño ajustado: `POST /api/asesorias/disponibilidades/{id}/resincronizar/` (acción del `DisponibilidadViewSet`, restringida al asesor dueño del registro, no a `EsMiembroSAE` — es el asesor corrigiendo su propio dato). Copia `formato`, `ubicacion` y `liga_virtual` actuales del bloque a todas las sesiones de `Disponibilidad.sesiones_futuras()` y encola `enviar_notificacion_resincronizacion` por cada alumno afectado.
 
 El modelo de snapshot **no cambió**: la propagación sigue siendo una acción explícita del asesor, no un efecto automático del `PATCH`. `hora_inicio` queda fuera a propósito — mover la hora de una sesión ya agendada es otra operación.
+
+**Pendiente:** el backend está completo y probado, pero ningún botón del SPA dispara este endpoint todavía — ver [deuda 0025](0025-resincronizar-sin-boton-en-spa.md).
