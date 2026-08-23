@@ -64,12 +64,12 @@ export function puedeGuardarNotas(
   return asesoria.estado === "realizada" && asesoria.asistio === true;
 }
 
-/** Los 28 slots de 30 minutos que cubre un día de asesorías: 07:00–20:30. */
+/** Las 14 horas en punto que cubre un día de asesorías: 07:00–20:00
+ *  (bloques de 1h, así que el último cubre hasta las 21:00). */
 export function horasDelDia(): string[] {
   const horas: string[] = [];
   for (let h = 7; h <= 20; h++) {
     horas.push(`${String(h).padStart(2, "0")}:00:00`);
-    horas.push(`${String(h).padStart(2, "0")}:30:00`);
   }
   return horas;
 }

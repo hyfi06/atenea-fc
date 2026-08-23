@@ -84,10 +84,10 @@ describe('MiHorario', () => {
     ).toBeInTheDocument()
   })
 
-  it('lista los 28 slots del día seleccionado, sin scroll horizontal', () => {
+  it('lista los 14 slots del día seleccionado, sin scroll horizontal', () => {
     montar()
 
-    expect(screen.getAllByRole('button', { name: /^Horario/ })).toHaveLength(28)
+    expect(screen.getAllByRole('button', { name: /^Horario/ })).toHaveLength(14)
   })
 
   it('un slot activo presencial muestra el salón sin prefijo ni texto de formato repetido', () => {

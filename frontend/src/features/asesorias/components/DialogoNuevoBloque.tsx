@@ -37,7 +37,7 @@ export function DialogoNuevoBloque({
     <Dialogo
       abierto={abierto}
       titulo={`Nuevo bloque — ${nombreDia} ${horaInicio.slice(0, 5)}`}
-      descripcion="Bloque recurrente de 30 minutos cada semana."
+      descripcion="Bloque recurrente de 1 hora cada semana."
       error={error}
       etiquetaSalir="Cancelar"
       onCerrar={onCerrar}

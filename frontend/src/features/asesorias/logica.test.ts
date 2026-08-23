@@ -88,12 +88,12 @@ describe('puedeGuardarNotas', () => {
 })
 
 describe('horasDelDia', () => {
-  it('produce los 28 slots de media hora de 07:00 a 20:30', () => {
+  it('produce las 14 horas en punto de 07:00 a 20:00', () => {
     const horas = horasDelDia()
-    expect(horas).toHaveLength(28)
+    expect(horas).toHaveLength(14)
     expect(horas[0]).toBe('07:00:00')
-    expect(horas[1]).toBe('07:30:00')
-    expect(horas.at(-1)).toBe('20:30:00')
+    expect(horas[1]).toBe('08:00:00')
+    expect(horas.at(-1)).toBe('20:00:00')
   })
 })
 
@@ -109,8 +109,8 @@ describe('slotsDelDia', () => {
     activa: true,
   }
 
-  it('devuelve un slot por cada media hora del día', () => {
-    expect(slotsDelDia(0, [])).toHaveLength(28)
+  it('devuelve un slot por cada hora del día', () => {
+    expect(slotsDelDia(0, [])).toHaveLength(14)
   })
 
   it('marca activo el slot con una disponibilidad activa de ese día', () => {
