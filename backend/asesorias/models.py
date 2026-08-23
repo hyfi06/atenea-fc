@@ -155,6 +155,38 @@ class Disponibilidad(models.Model):
             self.save()
         return canceladas
 
+    def resincronizar_sesiones_futuras(self):
+        """Reemplaza el snapshot de contacto de las sesiones futuras de este
+        bloque con los valores actuales. Devuelve la lista de las actualizadas.
+
+        Cierra la deuda 0005: el snapshot de `formato`/`ubicacion`/
+        `liga_virtual` que `Asesoria` congela al agendar deja de ser
+        irreparable cuando el asesor corrige un typo (una liga de Zoom mal
+        escrita, por ejemplo).
+
+        NO toca `hora_inicio`: mover la hora de una sesión ya agendada es otra
+        operación, con otras consecuencias para el alumno, y está fuera de
+        alcance. El criterio de qué sesiones alcanza es `sesiones_futuras()`,
+        el mismo que usan el endpoint de consulta y `desactivar()`.
+        """
+        from asesorias.tasks import enviar_notificacion_resincronizacion
+
+        with transaction.atomic():
+            sesiones = list(self.sesiones_futuras())
+            for asesoria in sesiones:
+                asesoria.formato = self.formato
+                asesoria.ubicacion = self.ubicacion
+                asesoria.liga_virtual = self.liga_virtual
+                asesoria.save(
+                    update_fields=["formato", "ubicacion", "liga_virtual", "actualizado_en"]
+                )
+                transaction.on_commit(
+                    lambda asesoria_id=asesoria.id: (
+                        enviar_notificacion_resincronizacion.delay(asesoria_id)
+                    )
+                )
+        return sesiones
+
     def __str__(self):
         return f"{self.registro} — {self.get_dia_semana_display()} {self.hora_inicio}"
 

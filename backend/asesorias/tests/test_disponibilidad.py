@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -243,3 +244,77 @@ class DesactivarDentroDeLaVentanaTests(SesionesFuturasTests):
         self.assertEqual(asesoria.motivo_cancelacion, "Me enfermé.")
         disponibilidad.refresh_from_db()
         self.assertFalse(disponibilidad.activa)
+
+
+class ResincronizarSesionesFuturasTests(SesionesFuturasTests):
+    """Deuda 0005: corregir un dato del bloque se propaga a las sesiones ya
+    agendadas que todavía no ocurren."""
+
+    def test_actualiza_el_snapshot_de_las_sesiones_futuras(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+
+        self.disponibilidad.liga_virtual = "https://meet.example.com/CORREGIDA"
+        self.disponibilidad.save()
+        actualizadas = self.disponibilidad.resincronizar_sesiones_futuras()
+
+        self.assertEqual(actualizadas, [futura])
+        futura.refresh_from_db()
+        self.assertEqual(futura.liga_virtual, "https://meet.example.com/CORREGIDA")
+
+    def test_propaga_tambien_formato_y_ubicacion(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+
+        self.disponibilidad.formato = "presencial"
+        self.disponibilidad.ubicacion = "Salón 25, Yelizcalli"
+        self.disponibilidad.liga_virtual = ""
+        self.disponibilidad.save()
+        self.disponibilidad.resincronizar_sesiones_futuras()
+
+        futura.refresh_from_db()
+        self.assertEqual(futura.formato, "presencial")
+        self.assertEqual(futura.ubicacion, "Salón 25, Yelizcalli")
+        self.assertEqual(futura.liga_virtual, "")
+
+    def test_no_toca_la_hora_de_inicio(self):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+        hora_original = futura.hora_inicio
+
+        self.disponibilidad.hora_inicio = datetime.time(15, 30)
+        self.disponibilidad.save()
+        self.disponibilidad.resincronizar_sesiones_futuras()
+
+        futura.refresh_from_db()
+        self.assertEqual(futura.hora_inicio, hora_original)
+
+    def test_no_toca_sesiones_pasadas_ni_canceladas(self):
+        hoy = timezone.localdate()
+        pasada = self._crear_asesoria(hoy - datetime.timedelta(days=7))
+        cancelada = self._crear_asesoria(
+            hoy + datetime.timedelta(days=14), estado="cancelada",
+        )
+
+        self.disponibilidad.liga_virtual = "https://meet.example.com/CORREGIDA"
+        self.disponibilidad.save()
+        actualizadas = self.disponibilidad.resincronizar_sesiones_futuras()
+
+        self.assertEqual(actualizadas, [])
+        pasada.refresh_from_db()
+        self.assertEqual(pasada.liga_virtual, "https://meet.example.com/x")
+        cancelada.refresh_from_db()
+        self.assertEqual(cancelada.liga_virtual, "https://meet.example.com/x")
+
+    @patch("asesorias.tasks.enviar_notificacion_resincronizacion.delay")
+    def test_encola_una_notificacion_por_sesion_afectada(self, mock_delay):
+        hoy = timezone.localdate()
+        futura = self._crear_asesoria(hoy + datetime.timedelta(days=7))
+        self._crear_asesoria(hoy - datetime.timedelta(days=7))
+
+        self.disponibilidad.liga_virtual = "https://meet.example.com/CORREGIDA"
+        self.disponibilidad.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.disponibilidad.resincronizar_sesiones_futuras()
+
+        mock_delay.assert_called_once_with(futura.id)
