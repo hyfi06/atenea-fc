@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { apiGet } from '../../api/client'
 import type { Materia, Carrera, RespuestaPaginada } from '../../api/types'
 
@@ -84,4 +84,46 @@ export function useMapaMaterias(): Map<number, Materia> {
 export function useMapaCarreras(): Map<number, Carrera> {
   const { data } = useCarreras()
   return useMemo(() => new Map((data ?? []).map((carrera) => [carrera.id, carrera])), [data])
+}
+
+export interface ParametrosMaterias {
+  /** `null` = todas las carreras. */
+  carrera?: number | null
+  /** Cadena vacía = sin búsqueda. */
+  search?: string
+  habilitada_asesorias?: boolean
+}
+
+/**
+ * `getNextPageParam` de `useMateriasInfinitas`, extraída para poder testearla
+ * sin montar React. `next === null` corta el scroll infinito.
+ */
+export function siguientePagina(
+  ultima: RespuestaPaginada<Materia>,
+  todas: RespuestaPaginada<Materia>[],
+): number | undefined {
+  return ultima.next === null ? undefined : todas.length + 1
+}
+
+/**
+ * Catálogo paginado para listar+buscar (hoy solo `DialogoAgregarMateria`).
+ *
+ * Los consumidores de lookup usan `useMaterias()`, no este hook: aquí el
+ * catálogo llega por partes y no sirve para resolver un nombre por id.
+ * `carrera` y `search` entran a la `queryKey`, así que cambiar cualquiera
+ * reinicia la paginación desde la página 1.
+ */
+export function useMateriasInfinitas(params: ParametrosMaterias) {
+  const carrera = params.carrera ?? null
+  const search = params.search ?? ''
+  const habilitadaAsesorias = params.habilitada_asesorias ?? null
+  return useInfiniteQuery({
+    queryKey: ['materias', 'infinitas', carrera, search, habilitadaAsesorias],
+    queryFn: ({ pageParam }) =>
+      apiGet<RespuestaPaginada<Materia>>(
+        construirRutaMaterias({ ...params, page: pageParam }),
+      ),
+    initialPageParam: 1,
+    getNextPageParam: siguientePagina,
+  })
 }

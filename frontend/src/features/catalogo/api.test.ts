@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { construirRutaMaterias, obtenerTodasLasMaterias } from './api'
-import type { Materia } from '../../api/types'
+import { construirRutaMaterias, obtenerTodasLasMaterias, siguientePagina } from './api'
+import type { Materia, RespuestaPaginada } from '../../api/types'
 
 const originalFetch = global.fetch
 
@@ -115,5 +115,21 @@ describe('obtenerTodasLasMaterias', () => {
       .mockResolvedValue(respuesta({ count: 0, next: null, previous: null, results: [] }))
 
     await expect(obtenerTodasLasMaterias()).resolves.toEqual([])
+  })
+})
+
+describe('siguientePagina', () => {
+  function paginaCon(next: string | null): RespuestaPaginada<Materia> {
+    return { count: 60, next, previous: null, results: [] }
+  }
+
+  it('devuelve undefined cuando next es null, para cortar el scroll infinito', () => {
+    const cargadas = [paginaCon(null)]
+    expect(siguientePagina(cargadas[0], cargadas)).toBeUndefined()
+  })
+
+  it('devuelve el número de páginas ya cargadas + 1', () => {
+    const cargadas = [paginaCon('http://x/?page=2'), paginaCon('http://x/?page=3')]
+    expect(siguientePagina(cargadas[1], cargadas)).toBe(3)
   })
 })
