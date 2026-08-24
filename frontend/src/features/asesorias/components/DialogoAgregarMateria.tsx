@@ -1,7 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Dialogo } from '../../../components/ui/Dialogo'
-import { useMaterias } from '../../catalogo/api'
+import { useCarreras, useMateriasInfinitas } from '../../catalogo/api'
+
+/** Evita una request por tecla mientras el asesor escribe. */
+const RETRASO_BUSQUEDA_MS = 300
 
 interface DialogoAgregarMateriaProps {
   abierto: boolean
@@ -18,17 +21,42 @@ export function DialogoAgregarMateria({
   onConfirmar,
   onCerrar,
 }: DialogoAgregarMateriaProps) {
-  const { data: materias = [] } = useMaterias()
   const [busqueda, setBusqueda] = useState('')
+  const [busquedaDiferida, setBusquedaDiferida] = useState('')
+  const [carrera, setCarrera] = useState<number | null>(null)
   const [seleccionada, setSeleccionada] = useState<number | null>(null)
+  const sentinelaRef = useRef<HTMLLIElement | null>(null)
 
-  const filtradas = useMemo(
-    () =>
-      materias.filter(
-        (m) => m.habilitada_asesorias && m.nombre.toLowerCase().includes(busqueda.toLowerCase()),
-      ),
-    [materias, busqueda],
-  )
+  useEffect(() => {
+    const temporizador = setTimeout(() => setBusquedaDiferida(busqueda), RETRASO_BUSQUEDA_MS)
+    return () => clearTimeout(temporizador)
+  }, [busqueda])
+
+  // Catálogo completo de carreras, no derivado de las materias cargadas: con
+  // scroll infinito el selector estaría incompleto hasta scrollear todo.
+  const { data: carreras = [] } = useCarreras()
+
+  // El filtro por texto y por carrera ya no corre en cliente: viaja al backend
+  // como `search` y `carrera`, y ambos entran a la queryKey del hook.
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useMateriasInfinitas({
+    habilitada_asesorias: true,
+    carrera,
+    search: busquedaDiferida,
+  })
+
+  const materias = useMemo(() => (data?.pages ?? []).flatMap((pagina) => pagina.results), [data])
+
+  // El sentinela es el último `<li>` del contenedor con overflow: cuando entra
+  // a la vista, se pide la página siguiente. Solo se monta si `hasNextPage`.
+  useEffect(() => {
+    const nodo = sentinelaRef.current
+    if (nodo === null || !hasNextPage) return
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas[0]?.isIntersecting === true) void fetchNextPage()
+    })
+    observador.observe(nodo)
+    return () => observador.disconnect()
+  }, [hasNextPage, fetchNextPage, materias.length])
 
   return (
     <Dialogo
@@ -48,6 +76,25 @@ export function DialogoAgregarMateria({
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
+          <label htmlFor="carrera-materia" className="text-xs text-on-surface-variant">
+            Carrera
+          </label>
+          <select
+            id="carrera-materia"
+            value={carrera ?? ''}
+            onChange={(e) => setCarrera(e.target.value === '' ? null : Number(e.target.value))}
+            className="foco-visible min-h-11 rounded-md border border-outline bg-transparent px-2 text-sm text-on-surface"
+          >
+            <option value="">Todas</option>
+            {carreras.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
           <label htmlFor="busqueda-materia" className="text-xs text-on-surface-variant">
             Buscar materia
           </label>
@@ -62,7 +109,7 @@ export function DialogoAgregarMateria({
         </div>
 
         <ul className="max-h-48 overflow-y-auto">
-          {filtradas.map((materia, indice) => (
+          {materias.map((materia, indice) => (
             <li key={materia.id} className="entrada-lista" style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
               <button
                 type="button"
@@ -78,6 +125,11 @@ export function DialogoAgregarMateria({
               </button>
             </li>
           ))}
+          {hasNextPage && (
+            <li ref={sentinelaRef} className="py-3 text-center text-xs text-on-surface-variant">
+              {isFetchingNextPage ? 'Cargando más…' : ''}
+            </li>
+          )}
         </ul>
       </div>
     </Dialogo>
