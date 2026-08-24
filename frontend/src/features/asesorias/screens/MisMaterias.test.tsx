@@ -68,6 +68,13 @@ describe('MisMaterias', () => {
     expect(fila).not.toHaveClass('truncate')
   })
 
+  it('el botón de agregar usa el mismo estilo de píldora con borde que sus vecinos', () => {
+    montar()
+
+    const boton = screen.getByRole('button', { name: '+ Agregar' })
+    expect(boton).toHaveClass('rounded-full', 'border', 'border-outline', 'text-primary')
+  })
+
   it('quitar pide confirmación con el copy de la spec y luego llama al endpoint', () => {
     const quitar = montar()
 

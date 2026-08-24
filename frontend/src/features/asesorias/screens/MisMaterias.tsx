@@ -132,7 +132,7 @@ export function MisMaterias({ soloLectura = false, materias = null, semestre = n
             setErrorAgregar(null)
             setDialogoAgregarAbierto(true)
           }}
-          className="foco-visible min-h-11 rounded-full px-2 text-sm font-medium text-primary"
+          className="foco-visible min-h-11 rounded-full border border-outline px-3 text-sm font-medium text-primary"
         >
           + Agregar
         </button>
