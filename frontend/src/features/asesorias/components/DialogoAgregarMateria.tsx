@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Dialogo } from '../../../components/ui/Dialogo'
 import { useCarreras, useMateriasInfinitas } from '../../catalogo/api'
@@ -25,7 +25,7 @@ export function DialogoAgregarMateria({
   const [busquedaDiferida, setBusquedaDiferida] = useState('')
   const [carrera, setCarrera] = useState<number | null>(null)
   const [seleccionada, setSeleccionada] = useState<number | null>(null)
-  const sentinelaRef = useRef<HTMLLIElement | null>(null)
+  const [sentinela, setSentinela] = useState<HTMLLIElement | null>(null)
 
   useEffect(() => {
     const temporizador = setTimeout(() => setBusquedaDiferida(busqueda), RETRASO_BUSQUEDA_MS)
@@ -48,15 +48,20 @@ export function DialogoAgregarMateria({
 
   // El sentinela es el último `<li>` del contenedor con overflow: cuando entra
   // a la vista, se pide la página siguiente. Solo se monta si `hasNextPage`.
+  //
+  // Ref con estado (no `useRef`) a propósito: Radix monta el contenido del
+  // diálogo en un commit posterior al primero (Portal), así que el nodo del
+  // sentinela puede no existir todavía cuando este efecto corre por primera
+  // vez. Con `useState` el nodo entra a las dependencias del efecto, así que
+  // en cuanto React lo asigna (en cualquier commit) el efecto se re-ejecuta.
   useEffect(() => {
-    const nodo = sentinelaRef.current
-    if (nodo === null || !hasNextPage) return
+    if (sentinela === null || !hasNextPage) return
     const observador = new IntersectionObserver((entradas) => {
       if (entradas[0]?.isIntersecting === true) void fetchNextPage()
     })
-    observador.observe(nodo)
+    observador.observe(sentinela)
     return () => observador.disconnect()
-  }, [hasNextPage, fetchNextPage, materias.length])
+  }, [sentinela, hasNextPage, fetchNextPage])
 
   return (
     <Dialogo
@@ -126,7 +131,7 @@ export function DialogoAgregarMateria({
             </li>
           ))}
           {hasNextPage && (
-            <li ref={sentinelaRef} className="py-3 text-center text-xs text-on-surface-variant">
+            <li ref={setSentinela} className="py-3 text-center text-xs text-on-surface-variant">
               {isFetchingNextPage ? 'Cargando más…' : ''}
             </li>
           )}
