@@ -63,6 +63,18 @@ export interface Materia {
   habilitada_asesorias: boolean
 }
 
+/**
+ * Envelope de `PageNumberPagination` de DRF. Hoy solo lo usa el catálogo de
+ * materias (`materias/pagination.py`, 50 por página); el resto de los
+ * listados del proyecto sigue devolviendo array plano (deuda 0006).
+ */
+export interface RespuestaPaginada<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
 export interface Carrera {
   id: number
   clave: number
