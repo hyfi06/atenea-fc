@@ -43,7 +43,7 @@ export function construirRutaMaterias(params: ParametrosRutaMaterias = {}): stri
  *
  * Existe para que `useMaterias()` siga cumpliendo el contrato que asumen sus
  * consumidores de lookup (`useMapaMaterias`), que necesitan el catálogo entero
- * en memoria. Cuesta N requests secuenciales en vez de 1 — deuda 0022.
+ * en memoria. Cuesta N requests secuenciales en vez de 1 — deuda 0027.
  */
 export async function obtenerTodasLasMaterias(): Promise<Materia[]> {
   const materias: Materia[] = []
