@@ -1,11 +1,19 @@
+from rest_framework.filters import SearchFilter
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import Materia
+from .pagination import PaginacionMaterias
 from .serializers import MateriaSerializer
 
 
 class MateriaViewSet(ReadOnlyModelViewSet):
     serializer_class = MateriaSerializer
+    pagination_class = PaginacionMaterias
+    # `?search=` de DRF: icontains sobre cada campo, unidos por OR. Se aplica
+    # después de `get_queryset`, así que se combina con `carrera` y
+    # `habilitada_asesorias` sin trabajo extra.
+    filter_backends = [SearchFilter]
+    search_fields = ["nombre", "clave"]
 
     def get_queryset(self):
         queryset = Materia.objects.select_related("carrera").all()

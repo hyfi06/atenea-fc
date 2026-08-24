@@ -133,15 +133,19 @@ Solo lectura (`ReadOnlyModelViewSet`), sin filtros ni paginación.
 
 ## `materias`
 
-Solo lectura, sin paginación. Filtros por query param (comparación manual en `get_queryset`, no `django-filter`):
+Solo lectura, **paginado**: `PageNumberPagination` con `page_size = 50`, declarado en `materias/pagination.py` como `pagination_class` propia de este viewset (no hay `DEFAULT_PAGINATION_CLASS` global — el resto de los listados sigue devolviendo array plano, deuda [0006](../technical-debt/0006-sin-paginacion-listados.md)). Una página fuera de rango responde `404`.
 
-- `?carrera=<id>`
+Filtros por query param:
+
+- `?page=<n>` — 1-indexado; se omite para la primera página.
+- `?carrera=<id>` — comparación manual en `get_queryset`, no `django-filter`.
 - `?habilitada_asesorias=<bool>` — solo `"1"`/`"true"` (case-insensitive) cuentan como verdadero; cualquier otro valor, incluido `"yes"`, se trata como falso.
+- `?search=<texto>` — `SearchFilter` de DRF sobre `search_fields = ["nombre", "clave"]`: coincidencia parcial insensible a mayúsculas, OR entre los dos campos. Se combina con `carrera` y `habilitada_asesorias`.
 
 | Método | Ruta | Response |
 |---|---|---|
-| `GET` | `/api/materias/materias/` | `[{id, clave, nombre, carrera, nivel, plan, habilitada_asesorias}]` |
-| `GET` | `/api/materias/materias/{id}/` | idem, un objeto |
+| `GET` | `/api/materias/materias/` | `{count, next, previous, results: [{id, clave, nombre, carrera, nivel, plan, habilitada_asesorias}]}` |
+| `GET` | `/api/materias/materias/{id}/` | `{id, clave, nombre, carrera, nivel, plan, habilitada_asesorias}` — un objeto, **sin** envelope |
 
 `carrera` aquí es un id plano (a diferencia de `carreras.area`, que va anidado). No hay endpoint para `OfertaMateria` — se carga por management command, nunca vía API.
 

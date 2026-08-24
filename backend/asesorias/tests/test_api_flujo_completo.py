@@ -56,7 +56,7 @@ class FlujoCompletoAsesoriaApiTests(APITestCase):
         self.client.force_authenticate(user=self.asesor_user)
         response = self.client.get(f"/api/materias/materias/?carrera={self.carrera.id}")
         self.assertEqual(response.status_code, 200)
-        materia_id = response.data[0]["id"]
+        materia_id = response.data["results"][0]["id"]
 
         # 2. Asesor crea su registro del semestre.
         response = self.client.post("/api/asesorias/registros/", {"semestre": self.semestre})
