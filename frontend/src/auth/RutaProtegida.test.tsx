@@ -31,7 +31,7 @@ function montar() {
             }
           />
           <Route path="/home" element={<p>pantalla home</p>} />
-          <Route path="/login" element={<p>pantalla login</p>} />
+          <Route path="/" element={<p>pantalla landing</p>} />
         </Routes>
       </MemoryRouter>
     </Proveedores>,
@@ -60,12 +60,12 @@ describe('RutaDeAsesor', () => {
     expect(screen.queryByText('panel del asesor')).not.toBeInTheDocument()
   })
 
-  it('manda a Login a quien no tiene sesión', async () => {
+  it('manda a la landing a quien no tiene sesión', async () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
 
     montar()
 
-    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
   })
 
   it('deja pasar al asesor aunque su perfil esté inactivo', async () => {
@@ -96,7 +96,7 @@ function montarAsesorias() {
             }
           />
           <Route path="/home" element={<p>pantalla home</p>} />
-          <Route path="/login" element={<p>pantalla login</p>} />
+          <Route path="/" element={<p>pantalla landing</p>} />
         </Routes>
       </MemoryRouter>
     </Proveedores>,
@@ -127,10 +127,10 @@ describe('RutaDeAsesorias', () => {
     expect(screen.queryByText('vista de asesorías')).not.toBeInTheDocument()
   })
 
-  it('manda a Login a quien no tiene sesión', async () => {
+  it('manda a la landing a quien no tiene sesión', async () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarAsesorias()
-    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
   })
 
   it('RutaDeAsesorias deja pasar al académico sin perfil de asesor', async () => {
@@ -156,7 +156,7 @@ function montarSAE() {
             }
           />
           <Route path="/home" element={<p>pantalla home</p>} />
-          <Route path="/login" element={<p>pantalla login</p>} />
+          <Route path="/" element={<p>pantalla landing</p>} />
         </Routes>
       </MemoryRouter>
     </Proveedores>,
@@ -181,10 +181,10 @@ describe('RutaDeSAE', () => {
     expect(screen.queryByText('área SAE')).not.toBeInTheDocument()
   })
 
-  it('manda a Login a quien no tiene sesión', async () => {
+  it('manda a la landing a quien no tiene sesión', async () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarSAE()
-    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
   })
 })
 
@@ -201,7 +201,7 @@ function montarConSesion() {
               </RutaConSesion>
             }
           />
-          <Route path="/login" element={<p>pantalla login</p>} />
+          <Route path="/" element={<p>pantalla landing</p>} />
         </Routes>
       </MemoryRouter>
     </Proveedores>,
@@ -221,13 +221,13 @@ describe('RutaConSesion', () => {
     vi.spyOn(client, 'apiGet').mockResolvedValue(usuarioDePrueba({ roles: [] }))
     montarConSesion()
     expect(await screen.findByText('pantalla home')).toBeInTheDocument()
-    expect(screen.queryByText('pantalla login')).not.toBeInTheDocument()
+    expect(screen.queryByText('pantalla landing')).not.toBeInTheDocument()
   })
 
-  it('manda a Login a quien no tiene sesión', async () => {
+  it('manda a la landing a quien no tiene sesión', async () => {
     vi.spyOn(client, 'apiGet').mockRejectedValue(new client.ApiError(401, { detail: 'no autenticado' }))
     montarConSesion()
-    expect(await screen.findByText('pantalla login')).toBeInTheDocument()
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
     expect(screen.queryByText('pantalla home')).not.toBeInTheDocument()
   })
 
