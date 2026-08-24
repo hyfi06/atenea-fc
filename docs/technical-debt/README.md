@@ -27,6 +27,7 @@ El formato estándar de cada archivo está documentado en [`CLAUDE.md`](../../CL
 - [0024 — Las tablas del blacklist de tokens crecen sin purga](0024-blacklist-sin-purga-de-tokens-vencidos.md)
 - [0025 — El endpoint de resincronización de `Disponibilidad` no tiene botón en el SPA](0025-resincronizar-sin-boton-en-spa.md)
 - [0026 — El wizard de agendado ofrece bloques que la ventana mínima de 2 horas ya rechazaría](0026-wizard-no-filtra-ventana-minima.md)
+- [0027 — `useMaterias()` recorre todas las páginas: N requests por carga del catálogo](0027-useMaterias-recorre-todas-las-paginas.md)
 
 ### Resuelta
 
