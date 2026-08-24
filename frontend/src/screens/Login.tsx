@@ -54,13 +54,10 @@ export function Login() {
     <main className="flex min-h-svh flex-col px-6 py-6">
       <button
         type="button"
-        onClick={() => navigate(-1)}
-        aria-label="Volver"
-        className={`mb-8 flex h-9 w-9 items-center justify-center rounded-full text-on-background ${FOCO_VISIBLE}`}
+        onClick={() => navigate('/')}
+        className="foco-visible mb-8 w-fit min-h-11 text-sm text-primary"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
-          <path d="M15 19 L8 12 L15 5" />
-        </svg>
+        ← Inicio
       </button>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">

@@ -33,6 +33,7 @@ function montar({
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<p>pantalla home</p>} />
         <Route path="/forgot-password" element={<p>pantalla recuperar</p>} />
+        <Route path="/" element={<p>pantalla landing</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -119,5 +120,13 @@ describe('Login', () => {
     fireEvent.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
 
     expect(await screen.findByText('pantalla recuperar')).toBeInTheDocument()
+  })
+
+  it('el botón de regreso navega a la landing', async () => {
+    montar()
+
+    fireEvent.click(screen.getByRole('button', { name: '← Inicio' }))
+
+    expect(await screen.findByText('pantalla landing')).toBeInTheDocument()
   })
 })
