@@ -72,6 +72,23 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* La app sólo tiene tema oscuro (sin variante clara). Sin esto, Chromium en
+     Linux puede pintar el popup nativo de <select> con texto de la paleta
+     clara sobre fondo oscuro del tema GTK del SO (o viceversa), casi
+     ilegible — bug reportado con Chrome/Opera/Edge + Linux Mint. Fix
+     best-effort: Chromium no da control total del popup nativo. */
+  color-scheme: dark;
+}
+
+select {
+  color-scheme: dark;
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface);
+}
+
+select option {
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface);
 }
 
 body {
