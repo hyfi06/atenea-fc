@@ -123,6 +123,54 @@ class BuscarDisponibilidadApiTests(APITestCase):
         registros = {r["registro_id"] for r in response.data}
         self.assertEqual(registros, {self.registro.id})
 
+    def test_no_devuelve_bloque_de_hoy_a_menos_de_dos_horas(self):
+        otro_user = User.objects.create_user(email="asesor-pronto@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=otro_user, numero_trabajador="88888")
+        otro_asesor = PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
+        otro_registro = RegistroAsesor.objects.create(asesor=otro_asesor, semestre=semestre_vigente())
+        otro_registro.agregar_materia(self.materia)
+
+        # Redondea a la hora en punto (rejilla de Disponibilidad): la
+        # separación real contra "ahora" queda entre 30 y 90 min, siempre
+        # dentro de la ventana mínima de 2h. Mismo criterio que
+        # `_bloque_que_arranca_en_menos_de_dos_horas` en test_disponibilidad.py.
+        pronto = timezone.localtime() + datetime.timedelta(minutes=90)
+        Disponibilidad.objects.create(
+            registro=otro_registro, dia_semana=pronto.weekday(), hora_inicio=datetime.time(pronto.hour, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/pronto",
+        )
+
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(
+            f"/api/asesorias/disponibilidad/buscar/?materia={self.materia.id}"
+        )
+
+        resultados_de_ese_dia = [r for r in response.data if r["fecha"] == str(pronto.date())]
+        self.assertEqual(resultados_de_ese_dia, [])
+
+    def test_si_devuelve_bloque_de_hoy_a_mas_de_dos_horas(self):
+        otro_user = User.objects.create_user(email="asesor-lejano@ciencias.unam.mx", password="x")
+        PerfilAcademico.objects.create(user=otro_user, numero_trabajador="77777")
+        otro_asesor = PerfilAsesorAcademico.objects.create(user=otro_user, area=self.area)
+        otro_registro = RegistroAsesor.objects.create(asesor=otro_asesor, semestre=semestre_vigente())
+        otro_registro.agregar_materia(self.materia)
+
+        # Redondeado a la hora en punto, la separación real contra "ahora"
+        # queda entre 2.5 y 3.5h, siempre fuera de la ventana mínima de 2h.
+        lejano = timezone.localtime() + datetime.timedelta(hours=3)
+        Disponibilidad.objects.create(
+            registro=otro_registro, dia_semana=lejano.weekday(), hora_inicio=datetime.time(lejano.hour, 0),
+            formato="virtual", liga_virtual="https://meet.example.com/lejano",
+        )
+
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.get(
+            f"/api/asesorias/disponibilidad/buscar/?materia={self.materia.id}"
+        )
+
+        resultados_de_ese_dia = [r for r in response.data if r["fecha"] == str(lejano.date())]
+        self.assertEqual(len(resultados_de_ese_dia), 1)
+
     def test_miembro_sae_puede_usar_la_busqueda(self):
         from accounts.models import PerfilSAE
 

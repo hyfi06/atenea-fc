@@ -15,7 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 from materias.models import Materia
 from accounts.models import PerfilAlumno
 
-from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor
+from .models import Asesoria, Disponibilidad, PerfilAsesorAcademico, RegistroAsesor, VENTANA_MINIMA_ANTICIPACION
 from .permissions import (
     EsAcademico, EsAlumno, EsAlumnoOAsesorAcademico, EsAlumnoOMiembroSAE, EsAsesorAcademico, EsAsesorAprobado, EsMiembroSAE, EsDuenoDelRegistro, EsDuenoDeLaAsesoria,
 )
@@ -146,6 +146,7 @@ class BuscarDisponibilidadView(APIView):
         disponibilidades = list(disponibilidades.distinct())
 
         inicio, fin = ventana_agendable()
+        ahora = timezone.now()
         ocupados = set(
             Asesoria.objects.filter(fecha__range=(inicio, fin))
             .exclude(estado="cancelada")
@@ -160,6 +161,13 @@ class BuscarDisponibilidadView(APIView):
                 if disp.dia_semana != dia_semana:
                     continue
                 if (disp.id, fecha_cursor) in ocupados:
+                    continue
+                # Mismo predicado que `Asesoria.clean()` (deuda 0003): lo que
+                # se ofrece como agendable debe ser siempre agendable.
+                momento_inicio = timezone.make_aware(
+                    datetime.datetime.combine(fecha_cursor, disp.hora_inicio)
+                )
+                if ahora > momento_inicio - VENTANA_MINIMA_ANTICIPACION:
                     continue
                 resultados.append({
                     "registro_id": disp.registro_id,
