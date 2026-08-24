@@ -73,10 +73,11 @@ describe('MiHorario', () => {
     vi.restoreAllMocks()
   })
 
-  it('muestra una pestaña por día y la instrucción fija arriba', () => {
+  it('muestra una pestaña por día (sin domingo) y la instrucción fija arriba', () => {
     montar()
 
-    expect(screen.getAllByRole('tab')).toHaveLength(7)
+    expect(screen.getAllByRole('tab')).toHaveLength(6)
+    expect(screen.queryByRole('tab', { name: 'Dom' })).not.toBeInTheDocument()
     expect(
       screen.getByText(
         'Cada celda es un horario disponible: toca para activarlo o editarlo. Para cambiar de día, usa las pestañas. Los cambios se autoguardan.',
@@ -171,10 +172,11 @@ describe('MiHorario', () => {
     )
   }
 
-  it('en solo lectura pinta los bloques recibidos y conserva los 7 días', () => {
+  it('en solo lectura pinta los bloques recibidos y tampoco muestra domingo', () => {
     montarSoloLectura([BLOQUE_LUNES])
 
-    expect(screen.getAllByRole('tab')).toHaveLength(7)
+    expect(screen.getAllByRole('tab')).toHaveLength(6)
+    expect(screen.queryByRole('tab', { name: 'Dom' })).not.toBeInTheDocument()
     expect(screen.getByText('Salón O-221')).toBeInTheDocument()
   })
 

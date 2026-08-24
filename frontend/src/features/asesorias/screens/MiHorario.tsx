@@ -24,8 +24,8 @@ import { DialogoNuevoBloque } from '../components/DialogoNuevoBloque'
 import { SinRegistroAsesor } from '../components/SinRegistroAsesor'
 import { diaSemanaHoy, slotsDelDia } from '../logica'
 
-const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
 const INSTRUCCION =
   'Cada celda es un horario disponible: toca para activarlo o editarlo. Para cambiar de día, usa las pestañas. Los cambios se autoguardan.'
