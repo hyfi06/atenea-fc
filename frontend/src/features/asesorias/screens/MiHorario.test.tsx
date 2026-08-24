@@ -219,3 +219,22 @@ describe('MiHorario', () => {
     expect(screen.getByRole('heading', { name: 'Mi horario' })).toBeInTheDocument()
   })
 })
+
+describe('MiHorario en domingo', () => {
+  beforeEach(() => {
+    // Domingo: diaSemanaHoy() devuelve 6, fuera del rango 0-5 de DIAS_CORTOS.
+    vi.setSystemTime(new Date('2026-08-02T10:00:00'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('cae en la pestaña Sábado en vez de dejar la rejilla en blanco', () => {
+    montar()
+
+    expect(screen.getByRole('tab', { name: 'Sáb' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByRole('button', { name: /^Horario/ })).toHaveLength(14)
+  })
+})

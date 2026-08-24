@@ -202,8 +202,12 @@ export function MiHorario({ soloLectura = false, disponibilidades = null }: MiHo
     )
   }
 
+  // diaSemanaHoy() devuelve 6 en domingo, pero DIAS_CORTOS/DIAS solo cubren
+  // lunes-sábado (0-5): se ajusta para no dejar el Tabs sin pestaña activa.
+  const diaInicial = Math.min(diaSemanaHoy(), DIAS_CORTOS.length - 1)
+
   const rejilla = (
-    <Tabs defaultValue={String(diaSemanaHoy())}>
+    <Tabs defaultValue={String(diaInicial)}>
       <TabsList className="gap-2 overflow-x-auto">
         {DIAS_CORTOS.map((dia, indice) => (
           <TabsTrigger key={dia} value={String(indice)}>
