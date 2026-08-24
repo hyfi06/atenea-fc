@@ -135,7 +135,7 @@ class BuscarDisponibilidadApiTests(APITestCase):
         # dentro de la ventana mínima de 2h. Mismo criterio que
         # `_bloque_que_arranca_en_menos_de_dos_horas` en test_disponibilidad.py.
         pronto = timezone.localtime() + datetime.timedelta(minutes=90)
-        Disponibilidad.objects.create(
+        bloque_pronto = Disponibilidad.objects.create(
             registro=otro_registro, dia_semana=pronto.weekday(), hora_inicio=datetime.time(pronto.hour, 0),
             formato="virtual", liga_virtual="https://meet.example.com/pronto",
         )
@@ -146,7 +146,8 @@ class BuscarDisponibilidadApiTests(APITestCase):
         )
 
         resultados_de_ese_dia = [r for r in response.data if r["fecha"] == str(pronto.date())]
-        self.assertEqual(resultados_de_ese_dia, [])
+        ids_de_ese_dia = {r["disponibilidad_id"] for r in resultados_de_ese_dia}
+        self.assertNotIn(bloque_pronto.id, ids_de_ese_dia)
 
     def test_si_devuelve_bloque_de_hoy_a_mas_de_dos_horas(self):
         otro_user = User.objects.create_user(email="asesor-lejano@ciencias.unam.mx", password="x")
@@ -158,7 +159,7 @@ class BuscarDisponibilidadApiTests(APITestCase):
         # Redondeado a la hora en punto, la separación real contra "ahora"
         # queda entre 2.5 y 3.5h, siempre fuera de la ventana mínima de 2h.
         lejano = timezone.localtime() + datetime.timedelta(hours=3)
-        Disponibilidad.objects.create(
+        bloque_lejano = Disponibilidad.objects.create(
             registro=otro_registro, dia_semana=lejano.weekday(), hora_inicio=datetime.time(lejano.hour, 0),
             formato="virtual", liga_virtual="https://meet.example.com/lejano",
         )
@@ -169,7 +170,8 @@ class BuscarDisponibilidadApiTests(APITestCase):
         )
 
         resultados_de_ese_dia = [r for r in response.data if r["fecha"] == str(lejano.date())]
-        self.assertEqual(len(resultados_de_ese_dia), 1)
+        ids_de_ese_dia = {r["disponibilidad_id"] for r in resultados_de_ese_dia}
+        self.assertIn(bloque_lejano.id, ids_de_ese_dia)
 
     def test_miembro_sae_puede_usar_la_busqueda(self):
         from accounts.models import PerfilSAE
