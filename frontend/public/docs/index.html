@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de uso — Atenea</title>
+<style>
+:root {
+  --color-primary: #a6daf2;
+  --color-on-primary: #0d4159;
+  --color-primary-container: #136286;
+  --color-on-primary-container: #d2edf9;
+  --color-secondary: #bfd3d9;
+  --color-on-secondary: #263a40;
+  --color-secondary-container: #395760;
+  --color-on-secondary-container: #dfe9ec;
+  --color-tertiary: #e3b5c5;
+  --color-on-tertiary: #4a1c2c;
+  --color-tertiary-container: #6f2a43;
+  --color-on-tertiary-container: #f1dae2;
+  --color-error: #f0aea8;
+  --color-on-error: #57150f;
+  --color-error-container: #822017;
+  --color-on-error-container: #f7d7d4;
+  --color-background: #171a1c;
+  --color-on-background: #e3e6e8;
+  --color-surface-variant: #425157;
+  --color-on-surface-variant: #c5cfd3;
+  --color-outline: #8b9ea7;
+  --color-outline-variant: #425157;
+  --color-surface-container-low: #191d1f;
+  --color-surface-container: #23292b;
+  --color-surface-container-high: #2d3436;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0e1011;
+  color: var(--color-on-background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+a { color: inherit; }
+.guia-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+.guia-header .marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+}
+.guia-header svg { width: 24px; height: 24px; }
+main.contenido {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 24px 64px;
+}
+h1.titulo-guia { font-size: 22px; font-weight: 600; margin: 12px 0 4px; }
+p.intro {
+  color: var(--color-on-surface-variant);
+  font-size: 14px;
+  max-width: 60ch;
+  margin: 0 0 32px;
+}
+.tarjetas { display: grid; gap: 12px; }
+.tarjeta {
+  display: block;
+  background: var(--color-surface-container);
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: var(--color-on-background);
+}
+.tarjeta h2 { font-size: 15px; margin: 0 0 4px; color: var(--color-primary); }
+.tarjeta p { font-size: 13px; margin: 0; color: var(--color-on-surface-variant); }
+</style>
+</head>
+<body>
+<header class="guia-header">
+  <a class="marca" href="/">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Atenea">
+      <circle cx="32" cy="32" r="27"></circle>
+      <path d="M20 32 C20 19 25 14 32 14 C39 14 44 19 44 32"></path>
+      <path d="M20 32 L18 43 L24 46 L26 35"></path>
+      <path d="M44 32 L46 43 L40 46 L38 35"></path>
+      <path d="M32 22 L32 44"></path>
+      <path d="M22 14 Q32 3 42 14"></path>
+    </svg>
+    <span>Atenea</span>
+  </a>
+</header>
+<main class="contenido">
+  <h1 class="titulo-guia">Guía de uso</h1>
+  <p class="intro">Guías paso a paso para usar los servicios de la SAE en Atenea, con ejemplos de pantalla.</p>
+  <div class="tarjetas">
+    <a class="tarjeta" href="academico/index.html">
+      <h2>Académico</h2>
+      <p>Regístrate como asesor, gestiona tus materias, tu horario y tus asesorías.</p>
+    </a>
+  </div>
+</main>
+</body>
+</html>
