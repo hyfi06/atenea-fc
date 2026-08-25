@@ -206,6 +206,10 @@ class Asesoria(models.Model):
     estado = models.CharField(max_length=10, choices=ESTADOS_ASESORIA, default="agendada")
     asistio = models.BooleanField(null=True, default=None)
     notas = models.TextField(blank=True)
+    # Lo que el alumno quiere tratar (dudas, temas), capturado al agendar.
+    # max_length no lo aplica la base de datos (TextField), pero DRF lo lee
+    # del modelo y genera el validador de longitud en el serializer.
+    motivo = models.TextField(blank=True, max_length=500)
 
     cancelado_por = models.ForeignKey(
         "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"

@@ -698,6 +698,59 @@ class AgendarConHistorialTests(APITestCase):
         self.assertIn("carrera", response.data)
 
 
+class MotivoAsesoriaApiTests(AsesoriaApiTestsBase):
+    """El alumno puede indicar el motivo al agendar (dudas o temas a tratar);
+    se guarda saneado de HTML y es visible para alumno, asesor y SAE."""
+
+    def test_alumno_agenda_con_motivo(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes), "motivo": "Tengo dudas de derivadas.",
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["motivo"], "Tengo dudas de derivadas.")
+
+    def test_motivo_es_opcional(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes),
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["motivo"], "")
+
+    def test_motivo_se_sanitiza_de_html(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes),
+            "motivo": "<script>alert(1)</script>Dudas de límites",
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["motivo"], "alert(1)Dudas de límites")
+
+    def test_motivo_mayor_a_500_caracteres_devuelve_400(self):
+        self.client.force_authenticate(user=self.alumno_user)
+        response = self.client.post("/api/asesorias/asesorias/", {
+            "disponibilidad": self.disponibilidad.id, "materia": self.materia.id,
+            "fecha": str(self.proximo_lunes), "motivo": "a" * 501,
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("motivo", response.data)
+
+    def test_asesor_ve_el_motivo_del_alumno(self):
+        Asesoria.objects.create(
+            alumno=self.alumno, disponibilidad=self.disponibilidad, materia=self.materia,
+            carrera=self.carrera, fecha=self.proximo_lunes, hora_inicio=self.disponibilidad.hora_inicio,
+            formato=self.disponibilidad.formato, liga_virtual=self.disponibilidad.liga_virtual,
+            motivo="Dudas de integrales.",
+        )
+        self.client.force_authenticate(user=self.asesor_user)
+        response = self.client.get("/api/asesorias/asesorias/")
+        self.assertEqual(response.data[0]["motivo"], "Dudas de integrales.")
+
+
 class AgendarDentroDeLaVentanaApiTests(AsesoriaApiTestsBase):
     """Deuda 0003: el POST de agendar devuelve 400 dentro de la ventana."""
 

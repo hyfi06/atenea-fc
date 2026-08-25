@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.html import strip_tags
 from rest_framework import serializers
 
 from academico.servicios import registro_asesores_abierto, semestre_vigente
@@ -122,7 +123,7 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         fields = [
             "id", "alumno", "alumno_nombre", "asesor_nombre", "disponibilidad", "materia",
             "carrera", "fecha", "hora_inicio", "formato", "ubicacion", "liga_virtual",
-            "estado", "asistio", "notas", "motivo_cancelacion", "cancelado_por",
+            "estado", "asistio", "notas", "motivo", "motivo_cancelacion", "cancelado_por",
             "cancelado_por_rol", "creado_en",
         ]
         read_only_fields = [
@@ -151,6 +152,12 @@ class AsesoriaSerializer(serializers.ModelSerializer):
         if obj.cancelado_por_id == obj.disponibilidad.registro.asesor.user_id:
             return "asesor"
         return "otro"
+
+    def validate_motivo(self, value):
+        # Saneado defensivo: React ya escapa lo que renderiza como texto, pero
+        # esto cierra la puerta a que HTML/script sobreviva si algo más
+        # adelante (admin, un export) lo vuelca sin escapar.
+        return strip_tags(value).strip()
 
     def validate(self, attrs):
         disponibilidad = attrs["disponibilidad"]

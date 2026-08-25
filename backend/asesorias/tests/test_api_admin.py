@@ -123,6 +123,14 @@ class AdminAsesoriasApiTests(APITestCase):
         fila = next(a for a in response.data if a["id"] == self.pasada_b.id)
         self.assertEqual(fila["notas"], "Repasar límites.")
 
+    def test_incluye_motivo(self):
+        self.futura_a.motivo = "Dudas con series."
+        self.futura_a.save(update_fields=["motivo"])
+        self.client.force_authenticate(user=self.sae_user)
+        response = self.client.get("/api/asesorias/admin/asesorias/")
+        fila = next(a for a in response.data if a["id"] == self.futura_a.id)
+        self.assertEqual(fila["motivo"], "Dudas con series.")
+
     def test_filtra_por_asesor(self):
         self.client.force_authenticate(user=self.sae_user)
         response = self.client.get(f"/api/asesorias/admin/asesorias/?asesor={self.asesor_a.id}")
