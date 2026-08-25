@@ -18,6 +18,11 @@ frontend/public/docs/
     02-mis-materias.html
     03-mi-horario.html
     04-tus-asesorias.html
+  alumno/
+    index.html            # portada de la guía de ese rol
+    01-agendar-asesoria.html
+    02-tus-asesorias.html
+    03-cancelar-asesoria.html
 ```
 
 Convención de nombres de sección: `NN-nombre-seccion.html`, numeradas en el
