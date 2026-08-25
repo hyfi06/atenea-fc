@@ -157,6 +157,7 @@ p.intro {
   border: none;
   font-family: inherit;
 }
+.boton-app.primario { background: var(--color-primary); color: var(--color-on-primary); }
 .boton-app.secundario { background: transparent; border: 1px solid var(--color-outline); color: var(--color-primary); }
 .boton-app.peligro { background: var(--color-error); color: var(--color-on-error); }
 .boton-app.bloque { display: block; width: 100%; }
@@ -210,7 +211,7 @@ p.intro {
   <p class="intro">Aquí defines en qué días y horas puedes atender asesorías, y si son virtuales o presenciales. Los alumnos solo pueden agendar en los bloques que actives.</p>
 
   <section class="paso">
-    <div class="telefono">
+    <div class="telefono" aria-hidden="true" inert>
       <div class="pantalla">
         <div class="isla"></div>
         <div class="barra-estado"><span>9:41</span><span>●●● 📶 🔋</span></div>
@@ -234,12 +235,12 @@ p.intro {
     <div class="nota">
       <span class="numero">1</span>
       <h2>Revisa tu semana</h2>
-      <p>Cambia de día con las pestañas de arriba. Cada fila es una hora: verde/activo significa que un alumno puede agendar ahí.</p>
+      <p>Cambia de día con las pestañas de arriba. Cada fila es una hora: el chip <strong>Activo</strong> significa que un alumno puede agendar ahí.</p>
     </div>
   </section>
 
   <section class="paso">
-    <div class="telefono">
+    <div class="telefono" aria-hidden="true" inert>
       <div class="pantalla">
         <div class="isla"></div>
         <div class="barra-estado"><span>9:41</span><span>●●● 📶 🔋</span></div>
@@ -257,7 +258,7 @@ p.intro {
                 <label>Liga de la sesión</label>
                 <input type="text" placeholder="https://…">
               </div>
-              <button class="boton-app secundario bloque" style="background:var(--color-primary);color:var(--color-on-primary);border:none;">Guardar</button>
+              <button class="boton-app primario bloque">Guardar</button>
             </div>
           </div>
         </div>
@@ -271,7 +272,7 @@ p.intro {
   </section>
 
   <section class="paso">
-    <div class="telefono">
+    <div class="telefono" aria-hidden="true" inert>
       <div class="pantalla">
         <div class="isla"></div>
         <div class="barra-estado"><span>9:41</span><span>●●● 📶 🔋</span></div>

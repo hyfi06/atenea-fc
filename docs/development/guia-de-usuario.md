@@ -246,6 +246,8 @@ p.intro {
   font-size: 12px;
   font-weight: 600;
   text-align: center;
+  border: none;
+  font-family: inherit;
 }
 .boton-app.primario { background: var(--color-primary); color: var(--color-on-primary); }
 .boton-app.secundario { background: transparent; border: 1px solid var(--color-outline); color: var(--color-primary); }
@@ -281,7 +283,7 @@ p.intro {
 .tab-app.activa { background: var(--color-primary-container); color: var(--color-on-primary-container); font-weight: 600; }
 
 .campo-app label { display: block; font-size: 10px; color: var(--color-on-surface-variant); margin-bottom: 4px; }
-.campo-app select, .campo-app textarea {
+.campo-app select, .campo-app input, .campo-app textarea {
   width: 100%;
   background: transparent;
   border: 1px solid var(--color-outline);
@@ -290,6 +292,7 @@ p.intro {
   font-size: 12px;
   padding: 6px 8px;
   font-family: inherit;
+  resize: none;
 }
 
 .overlay-app { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: flex-end; }
@@ -337,7 +340,7 @@ arriba) y el teléfono (a la derecha o abajo, según el ancho disponible):
 
 ```html
 <section class="paso">
-  <div class="telefono">
+  <div class="telefono" aria-hidden="true" inert>
     <div class="pantalla">
       <div class="isla"></div>
       <div class="barra-estado"><span>9:41</span><span>●●● 📶 🔋</span></div>
