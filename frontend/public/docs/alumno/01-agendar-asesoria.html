@@ -176,7 +176,7 @@ p.intro {
 .tab-app.activa { background: var(--color-primary-container); color: var(--color-on-primary-container); font-weight: 600; }
 .campo-app { margin-bottom: 10px; }
 .campo-app label { display: block; font-size: 10px; color: var(--color-on-surface-variant); margin-bottom: 4px; }
-.campo-app select, .campo-app input {
+.campo-app select, .campo-app input, .campo-app textarea {
   width: 100%;
   background: transparent;
   border: 1px solid var(--color-outline);
@@ -185,6 +185,7 @@ p.intro {
   font-size: 12px;
   padding: 6px 8px;
   font-family: inherit;
+  resize: none;
 }
 .card-app { background: var(--color-surface-container); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
 .card-app.bajo { background: var(--color-surface-container-low); }
@@ -350,6 +351,10 @@ p.intro {
             <label>Carrera</label>
             <select><option>Actuaría</option></select>
           </div>
+          <div class="campo-app">
+            <label>Motivo (opcional)</label>
+            <textarea rows="2" placeholder="¿Qué tema o duda quieres tratar?"></textarea>
+          </div>
           <button class="boton-app primario bloque">Continuar</button>
           <div class="overlay-app">
             <div class="hoja-app">
@@ -367,7 +372,7 @@ p.intro {
     <div class="nota">
       <span class="numero">6</span>
       <h2>Confirma tu asesoría</h2>
-      <p>Revisa el resumen, elige tu carrera si tienes más de una registrada, y toca <strong>Continuar</strong>. Confirma en el diálogo con <strong>Agendar</strong>.</p>
+      <p>Revisa el resumen, elige tu carrera si tienes más de una registrada y, si quieres, escribe en <strong>Motivo</strong> el tema o la duda que quieres tratar. Es opcional, y le sirve al asesor para prepararse. Toca <strong>Continuar</strong>. Confirma en el diálogo con <strong>Agendar</strong>.</p>
       <p>Si alguien más toma ese horario antes que tú, verás un aviso para elegir otro.</p>
     </div>
   </section>
