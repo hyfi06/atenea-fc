@@ -70,10 +70,17 @@ describe('Home', () => {
     expect(screen.queryByRole('button', { name: 'Asesorías · SAE' })).not.toBeInTheDocument()
   })
 
-  it('muestra una leyenda cuando ningún servicio aplica', () => {
+  it('sin roles, solo se ve la Guía de uso', () => {
     montar()
-    expect(screen.getByText('Aún no contamos con servicios para ti.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Guía de uso' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Asesorías' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Asesorías · SAE' })).not.toBeInTheDocument()
+  })
+
+  it('la Guía de uso es un link a /docs/, visible para cualquier rol', () => {
+    montar({ alumno: true })
+    const link = screen.getByRole('link', { name: 'Guía de uso' })
+    expect(link).toHaveAttribute('href', '/docs/')
   })
 
   it('la hamburguesa del header abre el menú de la sesión', () => {
