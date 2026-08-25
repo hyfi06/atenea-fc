@@ -1,7 +1,8 @@
+import type { ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { MenuUsuario } from '../components/MenuUsuario'
-import { IconTutorias } from '../components/icons/ServiceIcons'
+import { IconGuiaDeUso, IconTutorias, type IconProps } from '../components/icons/ServiceIcons'
 import { useEsAcademico, useEsAlumno, useEsMiembroSAE } from '../auth/rol'
 
 interface Tile {
@@ -15,6 +16,7 @@ interface Tile {
    *  `NoEncontrado`. */
   externo?: boolean
   containerClassName: string
+  Icono: ComponentType<IconProps>
 }
 
 /**
@@ -40,6 +42,7 @@ export function Home() {
       ruta: '/asesorias',
       visible: esAlumno || esAcademico,
       containerClassName: 'bg-primary-container text-on-primary-container',
+      Icono: IconTutorias,
     },
     {
       id: 'sae-asesorias',
@@ -47,6 +50,7 @@ export function Home() {
       ruta: '/sae/asesorias',
       visible: esMiembroSAE,
       containerClassName: 'bg-secondary-container text-on-secondary-container',
+      Icono: IconTutorias,
     },
     {
       id: 'guia',
@@ -55,6 +59,7 @@ export function Home() {
       visible: true,
       externo: true,
       containerClassName: 'bg-tertiary-container text-on-tertiary-container',
+      Icono: IconGuiaDeUso,
     },
   ].filter((tile) => tile.visible)
 
@@ -78,7 +83,7 @@ export function Home() {
               style={{ animationDelay: `${indice * 30}ms` }}
               className={`entrada-lista presionable foco-visible flex min-h-11 flex-col items-center gap-2 rounded-2xl p-3 text-center ${tile.containerClassName}`}
             >
-              <IconTutorias className="h-6 w-6" />
+              <tile.Icono className="h-6 w-6" />
               <span className="text-xs font-semibold leading-tight">{tile.etiqueta}</span>
             </a>
           ) : (
@@ -89,7 +94,7 @@ export function Home() {
               style={{ animationDelay: `${indice * 30}ms` }}
               className={`entrada-lista presionable foco-visible flex min-h-11 flex-col items-center gap-2 rounded-2xl p-3 text-center ${tile.containerClassName}`}
             >
-              <IconTutorias className="h-6 w-6" />
+              <tile.Icono className="h-6 w-6" />
               <span className="text-xs font-semibold leading-tight">{tile.etiqueta}</span>
             </button>
           ),

@@ -36,3 +36,13 @@ export function IconTutorias({ className }: IconProps) {
     </IconBase>
   )
 }
+
+export function IconGuiaDeUso({ className }: IconProps) {
+  return (
+    <IconBase className={className}>
+      <path d="M24 14 C21 11 15 10 9 10 V34 C15 34 21 35 24 38" />
+      <path d="M24 14 C27 11 33 10 39 10 V34 C33 34 27 35 24 38" />
+      <path d="M24 14 V38" />
+    </IconBase>
+  )
+}
