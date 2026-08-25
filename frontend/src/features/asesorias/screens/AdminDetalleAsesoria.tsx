@@ -53,6 +53,7 @@ export function AdminDetalleAsesoria() {
 
   const nombreMateria = state?.nombreMateria ?? `Materia #${asesoria.materia}`
   const notas = asesoria.notas.trim()
+  const motivo = asesoria.motivo.trim()
 
   return (
     <main className="flex min-h-svh flex-col gap-6 px-6 py-6">
@@ -99,6 +100,13 @@ export function AdminDetalleAsesoria() {
           </dd>
         </dl>
       </section>
+
+      {motivo !== '' && (
+        <section className="rounded-lg bg-surface-container-low p-4">
+          <h2 className="mb-2 text-sm font-medium text-on-surface">Motivo de la asesoría</h2>
+          <p className="whitespace-pre-line text-sm text-on-surface-variant">{motivo}</p>
+        </section>
+      )}
 
       {notas !== '' && (
         <section className="rounded-lg bg-surface-container-low p-4">

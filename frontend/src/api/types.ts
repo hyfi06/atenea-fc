@@ -126,6 +126,10 @@ export interface Asesoria {
   // payloads. DetalleAsesoria es la única pantalla que la consume para
   // edición y debe normalizar con `?? ''` antes de leerla como string.
   notas?: string
+  // Lo que el alumno quiere tratar, capturado al agendar (opcional, texto
+  // libre saneado de HTML en el backend). A diferencia de `notas` siempre
+  // viaja en el payload, sin importar el rol de quien pide.
+  motivo: string
   creado_en: string
 }
 
@@ -198,6 +202,7 @@ export interface AsesoriaAdmin {
   asesor_nombre: string
   asistio: boolean | null
   notas: string
+  motivo: string
 }
 
 /** GET /api/asesorias/admin/asesores/ */

@@ -81,6 +81,13 @@ export function DetalleAsesoria() {
         </dl>
       </section>
 
+      {asesoria.motivo && (
+        <section className="rounded-lg bg-surface-container-low p-4">
+          <h2 className="mb-2 text-sm font-medium text-on-surface">Motivo de la asesoría</h2>
+          <p className="whitespace-pre-line text-sm text-on-surface-variant">{asesoria.motivo}</p>
+        </section>
+      )}
+
       <SeccionAcciones asesoria={asesoria} />
 
       {esAsesor && previas.length > 0 && (

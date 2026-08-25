@@ -227,6 +227,7 @@ export interface PayloadAgendar {
   fecha: string
   materia: number
   carrera: number
+  motivo: string
 }
 
 export function useAgendarAsesoria() {

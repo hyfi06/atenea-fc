@@ -19,6 +19,7 @@ function asesoria(overrides: Partial<AsesoriaAdmin> = {}): AsesoriaAdmin {
     asesor_nombre: 'Ana López',
     asistio: true,
     notas: 'trae dudas del examen',
+    motivo: '',
     ...overrides,
   }
 }
@@ -54,6 +55,17 @@ describe('AdminDetalleAsesoria', () => {
   it('sin notas no muestra la sección de notas', () => {
     montar({ asesoria: asesoria({ notas: '   ' }), nombreMateria: 'Cálculo I' })
     expect(screen.queryByText('Notas de la sesión')).not.toBeInTheDocument()
+  })
+
+  it('muestra el motivo de la asesoría', () => {
+    montar({ asesoria: asesoria({ motivo: 'Dudas de límites' }), nombreMateria: 'Cálculo I' })
+    expect(screen.getByText('Motivo de la asesoría')).toBeInTheDocument()
+    expect(screen.getByText('Dudas de límites')).toBeInTheDocument()
+  })
+
+  it('sin motivo no muestra la sección de motivo', () => {
+    montar()
+    expect(screen.queryByText('Motivo de la asesoría')).not.toBeInTheDocument()
   })
 
   it('no ofrece ninguna acción de escritura', () => {

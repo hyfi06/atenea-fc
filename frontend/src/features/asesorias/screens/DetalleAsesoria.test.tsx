@@ -12,7 +12,7 @@ function crearAsesoria(overrides: Partial<Asesoria> = {}): Asesoria {
     id: 1, alumno: 10, alumno_nombre: 'Beto Alumno', asesor_nombre: 'Ana Asesora',
     disponibilidad: 1, materia: 1, carrera: 1, fecha: '2020-01-01', hora_inicio: '10:00:00',
     formato: 'presencial', ubicacion: 'Salón O-221', liga_virtual: '', estado: 'agendada',
-    asistio: null, notas: '', creado_en: '2020-01-01T10:00:00Z', ...overrides,
+    asistio: null, notas: '', motivo: '', creado_en: '2020-01-01T10:00:00Z', ...overrides,
   }
 }
 
@@ -100,6 +100,22 @@ describe('DetalleAsesoria por rol', () => {
     delete (asesoria as Partial<Asesoria>).notas
     montar(asesoria, false)
     expect(screen.getByText('Salón O-221')).toBeInTheDocument()
+  })
+
+  it('el alumno ve el motivo que capturó al agendar', () => {
+    montar(crearAsesoria({ motivo: 'Dudas de límites' }), false)
+    expect(screen.getByText('Motivo de la asesoría')).toBeInTheDocument()
+    expect(screen.getByText('Dudas de límites')).toBeInTheDocument()
+  })
+
+  it('el asesor también ve el motivo del alumno', () => {
+    montar(crearAsesoria({ motivo: 'Dudas de límites' }), true)
+    expect(screen.getByText('Dudas de límites')).toBeInTheDocument()
+  })
+
+  it('sin motivo no muestra la sección de motivo', () => {
+    montar(crearAsesoria({ motivo: '' }), false)
+    expect(screen.queryByText('Motivo de la asesoría')).not.toBeInTheDocument()
   })
 })
 

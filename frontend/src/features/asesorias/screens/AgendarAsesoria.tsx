@@ -35,6 +35,7 @@ export function AgendarAsesoria() {
   const [carrera, setCarrera] = useState<number | null>(
     historial.length === 1 ? historial[0].carrera : null,
   )
+  const [motivo, setMotivo] = useState('')
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const agendar = useAgendarAsesoria()
@@ -51,7 +52,7 @@ export function AgendarAsesoria() {
   function confirmar() {
     if (slot === null || carrera === null || fecha === null) return
     agendar.mutate(
-      { disponibilidad: slot.disponibilidad_id, fecha, materia: idMateria, carrera },
+      { disponibilidad: slot.disponibilidad_id, fecha, materia: idMateria, carrera, motivo },
       {
         onSuccess: (asesoria) => {
           setConfirmando(false)
@@ -187,6 +188,21 @@ export function AgendarAsesoria() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="motivo-agendar" className="text-xs text-on-surface-variant">
+              Motivo (opcional)
+            </label>
+            <textarea
+              id="motivo-agendar"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="¿Qué tema o duda quieres tratar?"
+              className="foco-visible rounded-md border border-outline bg-transparent px-2 py-1.5 text-sm text-on-surface"
+            />
           </div>
 
           <button

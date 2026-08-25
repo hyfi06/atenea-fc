@@ -90,9 +90,31 @@ describe('AgendarAsesoria', () => {
     avanzarHastaConfirmar()
     fireEvent.click(screen.getByRole('button', { name: 'Agendar' })) // botón del diálogo
     expect(mutate).toHaveBeenCalledWith(
-      { disponibilidad: 41, fecha: '2026-08-10', materia: 12, carrera: 3 },
+      { disponibilidad: 41, fecha: '2026-08-10', materia: 12, carrera: 3, motivo: '' },
       expect.anything(),
     )
+  })
+
+  it('el motivo capturado se incluye en el payload', () => {
+    const mutate = vi.fn()
+    mockComun(mutate)
+    montar()
+    fireEvent.click(screen.getByText(/10 de agosto/i))
+    fireEvent.click(screen.getByText('10:00–11:00'))
+    fireEvent.change(screen.getByLabelText(/motivo/i), { target: { value: 'Dudas de límites' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agendar' }))
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ motivo: 'Dudas de límites' }),
+      expect.anything(),
+    )
+  })
+
+  it('el campo de motivo limita a 500 caracteres', () => {
+    mockComun(vi.fn())
+    montar()
+    avanzarHastaConfirmar()
+    expect(screen.getByLabelText(/motivo/i)).toHaveAttribute('maxLength', '500')
   })
 
   it('un 409 regresa al paso de día', async () => {
