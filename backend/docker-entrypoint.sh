@@ -18,7 +18,9 @@ python manage.py migrate --noinput
 
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
+    --worker-class "${GUNICORN_WORKER_CLASS:-gthread}" \
     --workers "${GUNICORN_WORKERS:-3}" \
+    --threads "${GUNICORN_THREADS:-4}" \
     --timeout "${GUNICORN_TIMEOUT:-60}" \
     --access-logfile - \
     --error-logfile -
