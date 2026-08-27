@@ -63,3 +63,13 @@ REST_AUTH = {
 # dejar el login de Google roto en silencio (ver ADR 0018).
 SOCIALACCOUNT_PROVIDERS["google"]["APP"]["client_id"] = env("GOOGLE_OAUTH_CLIENT_ID")
 SOCIALACCOUNT_PROVIDERS["google"]["APP"]["secret"] = env("GOOGLE_OAUTH_CLIENT_SECRET")
+
+# Conexiones persistentes a Postgres — sin esto, Django abre y cierra una
+# conexión nueva en cada request (CONN_MAX_AGE default 0). Con gunicorn
+# gthread (ver docker-entrypoint.sh) el techo de conexiones concurrentes es
+# GUNICORN_WORKERS × GUNICORN_THREADS, muy por debajo del max_connections
+# default de Postgres — no se justifica PgBouncer a esta escala (ver spec).
+DATABASES["default"]["CONN_MAX_AGE"] = 60
+# Sin esto, Django podría reusar una conexión muerta (ej. tras un restart de
+# Postgres) y fallar la primera request con ella en vez de abrir una nueva.
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
