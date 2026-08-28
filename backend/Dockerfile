@@ -44,4 +44,7 @@ USER appuser
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD python -c "import urllib.request, urllib.error; req = urllib.request.Request('http://localhost:8000/api/health/', headers={'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(req, timeout=2)" || exit 1
+
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
