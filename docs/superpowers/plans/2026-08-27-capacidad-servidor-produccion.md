@@ -32,7 +32,7 @@
 
 No hay test unitario razonable para un script de arranque de contenedor — la verificación es funcional: construir la imagen, levantarla contra Postgres/Redis reales, e inspeccionar el log de arranque de gunicorn.
 
-- [ ] **Step 1: Editar `backend/docker-entrypoint.sh`**
+- [x] **Step 1: Editar `backend/docker-entrypoint.sh`**
 
 Reemplazar el bloque final (después de `python manage.py migrate --noinput`):
 
@@ -58,7 +58,7 @@ exec gunicorn config.wsgi:application \
     --error-logfile -
 ```
 
-- [ ] **Step 2: Levantar Postgres y Redis de dev (ya trae healthcheck propio)**
+- [x] **Step 2: Levantar Postgres y Redis de dev (ya trae healthcheck propio)**
 
 Run:
 ```bash
@@ -66,12 +66,12 @@ docker compose -f docker-compose.dev.yml up -d postgres redis
 ```
 Expected: ambos contenedores en estado `running (healthy)` — confirmar con `docker compose -f docker-compose.dev.yml ps`.
 
-- [ ] **Step 3: Construir la imagen de backend con el cambio**
+- [x] **Step 3: Construir la imagen de backend con el cambio**
 
 Run: `docker build -t atenea-backend-test ./backend`
 Expected: build termina con `exit code 0`.
 
-- [ ] **Step 4: Levantar el contenedor por fuera de compose, en la red de dev, forzando el path de producción (sin override de `command:`)**
+- [x] **Step 4: Levantar el contenedor por fuera de compose, en la red de dev, forzando el path de producción (sin override de `command:`)**
 
 ```bash
 NETWORK="$(docker compose -f docker-compose.dev.yml ps -q postgres | xargs docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"
@@ -88,7 +88,7 @@ sleep 5
 ```
 Expected: `docker ps` muestra `atenea-backend-test-run` como `Up`, sin reinicios en loop.
 
-- [ ] **Step 5: Confirmar en el log que gunicorn arrancó con `gthread` y 3 workers**
+- [x] **Step 5: Confirmar en el log que gunicorn arrancó con `gthread` y 3 workers**
 
 Run:
 ```bash
@@ -96,14 +96,14 @@ docker logs atenea-backend-test-run 2>&1 | grep -E "Using worker|Booting worker"
 ```
 Expected: una línea `Using worker: gunicorn.workers.gthread.ThreadWorker` (o equivalente con `gthread` en el nombre) y exactamente 3 líneas `Booting worker with pid: ...`.
 
-- [ ] **Step 6: Limpiar**
+- [x] **Step 6: Limpiar**
 
 ```bash
 docker rm -f atenea-backend-test-run
 docker compose -f docker-compose.dev.yml down
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/docker-entrypoint.sh
@@ -125,7 +125,7 @@ git commit --signoff -m "[feat][backend] usar gthread con threads configurables 
 
 No aplica un test de Django `TestCase` (correr bajo settings de prod dentro de la suite de tests, que usa `config.settings.dev` por default, no es el patrón de este repo) — se verifica cargando el módulo de settings directamente con las mismas variables dummy que ya usa `backend/Dockerfile` para `collectstatic`.
 
-- [ ] **Step 1: Editar `backend/config/settings/prod.py`**
+- [x] **Step 1: Editar `backend/config/settings/prod.py`**
 
 Agregar al final del archivo (después de las líneas de `SOCIALACCOUNT_PROVIDERS`):
 
@@ -141,7 +141,7 @@ DATABASES["default"]["CONN_MAX_AGE"] = 60
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 ```
 
-- [ ] **Step 2: Verificar que carga sin errores con settings de prod**
+- [x] **Step 2: Verificar que carga sin errores con settings de prod**
 
 Run (mismas variables dummy que usa `backend/Dockerfile` para `collectstatic` — no requieren que Postgres/Redis sean alcanzables, `check` no toca la base de datos):
 ```bash
@@ -157,7 +157,7 @@ uv run manage.py check
 ```
 Expected: `System check identified no issues (0 silenced).`
 
-- [ ] **Step 3: Confirmar los valores exactos**
+- [x] **Step 3: Confirmar los valores exactos**
 
 Run (mismas variables de entorno del Step 2):
 ```bash
@@ -172,7 +172,7 @@ uv run manage.py shell -c "from django.conf import settings; print(settings.DATA
 ```
 Expected: `60 True`.
 
-- [ ] **Step 4: Confirmar que settings de dev NO cambiaron (conexión por request se mantiene en desarrollo)**
+- [x] **Step 4: Confirmar que settings de dev NO cambiaron (conexión por request se mantiene en desarrollo)**
 
 Run:
 ```bash
@@ -182,7 +182,7 @@ uv run manage.py shell -c "from django.conf import settings; print(settings.DATA
 
 Expected: `0` (el default de Django, sin cambios en dev).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/config/settings/prod.py
@@ -202,7 +202,7 @@ git commit --signoff -m "[feat][backend] usar conexiones persistentes a Postgres
 - Consumes: nada de tareas previas (el endpoint `/api/health/` ya existe en el código de `asesorias`/donde esté registrado — no se toca en este plan).
 - Produces: la imagen de `atenea-backend` reporta `healthy`/`unhealthy` vía `docker inspect`/`docker ps` — el plan de `services` (fuera de alcance de este repo) lo neutraliza para `atenea-worker`, que usa la misma imagen pero no sirve HTTP.
 
-- [ ] **Step 1: Editar `backend/Dockerfile`**
+- [x] **Step 1: Editar `backend/Dockerfile`**
 
 Agregar después de `EXPOSE 8000` y antes de `ENTRYPOINT`:
 
@@ -223,12 +223,12 @@ evitar el loop de redirección 301 que `SECURE_SSL_REDIRECT` provoca sin él
 manda este healthcheck no está en el `DJANGO_ALLOWED_HOSTS` real de
 producción (hallado en la revisión final de todo el branch).
 
-- [ ] **Step 2: Levantar Postgres y Redis de dev**
+- [x] **Step 2: Levantar Postgres y Redis de dev**
 
 Run: `docker compose -f docker-compose.dev.yml up -d postgres redis`
 Expected: ambos `running (healthy)`.
 
-- [ ] **Step 3: Construir la imagen y confirmar que el `HEALTHCHECK` quedó embebido**
+- [x] **Step 3: Construir la imagen y confirmar que el `HEALTHCHECK` quedó embebido**
 
 ```bash
 docker build -t atenea-backend-test ./backend
@@ -236,7 +236,7 @@ docker inspect --format='{{json .Config.Healthcheck}}' atenea-backend-test
 ```
 Expected: JSON con `"Test":["CMD-SHELL","python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/', timeout=2)\" || exit 1"]` (o el equivalente en `["CMD", ...]` según cómo Docker lo serialice), `"Interval":30000000000`, `"Retries":3`.
 
-- [ ] **Step 4: Levantar el contenedor y esperar a que el healthcheck corra**
+- [x] **Step 4: Levantar el contenedor y esperar a que el healthcheck corra**
 
 ```bash
 NETWORK="$(docker compose -f docker-compose.dev.yml ps -q postgres | xargs docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"
@@ -254,7 +254,7 @@ docker inspect --format='{{.State.Health.Status}}' atenea-backend-test-run
 ```
 Expected: `healthy`.
 
-- [ ] **Step 5: Confirmar que un backend roto se reporta `unhealthy` (falso negativo del healthcheck sería peor que no tenerlo)**
+- [x] **Step 5: Confirmar que un backend roto se reporta `unhealthy` (falso negativo del healthcheck sería peor que no tenerlo)**
 
 ```bash
 docker exec atenea-backend-test-run pkill -f gunicorn
@@ -263,14 +263,14 @@ docker inspect --format='{{.State.Health.Status}}' atenea-backend-test-run
 ```
 Expected: `unhealthy` (o `starting`→`unhealthy` tras los reintentos configurados).
 
-- [ ] **Step 6: Limpiar**
+- [x] **Step 6: Limpiar**
 
 ```bash
 docker rm -f atenea-backend-test-run
 docker compose -f docker-compose.dev.yml down
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/Dockerfile
@@ -290,7 +290,7 @@ git commit --signoff -m "[feat][backend] agregar HEALTHCHECK a la imagen sobre /
 - Consumes: nada de tareas previas.
 - Produces: la imagen de `atenea-frontend` reporta `healthy`/`unhealthy` vía `docker inspect`/`docker ps`.
 
-- [ ] **Step 1: Editar `frontend/Dockerfile`**
+- [x] **Step 1: Editar `frontend/Dockerfile`**
 
 Agregar después de `EXPOSE 80` y antes de `CMD`:
 
@@ -303,7 +303,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-- [ ] **Step 2: Construir la imagen y confirmar que el `HEALTHCHECK` quedó embebido**
+- [x] **Step 2: Construir la imagen y confirmar que el `HEALTHCHECK` quedó embebido**
 
 ```bash
 docker build -t atenea-frontend-test --build-arg VITE_API_BASE_URL=http://localhost:8000 ./frontend
@@ -311,7 +311,7 @@ docker inspect --format='{{json .Config.Healthcheck}}' atenea-frontend-test
 ```
 Expected: JSON con `"Test":["CMD-SHELL","wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]`, `"Interval":30000000000`, `"Retries":3`.
 
-- [ ] **Step 3: Levantar el contenedor y esperar a que el healthcheck corra**
+- [x] **Step 3: Levantar el contenedor y esperar a que el healthcheck corra**
 
 ```bash
 docker run -d --name atenea-frontend-test-run -p 8080:80 \
@@ -323,13 +323,13 @@ curl -sf http://localhost:8080/ >/dev/null && echo "curl OK"
 ```
 Expected: `healthy` y `curl OK`.
 
-- [ ] **Step 4: Limpiar**
+- [x] **Step 4: Limpiar**
 
 ```bash
 docker rm -f atenea-frontend-test-run
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/Dockerfile
@@ -342,6 +342,6 @@ git commit --signoff -m "[feat][frontend] agregar HEALTHCHECK a la imagen sobre 
 
 ## Verificación final
 
-- [ ] `git log --oneline -4` muestra los 4 commits de este plan, uno por tarea, en orden.
-- [ ] `docker compose -f docker-compose.dev.yml up --build` (flujo normal de dev, `docs/development/getting-started.md`) sigue arrancando sin errores — el backend en dev sigue usando `runserver` (el `command:` de `docker-compose.dev.yml` no cambió), así que ninguno de estos 4 cambios debe alterar el flujo de desarrollo día a día.
-- [ ] Repasar la spec (`docs/superpowers/specs/2026-08-27-capacidad-servidor-produccion-design.md`) sección por sección contra las 4 tareas: sección 1 → Task 1, sección 2 → Task 2, sección 3 → Task 3 + Task 4, sección 4 (throttling) → sin tarea, confirmado sin cambios en la spec.
+- [x] `git log --oneline -4` muestra los 4 commits de este plan, uno por tarea, en orden.
+- [x] `docker compose -f docker-compose.dev.yml up --build` (flujo normal de dev, `docs/development/getting-started.md`) sigue arrancando sin errores — el backend en dev sigue usando `runserver` (el `command:` de `docker-compose.dev.yml` no cambió), así que ninguno de estos 4 cambios debe alterar el flujo de desarrollo día a día.
+- [x] Repasar la spec (`docs/superpowers/specs/2026-08-27-capacidad-servidor-produccion-design.md`) sección por sección contra las 4 tareas: sección 1 → Task 1, sección 2 → Task 2, sección 3 → Task 3 + Task 4, sección 4 (throttling) → sin tarea, confirmado sin cambios en la spec.
