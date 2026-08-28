@@ -49,6 +49,12 @@ services:
     build:
       context: ./backend
     command: celery -A config worker -l info
+    # celery-worker usa la misma imagen que backend, que ahora trae el HEALTHCHECK
+    # HTTP de backend/Dockerfile (http://localhost:8000/api/health/). Este servicio
+    # no corre gunicorn ni escucha en :8000, así que ese chequeo jamás pasaría —
+    # se deshabilita explícitamente en vez de reportar "unhealthy" para siempre.
+    healthcheck:
+      disable: true
     volumes:
       - ./backend:/app
     env_file:

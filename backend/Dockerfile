@@ -47,6 +47,6 @@ EXPOSE 8000
 # X-Forwarded-Proto: https evita que SECURE_SSL_REDIRECT (prod settings) rediriga a 301;
 # ver backend/config/settings/prod.py:SECURE_PROXY_SSL_HEADER y comentario asociado.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD python -c "import urllib.request, urllib.error; req = urllib.request.Request('http://localhost:8000/api/health/', headers={'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(req, timeout=2)" || exit 1
+  CMD python -c "import urllib.request; req = urllib.request.Request('http://localhost:8000/api/health/', headers={'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(req, timeout=2)" || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -2,7 +2,13 @@ from .base import *  # noqa: F401,F403
 
 DEBUG = False
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+# "localhost" se agrega siempre porque el HEALTHCHECK de backend/Dockerfile corre
+# dentro del mismo contenedor contra http://localhost:8000/ — nunca llega desde
+# fuera con ese Host, así que no amplía la superficie real de ataque (nada en este
+# repo arma URLs a partir del Host header). Sin esto, el healthcheck da 400
+# (DisallowedHost) bajo el DJANGO_ALLOWED_HOSTS real de producción y el contenedor
+# se reporta unhealthy aunque esté sirviendo tráfico normalmente.
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS") + ["localhost"]
 
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
