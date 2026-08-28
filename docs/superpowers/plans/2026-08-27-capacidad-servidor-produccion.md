@@ -215,6 +215,14 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 ```
 
+**Nota de corrección (revisión final del branch):** el `CMD` que se implementó
+también envuelve el request con un header `X-Forwarded-Proto: https`, para
+evitar el loop de redirección 301 que `SECURE_SSL_REDIRECT` provoca sin él
+(hallado durante la revisión de este Task 3). Además, `ALLOWED_HOSTS` en
+`prod.py` necesitó `+ ["localhost"]`, porque el `Host: localhost:8000` que
+manda este healthcheck no está en el `DJANGO_ALLOWED_HOSTS` real de
+producción (hallado en la revisión final de todo el branch).
+
 - [ ] **Step 2: Levantar Postgres y Redis de dev**
 
 Run: `docker compose -f docker-compose.dev.yml up -d postgres redis`

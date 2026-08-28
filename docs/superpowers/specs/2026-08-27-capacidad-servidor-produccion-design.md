@@ -129,6 +129,14 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/', timeout=2)" || exit 1
 ```
 
+**Nota de corrección (revisión final del branch):** el `CMD` que se implementó
+también envuelve el request con un header `X-Forwarded-Proto: https`, para
+evitar el loop de redirección 301 que `SECURE_SSL_REDIRECT` provoca sin él
+(hallado durante la revisión de la Task 3). Además, `ALLOWED_HOSTS` en
+`prod.py` necesitó `+ ["localhost"]`, porque el `Host: localhost:8000` que
+manda este healthcheck no está en el `DJANGO_ALLOWED_HOSTS` real de
+producción (hallado en la revisión final de todo el branch).
+
 Se usa `python -c` con `urllib` (siempre disponible en la imagen, ya
 `python:3.12-slim`) en vez de `curl`/`wget` — ninguno de los dos viene
 instalado en la imagen `slim` de Debian y agregarlo solo para esto es peso
